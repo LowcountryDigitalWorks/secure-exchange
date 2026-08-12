@@ -14,9 +14,12 @@ export interface Thread {
   readonly threadId: ThreadId;
   readonly deploymentId: DeploymentId;
   readonly queueId: QueueId;
+  readonly routingCategory: string;
   readonly state: ThreadLifecycleState;
   readonly createdAt: string;
   readonly updatedAt: string;
+  readonly lastActivityAt: string;
+  readonly attentionAt?: string;
   readonly completedAt?: string;
   readonly dispositionDueAt?: string;
   readonly disposedAt?: string;
@@ -53,12 +56,7 @@ export function transitionThread(
   expectedVersion: number,
   options: ThreadTransitionOptions,
 ): Thread {
-  if (thread.version !== expectedVersion) {
-    throw new DomainError(
-      "STALE_VERSION",
-      `Expected thread version ${expectedVersion}, found ${thread.version}.`,
-    );
-  }
+  requireExpectedVersion(thread, expectedVersion);
 
   if (!isThreadTransitionAllowed(thread.state, targetState)) {
     throw new DomainError(
@@ -82,4 +80,28 @@ export function transitionThread(
       : {}),
     ...(targetState === "DISPOSED" ? { disposedAt: options.at } : {}),
   };
+}
+
+export function recordThreadActivity(
+  thread: Thread,
+  expectedVersion: number,
+  at: string,
+): Thread {
+  requireExpectedVersion(thread, expectedVersion);
+
+  return {
+    ...thread,
+    updatedAt: at,
+    lastActivityAt: at,
+    version: thread.version + 1,
+  };
+}
+
+function requireExpectedVersion(thread: Thread, expectedVersion: number): void {
+  if (thread.version !== expectedVersion) {
+    throw new DomainError(
+      "STALE_VERSION",
+      `Expected thread version ${expectedVersion}, found ${thread.version}.`,
+    );
+  }
 }
