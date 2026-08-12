@@ -1,6 +1,7 @@
 import { serve } from "@hono/node-server";
 
-import { app } from "./http/app.js";
+import { createApp } from "./http/app.js";
+import { createLocalDevelopmentDemoRuntime } from "./http/development-demo.js";
 
 const DEFAULT_PORT = 3000;
 const parsedPort = Number.parseInt(
@@ -12,11 +13,16 @@ if (!Number.isInteger(parsedPort) || parsedPort < 1 || parsedPort > 65_535) {
   throw new Error("PORT must be an integer between 1 and 65535.");
 }
 
+const demoEnabled = process.env["SECURE_EXCHANGE_SYNTHETIC_DEMO"] === "enabled";
+const app = createApp({
+  ...(demoEnabled ? { demo: createLocalDevelopmentDemoRuntime() } : {}),
+});
+
 serve({
   fetch: app.fetch,
   port: parsedPort,
 });
 
 console.log(
-  `Secure Exchange engineering shell listening on port ${parsedPort}.`,
+  `Secure Exchange local development server listening on port ${parsedPort}; synthetic demo ${demoEnabled ? "enabled" : "disabled"}.`,
 );

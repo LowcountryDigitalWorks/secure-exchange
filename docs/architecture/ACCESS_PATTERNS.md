@@ -127,3 +127,11 @@ Reconsider the reference state store if the product develops a justified need fo
 - portability requirements that outweigh the serverless operational advantages of DynamoDB.
 
 A future PostgreSQL adapter must implement the same provider-neutral repository/transaction contracts rather than changing domain semantics.
+
+## Release 0.5 delivery-adapter note
+
+Release 0.5 does not change the production persistence access-pattern decision or select a browser/database schema. The local browser adapter reuses the existing in-memory WorkflowStore ports and application-service access patterns.
+
+Queue GETs remain candidate projections only. Conversation GETs perform authoritative thread/actor/queue/action validation before loading messages. Reply mutations retain expected-version and atomic thread/message/audit behavior. The optional Start work action uses the existing workflow transition service.
+
+Server-generated development IDs and POST/Redirect/GET routing are delivery concerns, not new DynamoDB key or index contracts.

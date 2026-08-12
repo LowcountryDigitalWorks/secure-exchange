@@ -97,3 +97,19 @@ Neither log class should copy message bodies, document contents, secret access g
 | Objects | Upload/download requests | Protected object storage | opaque keys, scoped grants, encryption, malware gate |
 | Notifications | Email transport | Secure Exchange content store | non-sensitive notifications only |
 | Logging | Runtime/provider telemetry | Audit/ops consumers | minimization, access control, no sensitive payload logging |
+
+## Release 0.5 local development browser flow
+
+Release 0.5 adds a local-only delivery path while preserving the existing provider-neutral application boundary:
+
+1. A development browser GET renders a synthetic external form only when the explicit demo configuration is enabled.
+2. The external POST supplies only a bounded routing choice and synthetic message body. The server supplies deployment/queue context and generates opaque participant, thread, message, and audit identifiers.
+3. ConversationService validates routing and atomically creates the thread, first immutable message, and minimized audit events in the local in-memory adapter.
+4. The synthetic staff queue GET calls listQueueCandidates() and renders metadata only.
+5. Opening is an explicit POST through openStaffConversation(), which records distinct Opened evidence and redirects.
+6. The redirected conversation GET performs a fresh authoritative THREAD_OPEN check through readStaffConversation() before rendering message content.
+7. Staff reply is an explicit expected-version POST through replyToConversation(); the application/domain reply-state rule is enforced before mutation.
+
+No GET mutates application state. The confirmation page grants no external conversation access. There is still no external retrieval/access-grant flow.
+
+The local browser trust boundary adds server-side HTML escaping, no-store caching, restrictive CSP, and a same-origin mutation check using browser Fetch Metadata when present with a strict Origin/host/request-URL fallback for non-browser test callers.
