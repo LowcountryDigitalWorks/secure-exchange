@@ -80,14 +80,14 @@ These are not current MVP commitments:
 - cross-customer shared tenancy;
 - unbounded file sharing.
 
-## Explicitly outside current scope
+## Explicitly outside current development scope
 
-- production AWS provisioning in Release 0.2;
 - real customer/PHI processing during development;
 - representing a development build as compliance-ready;
 - production email/domain routing changes;
 - production authentication setup;
-- paid-service purchases.
+- production AWS provisioning before its separate release gate;
+- paid-service purchases without approval.
 
 ## Roadmap gates
 
@@ -97,11 +97,26 @@ Completed and merged. Establishes product, architecture, workflow-evidence, thre
 
 ### Release 0.2 — Engineering Baseline
 
-Establishes executable project scaffolding, package/lockfiles, strict compilation, formatting/linting, unit/integration/architecture tests, browser and accessibility tests, dependency/security checks, secret detection, build validation, and CI. It deliberately implements no Secure Exchange business workflow.
+Completed and merged. Establishes executable project scaffolding, package/lockfiles, strict compilation, formatting/linting, unit/integration/architecture tests, browser and accessibility tests, dependency/security checks, secret detection, build validation, and required CI.
 
-### Prototype releases
+### Release 0.3 — Workflow Core Prototype
 
-Implement provider-neutral domain behavior and local/synthetic adapters first, then browser/API flows.
+Implements the first provider-neutral business behavior with synthetic/local persistence only:
+
+- authoritative thread lifecycle and optimistic-version semantics;
+- explicit completion/disposition timestamps where applicable;
+- distinct Opened and Downloaded audit evidence;
+- append-oriented `TransferAttestation` plus explicit supersede/invalidate controls;
+- fail-closed completion-policy evaluation;
+- authoritative normalized actor, deployment, queue-scope, and action-permission checks;
+- atomic local mutation + audit/evidence transactions;
+- deterministic two-deployment isolation tests.
+
+It deliberately adds no external submission/retrieval surface, production identity, attachment/object workflow, AWS adapter, or production infrastructure.
+
+### Later prototype releases
+
+Add provider-neutral external/browser/API workflow behavior and additional local/synthetic adapters before production cloud adapters.
 
 ### AWS adapter releases
 

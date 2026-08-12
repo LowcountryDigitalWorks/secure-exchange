@@ -4,7 +4,9 @@ Secure Exchange is a Lowcountry Digital Works product for secure, role-routed me
 
 ## Current status
 
-**Release 0.2 establishes the executable engineering baseline only.** It adds the approved TypeScript/Node/Hono toolchain, automated validation, and a minimal non-sensitive engineering shell. Secure Exchange business workflows and production AWS infrastructure are not implemented.
+**Release 0.3 implements the provider-neutral workflow core prototype.** It adds authoritative thread lifecycle/version behavior, distinct workflow evidence, append-oriented `TransferAttestation` semantics, completion-policy enforcement, normalized authorization checks, and local in-memory transaction/persistence adapters used only for deterministic development tests.
+
+Release 0.3 does not add external submission/retrieval APIs or UI, production authentication, file/object handling, email delivery, AWS adapters, or production infrastructure.
 
 This repository is public. Development must use synthetic examples only. Do not commit customer data, PHI, credentials, secrets, private operational details, or production configuration.
 
@@ -26,14 +28,21 @@ For local development:
 npm run dev
 ```
 
-For a production-style local build/run:
+Focused workflow-core tests can be run with:
+
+```sh
+npm test -- tests/unit/thread-lifecycle.test.ts tests/unit/completion-policy.test.ts
+npm test -- tests/integration/workflow-service.test.ts
+```
+
+For a production-style local build/run of the non-sensitive shell:
 
 ```sh
 npm run build
 npm start
 ```
 
-See [Development conventions](docs/development/DEVELOPMENT.md) for commands, project structure, CI behavior, dependency updates, security rules, and Release 0.2 non-goals.
+See [Development conventions](docs/development/DEVELOPMENT.md) for commands, project structure, CI behavior, dependency updates, security rules, and Release 0.3 boundaries.
 
 ## Product direction
 
@@ -48,6 +57,16 @@ The approved reference direction is:
 - a thin Web-standards-oriented HTTP layer;
 - semantic HTML/CSS with small TypeScript modules for the initial frontend;
 - DynamoDB as the initial AWS reference state store behind provider-neutral persistence abstractions.
+
+## Workflow-core rules
+
+Release 0.3 preserves these independent facts:
+
+**Opened != Downloaded != Transferred/Filed != Completed.**
+
+`TransferAttestation` is authenticated staff business evidence. It does not imply completion. Completion is an explicit lifecycle transition that succeeds only after current authorization, authoritative thread/version validation, and configured completion-policy preconditions pass.
+
+The local in-memory store is a development/test adapter only. It is not the production persistence contract.
 
 ## Authoritative documentation
 
@@ -74,4 +93,4 @@ Meaningful changes use:
 
 `branch -> pull request -> validation -> review -> squash merge`
 
-Do not push directly to protected `main`. Do not weaken validation to obtain a green build. Production infrastructure, billing, DNS, email routing, account ownership, or consequential permissions remain explicit approval gates.
+The protected `main` branch requires the GitHub Actions `validate` check. Do not push directly to protected `main` and do not weaken validation to obtain a green build. Production infrastructure, billing, DNS, email routing, account ownership, or consequential permissions remain explicit approval gates.
