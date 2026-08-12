@@ -113,3 +113,15 @@ Release 0.5 adds a local-only delivery path while preserving the existing provid
 No GET mutates application state. The confirmation page grants no external conversation access. There is still no external retrieval/access-grant flow.
 
 The local browser trust boundary adds server-side HTML escaping, no-store caching, restrictive CSP, and a same-origin mutation check using browser Fetch Metadata when present with a strict Origin/host/request-URL fallback for non-browser test callers.
+
+## Release 0.6 attachment ingestion, scan, and retrieval flows
+
+Release 0.6 adds three application-only synthetic flows.
+
+**Ingestion:** the application validates authoritative deployment/thread/message ownership and the current attachment policy before touching protected content. It generates opaque attachment/content references server-side, stages a copy of synthetic bytes through `ProtectedContentStore`, then atomically publishes `QUARANTINED` metadata plus minimized registration/quarantine audit events. If protected-content staging fails, no metadata is published. If metadata publication fails after staging, the application attempts provider-neutral staged-content deletion as compensation and reports failure; it never pretends object storage and metadata share one physical transaction.
+
+**Scan result:** a narrow trusted SYSTEM application boundary receives only a bounded normalized scan-result reference and normalized outcome. It revalidates deployment/thread/message/attachment association and current attachment state, applies the versioned transition, and commits state plus minimized audit together. No scanner raw payload or file bytes enter application audit.
+
+**Staff retrieval:** the application first validates actor deployment, authoritative thread, live staff authorization, queue scope, `ATTACHMENT_READ`, authoritative message, attachment deployment/thread/message association, exactly `CLEAN` safety state, and no deletion marker. Only after those checks does it resolve bytes through `ProtectedContentStore`. Missing/failed/inconsistent content fails with no download evidence. Once bytes resolve successfully, the application commits `ATTACHMENT_DOWNLOADED`; only after that audit commit succeeds does it return a provider-neutral retrieval result.
+
+Release 0.6 adds no browser upload/download route, permanent/public URL, AccessGrant, presigned URL, filesystem path, or AWS object-store contract.

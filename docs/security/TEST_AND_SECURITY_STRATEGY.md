@@ -163,3 +163,13 @@ Release 0.5 extends the executable gate with deterministic domain/application/HT
 - all existing Release 0.2-0.4 architecture, workflow, completion, evidence, queue, message, and authorization regression tests.
 
 The functional demo remains synthetic/local only. These tests are not production authentication, infrastructure, HIPAA, or regulated-deployment evidence.
+
+## Release 0.6 attachment-safety coverage
+
+Release 0.6 adds deterministic domain/application coverage for attachment policy, filename normalization, safety state, normalized scan results, protected-content storage, authorization/isolation, download evidence, and compensation boundaries.
+
+New unit coverage verifies bounded valid metadata, size/type/extension rejection, path/control-shaped filenames, invalid policy configuration, clean/malicious/indeterminate scan behavior, replay behavior, invalid current-state transitions, and retrieval eligibility across all non-clean states.
+
+New integration coverage verifies QUARANTINED publication, per-message count enforcement, protected-content write failure, metadata-commit compensation, successful clean scan/retrieval, malicious/indeterminate handling, scan replay and rollback, cross-deployment scan rejection, cross-deployment/wrong-thread/wrong-message retrieval denial, missing queue scope/permission denial, missing/failed content behavior, DELETED fail-closed behavior, exact successful-download audit creation, no TransferAttestation/completion/thread mutation from download, and absence of content/unrestricted filename values from audit.
+
+Every Release 0.2-0.5 regression remains part of `npm run validate`, including desktop/mobile Playwright and accessibility coverage for the existing synthetic browser demo. Release 0.6 deliberately adds no attachment browser route, so no new attachment-specific browser test is required.

@@ -135,3 +135,11 @@ Release 0.5 does not change the production persistence access-pattern decision o
 Queue GETs remain candidate projections only. Conversation GETs perform authoritative thread/actor/queue/action validation before loading messages. Reply mutations retain expected-version and atomic thread/message/audit behavior. The optional Start work action uses the existing workflow transition service.
 
 Server-generated development IDs and POST/Redirect/GET routing are delivery concerns, not new DynamoDB key or index contracts.
+
+## Release 0.6 attachment access-pattern implementation
+
+The in-memory WorkflowStore now supports authoritative attachment metadata lookup by deployment + attachment ID, per-message attachment listing for count enforcement, current per-deployment attachment policy, and versioned attachment updates inside the existing copy-on-write transaction boundary.
+
+Protected bytes are intentionally separate behind `ProtectedContentStore` (`put`, `get`, `delete`) using opaque `ProtectedContentRef` values. The Release 0.6 in-memory implementation stores cloned `Uint8Array` values for tests/development only. Its map keys are not S3 keys, filesystem paths, DynamoDB keys, or a future provider schema.
+
+Production adapters must preserve the ordering/compensation invariant demonstrated here: content staging can succeed before metadata publication, so metadata publication failure requires cleanup/orphan handling rather than assuming a distributed transaction. Retrieval must authorize against authoritative metadata before object access and must not emit successful download evidence until the object is actually resolved.

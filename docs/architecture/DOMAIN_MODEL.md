@@ -233,3 +233,23 @@ The domain/application layer depends on abstractions such as:
 - `TransactionBoundary`
 
 DynamoDB partition/sort keys, expressions, table names, GSIs, and AWS SDK types must not leak through these contracts.
+
+## Release 0.6 implemented Attachment model
+
+Release 0.6 makes the approved Attachment concept executable while keeping provider details outside the domain/application contract.
+
+An Attachment records: opaque attachment/deployment/thread/message identifiers; untrusted original display filename; separately derived safe-download filename; normalized declared media category/type/extension; byte length; opaque protected-content reference; current safety state; created time; optimistic version; and bounded normalized scan-result metadata when present.
+
+Authoritative states remain exactly:
+
+- `PENDING_UPLOAD`
+- `QUARANTINED`
+- `CLEAN`
+- `REJECTED`
+- `DELETED`
+
+The current application ingestion operation stages bytes and publishes the attachment directly as `QUARANTINED`; it does not expose browser staging or persist a client-driven `PENDING_UPLOAD` workflow. `PENDING_UPLOAD` remains a valid provider-neutral state for a later real ingestion/staging adapter. From `QUARANTINED`, a validated clean result transitions to `CLEAN`, a malicious result transitions to `REJECTED`, and an indeterminate result remains `QUARANTINED` with a versioned normalized scan record. New scan results from non-quarantined states fail closed. Exact replay of the same normalized scan-result reference/outcome is idempotent.
+
+Only `CLEAN` with no deletion marker is eligible for normal retrieval. The other states are non-retrievable. Release 0.6 models `DELETED` as non-retrievable but deliberately does not introduce a general attachment deletion/disposition application operation.
+
+Filename is never a storage locator. The original value is retained only as bounded untrusted display metadata; `safeDownloadFilename` removes directory semantics/control characters and is separately length-bounded for a future HTTP adapter.

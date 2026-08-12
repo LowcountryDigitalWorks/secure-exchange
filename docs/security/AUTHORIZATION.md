@@ -113,3 +113,13 @@ External accountless initiation does not accept an audit actor/reference from fo
 Staff queue, open/read, reply, and optional Start work actions continue through existing application authorization. Queue appearance or knowledge of a thread reference remains insufficient for content access.
 
 Staff reply additionally requires the portable lifecycle rule: NEW, IN_PROGRESS, AWAITING_EXTERNAL, or AWAITING_STAFF. COMPLETED, EXPIRED, and DISPOSED are rejected regardless of UI visibility.
+
+## Release 0.6 attachment authorization boundary
+
+Release 0.6 adds one staff permission: `ATTACHMENT_READ`. Staff retrieval requires a live STAFF authorization in the requested deployment, current queue scope for the authoritative thread, and that permission. Knowledge of an attachment ID, message ID, thread ID, queue candidate, or cached summary never grants retrieval authority.
+
+The retrieval service validates actor deployment and authoritative thread before message/attachment access, then verifies the attachment belongs to the same deployment, thread, and expected message and is exactly `CLEAN` before the protected-content port is called.
+
+Scan processing does not impersonate staff. It uses a narrow trusted SYSTEM application boundary with a server-held system actor reference for minimized audit events. Clients do not select scanner identity, scan permissions, or authoritative scan state.
+
+The former `DOWNLOAD_EVIDENCE_RECORD` permission and standalone `WorkflowService.recordDownloadEvidence()` path are removed. Normal application `ATTACHMENT_DOWNLOADED` evidence is now reachable only through successful authoritative attachment retrieval.

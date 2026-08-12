@@ -4,9 +4,9 @@ Secure Exchange is a Lowcountry Digital Works product for secure, role-routed me
 
 ## Current status
 
-**Release 0.5 implements the Local Development Vertical Slice.** It wires the provider-neutral Release 0.3 workflow core and Release 0.4 conversation/queue core into a disabled-by-default, server-rendered **Synthetic Development Demo** covering accountless synthetic initiation, a server-owned staff queue context, authoritative conversation open/read, chronological messages, and authorized staff reply.
+**Release 0.6 implements the Attachment Safety Core Prototype.** It adds provider-neutral attachment metadata and policy semantics, quarantine/scan-state handling, a protected-content port with an in-memory synthetic adapter, authoritative staff attachment retrieval, and download evidence that can only be created by a successful authoritative retrieval.
 
-Release 0.5 is a development delivery adapter only. It is not production authentication, a production public portal, a regulated deployment, or production infrastructure. It does not add attachments, external secure retrieval/reply, AccessGrant secrets, email delivery, AWS adapters, or customer integrations.
+Release 0.6 remains a synthetic/local application prototype. It does not expose arbitrary browser file upload/download, production authentication, a production public portal, real malware scanning, production object storage, AWS infrastructure, AccessGrant, customer data, or PHI.
 
 This repository is public. Development must use synthetic examples only. Do not commit or enter real customer, patient, client, confidential, regulated, or PHI data, credentials, secrets, private operational details, or production configuration.
 
@@ -48,6 +48,7 @@ npm test -- tests/unit/message.test.ts tests/unit/queue.test.ts tests/unit/threa
 npm test -- tests/integration/conversation-service.test.ts
 npm test -- tests/unit/reply-eligibility.test.ts tests/integration/reply-lifecycle.test.ts
 npm test -- tests/integration/development-demo-http.test.ts tests/integration/same-origin-http.test.ts
+npm test -- tests/unit/attachment.test.ts tests/integration/attachment-service.test.ts
 ```
 
 See [Development conventions](docs/development/DEVELOPMENT.md) for commands, project structure, CI behavior, dependency updates, security rules, and release boundaries.
@@ -68,7 +69,7 @@ The approved reference direction is:
 
 ## Development-browser and workflow rules
 
-Release 0.5 preserves these independent facts:
+Release 0.6 preserves these independent facts:
 
 **Opened != Downloaded != Transferred/Filed != Completed.**
 
@@ -80,12 +81,15 @@ Messages are immutable logical communications. The synthetic development browser
 
 Browser forms do not supply authoritative thread, message, audit-event, deployment, queue-authorization, or external actor/reference identifiers. The local delivery adapter generates opaque external participant, thread, message, and audit IDs server-side behind an injectable provider-neutral boundary.
 
+Attachments are application-only in Release 0.6. Newly ingested synthetic content is published as `QUARANTINED`, never `CLEAN`; only a validated clean scan outcome can make an attachment normally retrievable. Declared extension/MIME/media category validation is policy input, not authoritative content-signature verification.
+
 The local in-memory store is a development/test adapter only. Its maps, arrays, keys, and copy-on-write transaction implementation are not the production persistence contract. Restarting the local process may reset demo state.
 
 ## Authoritative documentation
 
 - [Product purpose and non-goals](docs/PRODUCT.md)
 - [MVP and roadmap](docs/MVP_AND_ROADMAP.md)
+- [Release 0.6 implementation boundary](docs/releases/0.6-attachment-safety-core.md)
 - [Release 0.5 implementation boundary](docs/releases/0.5-local-development-vertical-slice.md)
 - [Release 0.4 implementation boundary](docs/releases/0.4-conversation-queue-core.md)
 - [Architecture](docs/architecture/ARCHITECTURE.md)
