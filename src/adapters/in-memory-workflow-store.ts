@@ -60,43 +60,51 @@ export class InMemoryWorkflowStore implements WorkflowStore {
     ];
   }
 
-  async getThread(
+  getThread(
     deploymentId: DeploymentId,
     threadId: ThreadId,
   ): Promise<Thread | undefined> {
-    return this.threads.get(resourceKey(deploymentId, threadId));
-  }
-
-  async getCurrentCompletionPolicy(
-    deploymentId: DeploymentId,
-  ): Promise<CompletionPolicy | undefined> {
-    return this.completionPolicies.get(deploymentId);
-  }
-
-  async getActorAuthorization(
-    deploymentId: DeploymentId,
-    actorRef: ActorRef,
-  ): Promise<ActorAuthorization | undefined> {
-    return this.actorAuthorizations.get(resourceKey(deploymentId, actorRef));
-  }
-
-  async listTransferAttestations(
-    deploymentId: DeploymentId,
-    threadId: ThreadId,
-  ): Promise<readonly TransferAttestation[]> {
-    return this.transferAttestations.filter(
-      (item) =>
-        item.deploymentId === deploymentId && item.threadId === threadId,
+    return Promise.resolve(
+      this.threads.get(resourceKey(deploymentId, threadId)),
     );
   }
 
-  async listTransferAttestationControls(
+  getCurrentCompletionPolicy(
+    deploymentId: DeploymentId,
+  ): Promise<CompletionPolicy | undefined> {
+    return Promise.resolve(this.completionPolicies.get(deploymentId));
+  }
+
+  getActorAuthorization(
+    deploymentId: DeploymentId,
+    actorRef: ActorRef,
+  ): Promise<ActorAuthorization | undefined> {
+    return Promise.resolve(
+      this.actorAuthorizations.get(resourceKey(deploymentId, actorRef)),
+    );
+  }
+
+  listTransferAttestations(
+    deploymentId: DeploymentId,
+    threadId: ThreadId,
+  ): Promise<readonly TransferAttestation[]> {
+    return Promise.resolve(
+      this.transferAttestations.filter(
+        (item) =>
+          item.deploymentId === deploymentId && item.threadId === threadId,
+      ),
+    );
+  }
+
+  listTransferAttestationControls(
     deploymentId: DeploymentId,
     threadId: ThreadId,
   ): Promise<readonly TransferAttestationControl[]> {
-    return this.transferAttestationControls.filter(
-      (item) =>
-        item.deploymentId === deploymentId && item.threadId === threadId,
+    return Promise.resolve(
+      this.transferAttestationControls.filter(
+        (item) =>
+          item.deploymentId === deploymentId && item.threadId === threadId,
+      ),
     );
   }
 
@@ -114,7 +122,16 @@ export class InMemoryWorkflowStore implements WorkflowStore {
     this.failNextCommitRequested = true;
   }
 
-  async commit(mutation: WorkflowMutation): Promise<void> {
+  commit(mutation: WorkflowMutation): Promise<void> {
+    try {
+      this.commitSynchronously(mutation);
+      return Promise.resolve();
+    } catch (error: unknown) {
+      return Promise.reject(error);
+    }
+  }
+
+  private commitSynchronously(mutation: WorkflowMutation): void {
     const nextThreads = new Map(this.threads);
     const nextAuditEvents = [...this.auditEvents];
     const nextAttestations = [...this.transferAttestations];
