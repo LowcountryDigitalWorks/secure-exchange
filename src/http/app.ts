@@ -31,7 +31,10 @@ function isSameOriginPost(request: Request): boolean {
 
   try {
     const parsedOrigin = new URL(origin);
-    if (parsedOrigin.protocol !== "http:" && parsedOrigin.protocol !== "https:") {
+    if (
+      parsedOrigin.protocol !== "http:" &&
+      parsedOrigin.protocol !== "https:"
+    ) {
       return false;
     }
 
