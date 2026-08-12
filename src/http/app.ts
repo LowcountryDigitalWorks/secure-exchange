@@ -24,6 +24,11 @@ function contentSecurityPolicy(demoEnabled: boolean): string {
 }
 
 function isSameOriginPost(request: Request): boolean {
+  const fetchSite = request.headers.get("Sec-Fetch-Site");
+  if (fetchSite !== null) {
+    return fetchSite === "same-origin";
+  }
+
   const origin = request.headers.get("Origin");
   if (origin === null) {
     return false;
