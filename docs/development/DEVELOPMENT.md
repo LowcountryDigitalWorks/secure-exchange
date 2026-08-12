@@ -158,3 +158,28 @@ Release 0.4 does **not** implement production public submission, finished public
 Infrastructure-as-code remains required before real AWS provisioning, but the IaC tool and production resource structure are not selected by Release 0.4.
 
 No production resource should be created manually as a substitute for a reviewed reproducible deployment process.
+
+## Release 0.5 local browser slice
+
+Release 0.5 keeps the normal application disabled by default. To enable the synthetic browser vertical slice locally:
+
+\`\`\`sh
+SECURE_EXCHANGE_SYNTHETIC_DEMO=enabled npm run dev
+\`\`\`
+
+or after a build:
+
+\`\`\`sh
+npm run build
+SECURE_EXCHANGE_SYNTHETIC_DEMO=enabled npm start
+\`\`\`
+
+Without that exact flag, /demo/* is unavailable while the engineering shell and /health remain available. The local in-memory store may retain demo state for the process lifetime and may reset on restart.
+
+The browser surface is server-rendered HTML/CSS with normal forms and no client-side JavaScript. Application composition injects ConversationService, WorkflowService, the local WorkflowStore, trusted synthetic staff/deployment/queue configuration, an OpaqueIdGenerator, and a clock into createApp().
+
+WebCryptoOpaqueIdGenerator uses Web Crypto randomUUID() only as a local development adapter. Tests inject a deterministic generator. This is not the final production ID design.
+
+Staff reply is a provider-neutral business rule: allowed in NEW, IN_PROGRESS, AWAITING_EXTERNAL, and AWAITING_STAFF; rejected in COMPLETED, EXPIRED, and DISPOSED. Reply does not transition lifecycle state.
+
+Use only synthetic data. Production authentication, external retrieval, attachments, AWS adapters/infrastructure, customer data, PHI, and paid services remain absent.

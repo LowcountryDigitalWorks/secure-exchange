@@ -140,3 +140,26 @@ A failing security, architecture, authorization, accessibility, or quality test 
 ## Production validation
 
 Regulated production requires additional deployment-specific evidence for IAM, network/exposure, identity/MFA, encryption, logging, backups, retention, malware scanning, abuse controls, incident response, and contractual coverage. Release 0.4 provides none of that production evidence and makes no compliance-ready claim.
+
+## Release 0.5 local development vertical-slice coverage
+
+Release 0.5 extends the executable gate with deterministic domain/application/HTTP/browser tests for:
+
+- reply eligibility across all seven lifecycle states and no-partial-mutation rejection;
+- default-disabled and explicitly enabled demo composition;
+- minimal external form and server-generated authoritative IDs;
+- browser inability to choose actor/deployment/queue authority or authoritative thread/message/audit IDs;
+- invalid/inactive routing and POST/Redirect/GET behavior;
+- no GET mutation;
+- metadata-only queue output;
+- explicit Opened evidence versus non-mutating authorized reads;
+- chronological direction-labeled message rendering;
+- expected-version staff reply and stale rejection;
+- server-side HTML escaping of script/markup-shaped synthetic content;
+- audit-body exclusion;
+- no-store caching and restrictive CSP;
+- same-origin Fetch Metadata/Origin mutation boundaries;
+- desktop/mobile Chromium vertical-slice flow and axe WCAG A/AA checks;
+- all existing Release 0.2-0.4 architecture, workflow, completion, evidence, queue, message, and authorization regression tests.
+
+The functional demo remains synthetic/local only. These tests are not production authentication, infrastructure, HIPAA, or regulated-deployment evidence.

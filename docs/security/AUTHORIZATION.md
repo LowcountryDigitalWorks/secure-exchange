@@ -103,3 +103,13 @@ Examples:
 Authorization uncertainty fails closed.
 
 Do not expose whether a forbidden resource exists when a generic not-found response reduces enumeration risk.
+
+## Release 0.5 synthetic browser authorization boundary
+
+The Release 0.5 browser slice has no production authentication or login. A trusted local development fixture supplies one synthetic STAFF ActorContext plus its authoritative queue scope and permissions. The browser cannot choose or alter that actor, deployment, queue grant, or permission set.
+
+External accountless initiation does not accept an audit actor/reference from form input. The delivery adapter generates an opaque external-participant reference server-side. Browser-provided thread, message, audit, deployment, queue-authority, or actor values are not trusted as authoritative identifiers.
+
+Staff queue, open/read, reply, and optional Start work actions continue through existing application authorization. Queue appearance or knowledge of a thread reference remains insufficient for content access.
+
+Staff reply additionally requires the portable lifecycle rule: NEW, IN_PROGRESS, AWAITING_EXTERNAL, or AWAITING_STAFF. COMPLETED, EXPIRED, and DISPOSED are rejected regardless of UI visibility.

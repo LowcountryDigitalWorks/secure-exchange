@@ -99,3 +99,11 @@ Regulated deployments require a documented end-to-end boundary covering vendors/
 - accessible responsive UX;
 - synthetic-data-only development;
 - explicit security and retention semantics.
+
+## Release 0.5 local development delivery boundary
+
+Release 0.5 adds a disabled-by-default **Synthetic Development Demo** as a local browser delivery adapter over the existing provider-neutral application services. It is a development surface for exercising the approved workflow and conversation model, not a production portal or a change to the product's production trust boundary.
+
+The demo accepts only a permitted routing category and bounded synthetic message text for accountless initiation. It uses a server-held synthetic STAFF context for queue, open/read, reply, and the optional explicit Start work action. Browser input cannot choose staff actor IDs, permissions, deployment IDs, queue grants, or authoritative external/thread/message/audit identifiers.
+
+Production authentication, real external identity/contact modeling, external secure retrieval/reply, attachments, notifications, customer data, PHI, and production infrastructure remain outside Release 0.5.

@@ -271,3 +271,24 @@ The following require explicit resolution before a regulated production deployme
 - incident response and operational ownership;
 - production rate-limiting/bot controls;
 - customer-specific retention policy.
+
+## Release 0.5 local browser delivery controls
+
+Release 0.5 introduces a deliberately local development browser adapter, disabled by default. Its primary accidental-exposure control is the explicit SECURE_EXCHANGE_SYNTHETIC_DEMO=enabled gate; it is not a production authentication control.
+
+Additional development-delivery controls include:
+
+- server ownership of deployment, queue authority, STAFF identity, permissions, and generated authoritative IDs;
+- bounded form fields with no real contact/identity fields;
+- POST-only mutations with POST/Redirect/GET;
+- no GET mutation;
+- Fetch Metadata same-origin validation when Sec-Fetch-Site is supplied; only same-origin is accepted;
+- strict Origin/host/request-URL validation for non-browser callers without Fetch Metadata;
+- fail-closed missing/cross-site mutation signals;
+- HTML escaping of all rendered message/configuration text;
+- restrictive CSP with form-action 'self' only in enabled demo mode;
+- Cache-Control: no-store on demo routes;
+- no client-side script, analytics, trackers, or external hosts;
+- bounded generic error mapping without authorization details or message content.
+
+These controls do not make the demo safe for customer/regulated data or public production exposure. Production authentication, session/CSRF design, rate limiting/bot controls, external identity verification, and deployment-specific security controls remain separate pre-production gates.

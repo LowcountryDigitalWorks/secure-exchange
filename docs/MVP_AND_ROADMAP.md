@@ -142,3 +142,21 @@ Implement approved AWS adapters without embedding AWS concepts into the domain l
 ### Regulated deployment readiness
 
 Separate gate covering customer-owned infrastructure, contractual/BAA coverage, security operations, backup/recovery, logging, retention, incident response, production secrets, and customer responsibilities.
+
+## Release 0.5 implemented development slice
+
+Release 0.5 implements the first browser-driven development vertical slice without promoting it to a production feature surface:
+
+- disabled-by-default local demo composition;
+- minimal server-rendered synthetic external initiation form;
+- server-generated opaque external participant/thread/message/audit identifiers;
+- metadata-only synthetic staff queue;
+- explicit authoritative Opened action plus non-mutating authorized conversation reads;
+- chronological immutable message rendering;
+- authorized expected-version staff reply;
+- explicit optional NEW -> IN_PROGRESS Start work action;
+- server-side HTML escaping, restrictive CSP, no-store demo caching, and same-origin mutation checks.
+
+Staff reply is allowed only in NEW, IN_PROGRESS, AWAITING_EXTERNAL, and AWAITING_STAFF. COMPLETED, EXPIRED, and DISPOSED fail closed. Reply never automatically changes lifecycle state.
+
+Still deferred: production authentication/sessions, real external identity/contact fields, AccessGrant/external retrieval, attachments and file handling, notifications, AWS adapters/infrastructure, durable production persistence, customer integrations, analytics, and regulated deployment readiness.
