@@ -43,11 +43,31 @@ export const ALLOWED_THREAD_TRANSITIONS: Readonly<
   DISPOSED: [],
 };
 
+export const STAFF_REPLY_ALLOWED_STATES: readonly ThreadLifecycleState[] = [
+  "NEW",
+  "IN_PROGRESS",
+  "AWAITING_EXTERNAL",
+  "AWAITING_STAFF",
+];
+
 export function isThreadTransitionAllowed(
   from: ThreadLifecycleState,
   to: ThreadLifecycleState,
 ): boolean {
   return ALLOWED_THREAD_TRANSITIONS[from].includes(to);
+}
+
+export function isStaffReplyAllowed(state: ThreadLifecycleState): boolean {
+  return STAFF_REPLY_ALLOWED_STATES.includes(state);
+}
+
+export function requireStaffReplyAllowed(thread: Thread): void {
+  if (!isStaffReplyAllowed(thread.state)) {
+    throw new DomainError(
+      "REPLY_NOT_ALLOWED",
+      `Staff reply is not allowed while thread is ${thread.state}.`,
+    );
+  }
 }
 
 export function transitionThread(

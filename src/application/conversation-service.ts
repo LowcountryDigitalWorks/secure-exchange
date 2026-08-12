@@ -2,6 +2,7 @@ import {
   createPlainTextMessageBody,
   queueAllowsRoutingCategory,
   recordThreadActivity,
+  requireStaffReplyAllowed,
   validateRoutingCategory,
   type ActorAuthorization,
   type ActorContext,
@@ -68,10 +69,13 @@ export interface QueueCandidate {
   readonly attentionAt?: string;
 }
 
-export interface OpenConversationInput {
+export interface ReadConversationInput {
   readonly actor: ActorContext;
   readonly deploymentId: DeploymentId;
   readonly threadId: ThreadId;
+}
+
+export interface OpenConversationInput extends ReadConversationInput {
   readonly auditEventId: AuditEventId;
   readonly at: string;
 }
@@ -205,6 +209,18 @@ export class ConversationService {
       );
   }
 
+  async readStaffConversation(
+    input: ReadConversationInput,
+  ): Promise<ConversationReadModel> {
+    const { thread } = await this.loadAuthorizedThread(input, "THREAD_OPEN");
+    const messages = await this.store.listMessages(
+      input.deploymentId,
+      input.threadId,
+    );
+
+    return { thread, messages };
+  }
+
   async openStaffConversation(
     input: OpenConversationInput,
   ): Promise<ConversationReadModel> {
@@ -243,6 +259,7 @@ export class ConversationService {
       "THREAD_REPLY",
     );
     this.requireStaffActor(authorization);
+    requireStaffReplyAllowed(thread);
 
     const message: Message = {
       messageId: input.messageId,
