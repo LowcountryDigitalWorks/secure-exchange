@@ -1,0 +1,55 @@
+name: Apply Release 0.5 Fetch Metadata guard
+
+on:
+  push:
+    branches:
+      - release/0.5-local-development-vertical-slice
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out release branch
+        uses: actions/checkout@v6
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Apply Fetch Metadata same-origin boundary
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const path = 'src/http/app.ts';
+          const source = readFileSync(path, 'utf8');
+          const before = `function isSameOriginPost(request: Request): boolean {\n  const origin = request.headers.get("Origin");\n  if (origin === null) {\n    return false;\n  }\n\n  try {\n    const parsedOrigin = new URL(origin);\n    if (\n      parsedOrigin.protocol !== "http:" &&\n      parsedOrigin.protocol !== "https:"\n    ) {\n      return false;\n    }\n\n    const requestHost = request.headers.get("Host");\n    if (requestHost !== null) {\n      return parsedOrigin.host === requestHost;\n    }\n\n    return parsedOrigin.origin === new URL(request.url).origin;\n  } catch {\n    return false;\n  }\n}`;
+          const after = `function isSameOriginPost(request: Request): boolean {\n  const fetchSite = request.headers.get("Sec-Fetch-Site");\n  if (fetchSite !== null) {\n    return fetchSite === "same-origin";\n  }\n\n  const origin = request.headers.get("Origin");\n  if (origin === null) {\n    return false;\n  }\n\n  try {\n    const parsedOrigin = new URL(origin);\n    if (\n      parsedOrigin.protocol !== "http:" &&\n      parsedOrigin.protocol !== "https:"\n    ) {\n      return false;\n    }\n\n    const requestHost = request.headers.get("Host");\n    if (requestHost !== null) {\n      return parsedOrigin.host === requestHost;\n    }\n\n    return parsedOrigin.origin === new URL(request.url).origin;\n  } catch {\n    return false;\n  }\n}`;
+          if (!source.includes(before)) {
+            throw new Error('Expected same-origin function not found.');
+          }
+          writeFileSync(path, source.replace(before, after));
+          NODE
+          npx --no-install prettier --write src/http/app.ts tests/integration/same-origin-http.test.ts
+          npm run lint
+          npm run typecheck
+          npm test -- tests/integration/same-origin-http.test.ts tests/integration/development-demo-http.test.ts
+      - name: Commit correction
+        shell: bash
+        run: |
+          if git diff --quiet -- src/http/app.ts tests/integration/same-origin-http.test.ts; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- src/http/app.ts tests/integration/same-origin-http.test.ts
+          git commit -m "Use Fetch Metadata for Release 0.5 browser mutations"
+          git push origin HEAD:${GITHUB_REF_NAME}
