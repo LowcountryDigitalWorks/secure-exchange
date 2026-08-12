@@ -415,7 +415,7 @@ export class WorkflowService {
       input.deploymentId,
       input.threadId,
     );
-    if (thread === undefined || thread.deploymentId !== input.deploymentId) {
+    if (thread?.deploymentId !== input.deploymentId) {
       throw new ApplicationError(
         "RESOURCE_NOT_FOUND",
         "Authoritative thread was not found in the requested deployment.",

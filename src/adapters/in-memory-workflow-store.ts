@@ -123,12 +123,9 @@ export class InMemoryWorkflowStore implements WorkflowStore {
   }
 
   commit(mutation: WorkflowMutation): Promise<void> {
-    try {
+    return Promise.resolve().then(() => {
       this.commitSynchronously(mutation);
-      return Promise.resolve();
-    } catch (error: unknown) {
-      return Promise.reject(error);
-    }
+    });
   }
 
   private commitSynchronously(mutation: WorkflowMutation): void {
