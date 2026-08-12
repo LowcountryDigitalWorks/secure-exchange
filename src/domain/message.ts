@@ -1,16 +1,22 @@
 import { DomainError } from "./errors.js";
-import type {
-  ActorRef,
-  DeploymentId,
-  ExternalParticipantRef,
-  MessageId,
-  ThreadId,
-} from "./types.js";
+import type { DeploymentId, MessageId, ThreadId } from "./types.js";
 
 export const MAX_MESSAGE_BODY_LENGTH = 8_000;
 
-const DISALLOWED_MESSAGE_CONTROL =
-  /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/u;
+function containsDisallowedMessageControl(value: string): boolean {
+  for (const character of value) {
+    const codePoint = character.codePointAt(0);
+    if (
+      codePoint !== undefined &&
+      (codePoint === 0x7f ||
+        (codePoint < 0x20 && codePoint !== 0x09 && codePoint !== 0x0a))
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 export type MessageDirection = "EXTERNAL_TO_STAFF" | "STAFF_TO_EXTERNAL";
 
@@ -24,7 +30,7 @@ export interface Message {
   readonly deploymentId: DeploymentId;
   readonly threadId: ThreadId;
   readonly direction: MessageDirection;
-  readonly actorRef: ActorRef | ExternalParticipantRef;
+  readonly actorRef: string;
   readonly createdAt: string;
   readonly body: PlainTextMessageBody;
 }
@@ -35,7 +41,7 @@ export function createPlainTextMessageBody(text: string): PlainTextMessageBody {
   if (
     normalized.trim().length === 0 ||
     normalized.length > MAX_MESSAGE_BODY_LENGTH ||
-    DISALLOWED_MESSAGE_CONTROL.test(normalized)
+    containsDisallowedMessageControl(normalized)
   ) {
     throw new DomainError(
       "INVALID_MESSAGE_BODY",

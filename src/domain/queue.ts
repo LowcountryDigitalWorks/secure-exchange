@@ -4,8 +4,16 @@ import type { DeploymentId, QueueId } from "./types.js";
 export const MAX_QUEUE_DISPLAY_LABEL_LENGTH = 80;
 export const MAX_ROUTING_CATEGORY_LENGTH = 64;
 
-const DISALLOWED_CONFIGURATION_CONTROL =
-  /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/u;
+function containsConfigurationControl(value: string): boolean {
+  for (const character of value) {
+    const codePoint = character.codePointAt(0);
+    if (codePoint !== undefined && (codePoint < 0x20 || codePoint === 0x7f)) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 export interface Queue {
   readonly queueId: QueueId;
@@ -21,7 +29,7 @@ export function validateRoutingCategory(value: string): string {
   if (
     normalized.length === 0 ||
     normalized.length > MAX_ROUTING_CATEGORY_LENGTH ||
-    DISALLOWED_CONFIGURATION_CONTROL.test(normalized)
+    containsConfigurationControl(normalized)
   ) {
     throw new DomainError(
       "INVALID_ROUTING_CATEGORY",
@@ -38,7 +46,7 @@ export function validateQueue(queue: Queue): Queue {
   if (
     label.length === 0 ||
     label.length > MAX_QUEUE_DISPLAY_LABEL_LENGTH ||
-    DISALLOWED_CONFIGURATION_CONTROL.test(label) ||
+    containsConfigurationControl(label) ||
     queue.allowedRoutingCategories.length === 0
   ) {
     throw new DomainError(

@@ -22,7 +22,16 @@ import { ApplicationError } from "./errors.js";
 import type { WorkflowStore } from "./ports.js";
 
 const MAX_EXTERNAL_PARTICIPANT_REF_LENGTH = 128;
-const DISALLOWED_REFERENCE_CONTROL = /[\u0000-\u001F\u007F]/u;
+function containsReferenceControl(value: string): boolean {
+  for (const character of value) {
+    const codePoint = character.codePointAt(0);
+    if (codePoint !== undefined && (codePoint < 0x20 || codePoint === 0x7f)) {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 export interface InitiateExternalExchangeInput {
   readonly deploymentId: DeploymentId;
@@ -376,7 +385,7 @@ export class ConversationService {
     if (
       value.length === 0 ||
       value.length > MAX_EXTERNAL_PARTICIPANT_REF_LENGTH ||
-      DISALLOWED_REFERENCE_CONTROL.test(value)
+      containsReferenceControl(value)
     ) {
       throw new ApplicationError(
         "ROUTING_NOT_AVAILABLE",
