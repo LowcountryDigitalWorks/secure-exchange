@@ -4,7 +4,8 @@ import type {
 } from "../application/id-generator.js";
 
 export class WebCryptoOpaqueIdGenerator implements OpaqueIdGenerator {
-  generate(_purpose: OpaqueIdPurpose): string {
+  generate(purpose: OpaqueIdPurpose): string {
+    void purpose;
     return globalThis.crypto.randomUUID();
   }
 }
