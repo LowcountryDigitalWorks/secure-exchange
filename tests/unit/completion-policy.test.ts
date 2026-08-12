@@ -13,17 +13,20 @@ import {
   makeCompletionPolicy,
 } from "../helpers/workflow-fixture.js";
 
-function evaluate(options: {
-  readonly attestation?: ReturnType<typeof makeAttestation>;
-  readonly controls?: readonly TransferAttestationControl[];
-  readonly authorizedActors?: readonly string[];
-  readonly policy?: ReturnType<typeof makeCompletionPolicy>;
-} = {}) {
+function evaluate(
+  options: {
+    readonly attestation?: ReturnType<typeof makeAttestation>;
+    readonly controls?: readonly TransferAttestationControl[];
+    readonly authorizedActors?: readonly string[];
+    readonly policy?: ReturnType<typeof makeCompletionPolicy>;
+  } = {},
+) {
   return evaluateCompletionPolicy({
     policy: options.policy ?? makeCompletionPolicy(),
     deploymentId: DEPLOYMENT_A,
     threadId: THREAD_A,
-    attestations: options.attestation === undefined ? [] : [options.attestation],
+    attestations:
+      options.attestation === undefined ? [] : [options.attestation],
     controls: options.controls ?? [],
     authorizedAttestationActorRefs: new Set(
       options.authorizedActors ?? [STAFF_A],

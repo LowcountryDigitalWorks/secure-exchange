@@ -42,12 +42,14 @@ async function expectApplicationError(
   }
 }
 
-function seedStore(options: {
-  readonly threads?: readonly Thread[];
-  readonly actors?: readonly ActorAuthorization[];
-  readonly attestations?: readonly TransferAttestation[];
-  readonly auditEvents?: readonly AuditEvent[];
-} = {}): InMemoryWorkflowStore {
+function seedStore(
+  options: {
+    readonly threads?: readonly Thread[];
+    readonly actors?: readonly ActorAuthorization[];
+    readonly attestations?: readonly TransferAttestation[];
+    readonly auditEvents?: readonly AuditEvent[];
+  } = {},
+): InMemoryWorkflowStore {
   return new InMemoryWorkflowStore({
     threads: options.threads ?? [makeThread()],
     completionPolicies: [makeCompletionPolicy()],
@@ -84,9 +86,9 @@ describe("workflow service", () => {
         .listAuditEvents(DEPLOYMENT_A, THREAD_A)
         .some((event) => event.eventType === "ATTACHMENT_DOWNLOADED"),
     ).toBe(false);
-    expect(await store.listTransferAttestations(DEPLOYMENT_A, THREAD_A)).toEqual(
-      [],
-    );
+    expect(
+      await store.listTransferAttestations(DEPLOYMENT_A, THREAD_A),
+    ).toEqual([]);
   });
 
   it("records Downloaded distinctly without creating TransferAttestation", async () => {
@@ -107,9 +109,9 @@ describe("workflow service", () => {
         attachmentId: "attachment-synthetic",
       }),
     ]);
-    expect(await store.listTransferAttestations(DEPLOYMENT_A, THREAD_A)).toEqual(
-      [],
-    );
+    expect(
+      await store.listTransferAttestations(DEPLOYMENT_A, THREAD_A),
+    ).toEqual([]);
   });
 
   it("appends TransferAttestation without completing the thread", async () => {
@@ -130,7 +132,9 @@ describe("workflow service", () => {
       state: "IN_PROGRESS",
       version: 3,
     });
-    expect(await store.listTransferAttestations(DEPLOYMENT_A, THREAD_A)).toEqual([
+    expect(
+      await store.listTransferAttestations(DEPLOYMENT_A, THREAD_A),
+    ).toEqual([
       expect.objectContaining({
         attestationId: "attestation-created",
         completionPolicyRef: POLICY_A,
@@ -212,7 +216,9 @@ describe("workflow service", () => {
   });
 
   it("supersedes evidence explicitly and does not let the old record qualify", async () => {
-    const { store, service } = makeFixture({ attestations: [makeAttestation()] });
+    const { store, service } = makeFixture({
+      attestations: [makeAttestation()],
+    });
 
     await service.supersedeTransferAttestation({
       actor: actorContext(),

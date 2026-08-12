@@ -7,7 +7,9 @@ import {
 } from "../../src/domain/index.js";
 import { makeThread } from "../helpers/workflow-fixture.js";
 
-const states = Object.keys(ALLOWED_THREAD_TRANSITIONS) as ThreadLifecycleState[];
+const states = Object.keys(
+  ALLOWED_THREAD_TRANSITIONS,
+) as ThreadLifecycleState[];
 
 describe("thread lifecycle", () => {
   for (const from of states) {

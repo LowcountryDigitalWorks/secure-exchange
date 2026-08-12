@@ -19,8 +19,7 @@ export interface CompletionPolicy {
 }
 
 export type CompletionPolicyFailureReason =
-  | "INVALID_POLICY"
-  | "QUALIFYING_TRANSFER_ATTESTATION_REQUIRED";
+  "INVALID_POLICY" | "QUALIFYING_TRANSFER_ATTESTATION_REQUIRED";
 
 export type CompletionPolicyDecision =
   | { readonly allowed: true; readonly qualifyingAttestationId?: string }

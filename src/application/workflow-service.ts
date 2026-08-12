@@ -55,8 +55,7 @@ export interface AppendTransferAttestationInput extends ThreadActionInput {
   readonly destinationCategory: string;
 }
 
-export interface SupersedeTransferAttestationInput
-  extends AppendTransferAttestationInput {
+export interface SupersedeTransferAttestationInput extends AppendTransferAttestationInput {
   readonly controlId: TransferAttestationControlId;
   readonly targetAttestationId: TransferAttestationId;
   readonly reasonCode: TransferAttestationControlReason;
@@ -144,9 +143,7 @@ export class WorkflowService {
     }
 
     const requiredPermission: WorkflowPermission =
-      input.targetState === "DISPOSED"
-        ? "THREAD_DISPOSE"
-        : "THREAD_TRANSITION";
+      input.targetState === "DISPOSED" ? "THREAD_DISPOSE" : "THREAD_TRANSITION";
     const { thread, authorization } = await this.loadAuthorizedThread(
       input,
       requiredPermission,

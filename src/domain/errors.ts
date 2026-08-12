@@ -1,7 +1,5 @@
 export type DomainErrorCode =
-  | "STALE_VERSION"
-  | "INVALID_TRANSITION"
-  | "INVALID_ATTESTATION_CONTROL";
+  "STALE_VERSION" | "INVALID_TRANSITION" | "INVALID_ATTESTATION_CONTROL";
 
 export class DomainError extends Error {
   constructor(

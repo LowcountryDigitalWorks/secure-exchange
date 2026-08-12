@@ -10,10 +10,7 @@ import type {
   TransferAttestation,
   TransferAttestationControl,
 } from "../domain/index.js";
-import type {
-  WorkflowMutation,
-  WorkflowStore,
-} from "../application/ports.js";
+import type { WorkflowMutation, WorkflowStore } from "../application/ports.js";
 
 export interface InMemoryWorkflowSeed {
   readonly threads?: readonly Thread[];
@@ -202,7 +199,9 @@ export class InMemoryWorkflowStore implements WorkflowStore {
         item.deploymentId !== mutation.deploymentId ||
         item.threadId !== mutation.threadId
       ) {
-        throw new Error("Attestation mutation escaped its authoritative scope.");
+        throw new Error(
+          "Attestation mutation escaped its authoritative scope.",
+        );
       }
     }
 

@@ -32,9 +32,7 @@ export const ALL_WORKFLOW_PERMISSIONS: readonly WorkflowPermission[] = [
   "THREAD_COMPLETE",
 ];
 
-export function makeThread(
-  overrides: Partial<Thread> = {},
-): Thread {
+export function makeThread(overrides: Partial<Thread> = {}): Thread {
   return {
     deploymentId: DEPLOYMENT_A,
     threadId: THREAD_A,
@@ -101,20 +99,24 @@ export function makeAttestation(
   };
 }
 
-export function makeFixture(options: {
-  readonly threadState?: ThreadLifecycleState;
-  readonly threadVersion?: number;
-  readonly policy?: CompletionPolicy;
-  readonly additionalThreads?: readonly Thread[];
-  readonly additionalActors?: readonly ActorAuthorization[];
-  readonly attestations?: readonly TransferAttestation[];
-} = {}): {
+export function makeFixture(
+  options: {
+    readonly threadState?: ThreadLifecycleState;
+    readonly threadVersion?: number;
+    readonly policy?: CompletionPolicy;
+    readonly additionalThreads?: readonly Thread[];
+    readonly additionalActors?: readonly ActorAuthorization[];
+    readonly attestations?: readonly TransferAttestation[];
+  } = {},
+): {
   readonly store: InMemoryWorkflowStore;
   readonly service: WorkflowService;
   readonly thread: Thread;
 } {
   const thread = makeThread({
-    ...(options.threadState === undefined ? {} : { state: options.threadState }),
+    ...(options.threadState === undefined
+      ? {}
+      : { state: options.threadState }),
     ...(options.threadVersion === undefined
       ? {}
       : { version: options.threadVersion }),

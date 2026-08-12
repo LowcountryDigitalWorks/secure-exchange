@@ -27,9 +27,7 @@ export interface TransferAttestation {
 export type TransferAttestationControlAction = "SUPERSEDE" | "INVALIDATE";
 
 export type TransferAttestationControlReason =
-  | "CORRECTION"
-  | "ENTERED_IN_ERROR"
-  | "POLICY_MISMATCH";
+  "CORRECTION" | "ENTERED_IN_ERROR" | "POLICY_MISMATCH";
 
 export interface TransferAttestationControl {
   readonly controlId: TransferAttestationControlId;
