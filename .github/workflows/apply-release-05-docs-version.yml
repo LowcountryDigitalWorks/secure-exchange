@@ -1,0 +1,216 @@
+name: Apply Release 0.5 docs and version
+
+on:
+  push:
+    branches:
+      - release/0.5-local-development-vertical-slice
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out release branch
+        uses: actions/checkout@v6
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Set Release 0.5 package metadata
+        run: npm version 0.5.0 --no-git-tag-version --ignore-scripts
+      - name: Reconcile Release 0.5 documentation
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+
+          function appendSection(path, marker, section) {
+            const source = readFileSync(path, 'utf8');
+            if (source.includes(marker)) return;
+            writeFileSync(path, `${source.trimEnd()}\n\n${section.trim()}\n`);
+          }
+
+          appendSection('docs/PRODUCT.md', '## Release 0.5 local development delivery boundary', String.raw`
+          ## Release 0.5 local development delivery boundary
+
+          Release 0.5 adds a disabled-by-default **Synthetic Development Demo** as a local browser delivery adapter over the existing provider-neutral application services. It is a development surface for exercising the approved workflow and conversation model, not a production portal or a change to the product's production trust boundary.
+
+          The demo accepts only a permitted routing category and bounded synthetic message text for accountless initiation. It uses a server-held synthetic STAFF context for queue, open/read, reply, and the optional explicit Start work action. Browser input cannot choose staff actor IDs, permissions, deployment IDs, queue grants, or authoritative external/thread/message/audit identifiers.
+
+          Production authentication, real external identity/contact modeling, external secure retrieval/reply, attachments, notifications, customer data, PHI, and production infrastructure remain outside Release 0.5.
+          `);
+
+          appendSection('docs/MVP_AND_ROADMAP.md', '## Release 0.5 implemented development slice', String.raw`
+          ## Release 0.5 implemented development slice
+
+          Release 0.5 implements the first browser-driven development vertical slice without promoting it to a production feature surface:
+
+          - disabled-by-default local demo composition;
+          - minimal server-rendered synthetic external initiation form;
+          - server-generated opaque external participant/thread/message/audit identifiers;
+          - metadata-only synthetic staff queue;
+          - explicit authoritative Opened action plus non-mutating authorized conversation reads;
+          - chronological immutable message rendering;
+          - authorized expected-version staff reply;
+          - explicit optional NEW -> IN_PROGRESS Start work action;
+          - server-side HTML escaping, restrictive CSP, no-store demo caching, and same-origin mutation checks.
+
+          Staff reply is allowed only in NEW, IN_PROGRESS, AWAITING_EXTERNAL, and AWAITING_STAFF. COMPLETED, EXPIRED, and DISPOSED fail closed. Reply never automatically changes lifecycle state.
+
+          Still deferred: production authentication/sessions, real external identity/contact fields, AccessGrant/external retrieval, attachments and file handling, notifications, AWS adapters/infrastructure, durable production persistence, customer integrations, analytics, and regulated deployment readiness.
+          `);
+
+          appendSection('docs/architecture/DATA_FLOW.md', '## Release 0.5 local development browser flow', String.raw`
+          ## Release 0.5 local development browser flow
+
+          Release 0.5 adds a local-only delivery path while preserving the existing provider-neutral application boundary:
+
+          1. A development browser GET renders a synthetic external form only when the explicit demo configuration is enabled.
+          2. The external POST supplies only a bounded routing choice and synthetic message body. The server supplies deployment/queue context and generates opaque participant, thread, message, and audit identifiers.
+          3. ConversationService validates routing and atomically creates the thread, first immutable message, and minimized audit events in the local in-memory adapter.
+          4. The synthetic staff queue GET calls listQueueCandidates() and renders metadata only.
+          5. Opening is an explicit POST through openStaffConversation(), which records distinct Opened evidence and redirects.
+          6. The redirected conversation GET performs a fresh authoritative THREAD_OPEN check through readStaffConversation() before rendering message content.
+          7. Staff reply is an explicit expected-version POST through replyToConversation(); the application/domain reply-state rule is enforced before mutation.
+
+          No GET mutates application state. The confirmation page grants no external conversation access. There is still no external retrieval/access-grant flow.
+
+          The local browser trust boundary adds server-side HTML escaping, no-store caching, restrictive CSP, and a same-origin mutation check using browser Fetch Metadata when present with a strict Origin/host/request-URL fallback for non-browser test callers.
+          `);
+
+          appendSection('docs/architecture/ACCESS_PATTERNS.md', '## Release 0.5 delivery-adapter note', String.raw`
+          ## Release 0.5 delivery-adapter note
+
+          Release 0.5 does not change the production persistence access-pattern decision or select a browser/database schema. The local browser adapter reuses the existing in-memory WorkflowStore ports and application-service access patterns.
+
+          Queue GETs remain candidate projections only. Conversation GETs perform authoritative thread/actor/queue/action validation before loading messages. Reply mutations retain expected-version and atomic thread/message/audit behavior. The optional Start work action uses the existing workflow transition service.
+
+          Server-generated development IDs and POST/Redirect/GET routing are delivery concerns, not new DynamoDB key or index contracts.
+          `);
+
+          appendSection('docs/security/AUTHORIZATION.md', '## Release 0.5 synthetic browser authorization boundary', String.raw`
+          ## Release 0.5 synthetic browser authorization boundary
+
+          The Release 0.5 browser slice has no production authentication or login. A trusted local development fixture supplies one synthetic STAFF ActorContext plus its authoritative queue scope and permissions. The browser cannot choose or alter that actor, deployment, queue grant, or permission set.
+
+          External accountless initiation does not accept an audit actor/reference from form input. The delivery adapter generates an opaque external-participant reference server-side. Browser-provided thread, message, audit, deployment, queue-authority, or actor values are not trusted as authoritative identifiers.
+
+          Staff queue, open/read, reply, and optional Start work actions continue through existing application authorization. Queue appearance or knowledge of a thread reference remains insufficient for content access.
+
+          Staff reply additionally requires the portable lifecycle rule: NEW, IN_PROGRESS, AWAITING_EXTERNAL, or AWAITING_STAFF. COMPLETED, EXPIRED, and DISPOSED are rejected regardless of UI visibility.
+          `);
+
+          appendSection('docs/security/THREAT_MODEL.md', '## Release 0.5 local browser delivery controls', String.raw`
+          ## Release 0.5 local browser delivery controls
+
+          Release 0.5 introduces a deliberately local development browser adapter, disabled by default. Its primary accidental-exposure control is the explicit SECURE_EXCHANGE_SYNTHETIC_DEMO=enabled gate; it is not a production authentication control.
+
+          Additional development-delivery controls include:
+
+          - server ownership of deployment, queue authority, STAFF identity, permissions, and generated authoritative IDs;
+          - bounded form fields with no real contact/identity fields;
+          - POST-only mutations with POST/Redirect/GET;
+          - no GET mutation;
+          - Fetch Metadata same-origin validation when Sec-Fetch-Site is supplied; only same-origin is accepted;
+          - strict Origin/host/request-URL validation for non-browser callers without Fetch Metadata;
+          - fail-closed missing/cross-site mutation signals;
+          - HTML escaping of all rendered message/configuration text;
+          - restrictive CSP with form-action 'self' only in enabled demo mode;
+          - Cache-Control: no-store on demo routes;
+          - no client-side script, analytics, trackers, or external hosts;
+          - bounded generic error mapping without authorization details or message content.
+
+          These controls do not make the demo safe for customer/regulated data or public production exposure. Production authentication, session/CSRF design, rate limiting/bot controls, external identity verification, and deployment-specific security controls remain separate pre-production gates.
+          `);
+
+          appendSection('docs/security/TEST_AND_SECURITY_STRATEGY.md', '## Release 0.5 local development vertical-slice coverage', String.raw`
+          ## Release 0.5 local development vertical-slice coverage
+
+          Release 0.5 extends the executable gate with deterministic domain/application/HTTP/browser tests for:
+
+          - reply eligibility across all seven lifecycle states and no-partial-mutation rejection;
+          - default-disabled and explicitly enabled demo composition;
+          - minimal external form and server-generated authoritative IDs;
+          - browser inability to choose actor/deployment/queue authority or authoritative thread/message/audit IDs;
+          - invalid/inactive routing and POST/Redirect/GET behavior;
+          - no GET mutation;
+          - metadata-only queue output;
+          - explicit Opened evidence versus non-mutating authorized reads;
+          - chronological direction-labeled message rendering;
+          - expected-version staff reply and stale rejection;
+          - server-side HTML escaping of script/markup-shaped synthetic content;
+          - audit-body exclusion;
+          - no-store caching and restrictive CSP;
+          - same-origin Fetch Metadata/Origin mutation boundaries;
+          - desktop/mobile Chromium vertical-slice flow and axe WCAG A/AA checks;
+          - all existing Release 0.2-0.4 architecture, workflow, completion, evidence, queue, message, and authorization regression tests.
+
+          The functional demo remains synthetic/local only. These tests are not production authentication, infrastructure, HIPAA, or regulated-deployment evidence.
+          `);
+
+          appendSection('docs/development/DEVELOPMENT.md', '## Release 0.5 local browser slice', String.raw`
+          ## Release 0.5 local browser slice
+
+          Release 0.5 keeps the normal application disabled by default. To enable the synthetic browser vertical slice locally:
+
+          \`\`\`sh
+          SECURE_EXCHANGE_SYNTHETIC_DEMO=enabled npm run dev
+          \`\`\`
+
+          or after a build:
+
+          \`\`\`sh
+          npm run build
+          SECURE_EXCHANGE_SYNTHETIC_DEMO=enabled npm start
+          \`\`\`
+
+          Without that exact flag, /demo/* is unavailable while the engineering shell and /health remain available. The local in-memory store may retain demo state for the process lifetime and may reset on restart.
+
+          The browser surface is server-rendered HTML/CSS with normal forms and no client-side JavaScript. Application composition injects ConversationService, WorkflowService, the local WorkflowStore, trusted synthetic staff/deployment/queue configuration, an OpaqueIdGenerator, and a clock into createApp().
+
+          WebCryptoOpaqueIdGenerator uses Web Crypto randomUUID() only as a local development adapter. Tests inject a deterministic generator. This is not the final production ID design.
+
+          Staff reply is a provider-neutral business rule: allowed in NEW, IN_PROGRESS, AWAITING_EXTERNAL, and AWAITING_STAFF; rejected in COMPLETED, EXPIRED, and DISPOSED. Reply does not transition lifecycle state.
+
+          Use only synthetic data. Production authentication, external retrieval, attachments, AWS adapters/infrastructure, customer data, PHI, and paid services remain absent.
+          `);
+          NODE
+      - name: Normalize docs and metadata
+        run: >-
+          npx --no-install prettier --write
+          README.md
+          docs/PRODUCT.md
+          docs/MVP_AND_ROADMAP.md
+          docs/architecture/DATA_FLOW.md
+          docs/architecture/ACCESS_PATTERNS.md
+          docs/security/AUTHORIZATION.md
+          docs/security/THREAT_MODEL.md
+          docs/security/TEST_AND_SECURITY_STRATEGY.md
+          docs/development/DEVELOPMENT.md
+          docs/releases/0.5-local-development-vertical-slice.md
+          package.json
+          package-lock.json
+      - name: Validate docs and metadata changes
+        run: |
+          npm run format:check
+          npm run lint
+          npm run typecheck
+      - name: Commit Release 0.5 docs and metadata
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- README.md docs package.json package-lock.json
+          git commit -m "Reconcile Release 0.5 documentation and metadata"
+          git push origin HEAD:${GITHUB_REF_NAME}
