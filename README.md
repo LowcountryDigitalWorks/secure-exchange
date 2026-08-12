@@ -4,11 +4,36 @@ Secure Exchange is a Lowcountry Digital Works product for secure, role-routed me
 
 ## Current status
 
-**Release 0.1 is a product and architecture foundation only.** No production application, AWS infrastructure, production credentials, or customer deployment exists in this repository yet.
+**Release 0.2 establishes the executable engineering baseline only.** It adds the approved TypeScript/Node/Hono toolchain, automated validation, and a minimal non-sensitive engineering shell. Secure Exchange business workflows and production AWS infrastructure are not implemented.
 
 This repository is public. Development must use synthetic examples only. Do not commit customer data, PHI, credentials, secrets, private operational details, or production configuration.
 
 Secure Exchange must not be represented as HIPAA compliant merely because it uses encryption, secure links, or AWS services. Any regulated deployment requires a documented end-to-end compliance and operational boundary.
+
+## Development quick start
+
+Required: Node.js 24.x and npm 11.x or 12.x.
+
+```sh
+npm ci
+npx playwright install chromium
+npm run validate
+```
+
+For local development:
+
+```sh
+npm run dev
+```
+
+For a production-style local build/run:
+
+```sh
+npm run build
+npm start
+```
+
+See [Development conventions](docs/development/DEVELOPMENT.md) for commands, project structure, CI behavior, dependency updates, security rules, and Release 0.2 non-goals.
 
 ## Product direction
 
