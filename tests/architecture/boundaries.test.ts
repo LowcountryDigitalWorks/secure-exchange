@@ -34,6 +34,20 @@ const providerOrDeliveryImports = [
 const browserRuntimeReferences =
   /\b(?:window|document|navigator|localStorage|sessionStorage)\b/u;
 
+const layerViolations: Readonly<Record<"domain" | "application", RegExp[]>> = {
+  domain: [
+    /from\s+['"][^'"]*\/application\//u,
+    /from\s+['"][^'"]*\/adapters\//u,
+    /from\s+['"][^'"]*\/http\//u,
+    /from\s+['"][^'"]*\/web\//u,
+  ],
+  application: [
+    /from\s+['"][^'"]*\/adapters\//u,
+    /from\s+['"][^'"]*\/http\//u,
+    /from\s+['"][^'"]*\/web\//u,
+  ],
+};
+
 async function expectPortableLayer(
   layer: "domain" | "application",
 ): Promise<void> {
@@ -42,10 +56,13 @@ async function expectPortableLayer(
   for (const file of files) {
     const source = await readFile(file, "utf8");
 
-    for (const forbidden of providerOrDeliveryImports) {
+    for (const forbidden of [
+      ...providerOrDeliveryImports,
+      ...layerViolations[layer],
+    ]) {
       expect(
         source,
-        `${file} contains provider/delivery import ${forbidden}`,
+        `${file} contains forbidden dependency ${forbidden}`,
       ).not.toMatch(forbidden);
     }
 
@@ -56,11 +73,11 @@ async function expectPortableLayer(
 }
 
 describe("architecture boundaries", () => {
-  it("keeps the domain independent of frameworks, providers, Node, and browsers", async () => {
+  it("keeps the domain independent of application, adapters, delivery, providers, Node, and browsers", async () => {
     await expectPortableLayer("domain");
   });
 
-  it("keeps application use cases independent of delivery/providers and browsers", async () => {
+  it("keeps application use cases independent of adapters, delivery, providers, Node, and browsers", async () => {
     await expectPortableLayer("application");
   });
 });

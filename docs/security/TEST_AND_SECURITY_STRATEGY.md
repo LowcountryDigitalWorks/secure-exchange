@@ -1,10 +1,8 @@
 # Test and Security Strategy
 
-Release 0.2 establishes the first executable validation baseline while preserving the Release 0.1 security model. It deliberately contains no Secure Exchange business workflow implementation.
+Release 0.3 extends the Release 0.2 executable validation baseline with deterministic provider-neutral workflow-core tests. It remains a synthetic/local prototype and provides no production security/compliance evidence.
 
-## Release 0.2 executable baseline
-
-The complete engineering gate is:
+## Complete validation gate
 
 ```sh
 npm run validate
@@ -22,91 +20,99 @@ It fails on applicable:
 - high-or-critical `npm audit` findings;
 - Secretlint findings.
 
-The GitHub Actions workflow runs the same command with least-privileged repository permissions.
+The GitHub Actions workflow runs the same command with least-privileged repository permissions. Protected `main` requires the `validate` check.
 
-## Architecture-boundary regression baseline
+## Architecture-boundary regression coverage
 
-Release 0.2 includes an automated architecture test that protects the Release 0.1 layering decision. The `domain` and `application` layers must not acquire Hono, AWS SDK, Node provider API, or browser-runtime dependencies.
+Architecture tests protect the Release 0.1 layering decision. The `domain` and `application` layers must not acquire Hono, AWS SDK, Node provider API, browser-runtime dependencies, or backwards dependencies on adapters/HTTP/web presentation.
 
-As features are introduced, these tests should become more specific rather than being removed to accommodate coupling.
+These tests should become more specific as features are introduced rather than being removed to accommodate coupling.
 
-## Unit tests
+## Release 0.3 unit coverage
 
-As business implementation begins, prioritize deterministic domain behavior:
+Deterministic domain tests cover:
 
-- state transitions;
-- authorization policy;
-- workflow-evidence independence (`Opened != Downloaded != Transferred/Filed != Completed`);
-- TransferAttestation validation/supersession semantics;
-- completion-policy preconditions requiring qualifying TransferAttestation evidence where configured;
-- retention due calculations;
-- access-grant expiry/revocation semantics;
-- configuration validation;
-- file policy rules;
-- audit-event derivation.
+- every lifecycle transition implemented by the Release 0.3 matrix;
+- representative forbidden lifecycle transitions;
+- stale expected-version rejection;
+- terminal `DISPOSED` behavior;
+- completion/disposition timestamp semantics;
+- completion policy with and without required transfer/file evidence;
+- failed attestation rejection;
+- wrong-thread and wrong-deployment attestation rejection;
+- current-policy reference and destination-category validation;
+- unauthorized historical attestation actor rejection;
+- explicit superseded/invalidated evidence rejection;
+- fail-closed invalid required-attestation configuration.
 
-Release 0.2's unit test covers only the non-sensitive engineering-status use case.
+## Release 0.3 integration coverage
 
-## Integration tests
+Synthetic application/in-memory-adapter tests cover:
 
-Future synthetic adapters/fixtures should test:
+- authoritative deployment ownership;
+- authoritative queue scope;
+- explicit action permission;
+- Opened evidence remaining distinct from Downloaded evidence;
+- Downloaded evidence not creating TransferAttestation;
+- TransferAttestation not completing a thread;
+- required-attestation completion success;
+- missing, failed, superseded, invalidated, wrong-thread, wrong-deployment, and unauthorized-actor completion failures;
+- generic transition being unable to bypass the completion-policy service;
+- stale lifecycle mutation rejection;
+- all-or-nothing thread mutation + audit rollback on synthetic transaction failure;
+- isolation between two synthetic deployment contexts.
 
-- transaction boundaries;
-- repository contracts;
-- object lifecycle;
-- notification minimization;
-- malware state transitions;
-- distinct opened/read and download evidence persistence;
-- TransferAttestation persistence/retrieval and related audit evidence;
-- atomic/conditional completion with configured attestation requirements;
-- disposition orchestration.
+The local store's fault injection and map/array representation are test infrastructure only and are not production persistence contracts.
 
-Release 0.2 integration tests cover only the in-process HTTP shell and security-header behavior; no external service is contacted.
+## Workflow evidence rules
+
+The following facts are always distinct:
+
+**Opened != Downloaded != Transferred/Filed != Completed.**
+
+- opening a thread appends an Opened audit event only;
+- successful download evidence is a separate audit event;
+- TransferAttestation is explicit authenticated staff business evidence;
+- TransferAttestation does not itself change lifecycle state;
+- completion is a separate authorized lifecycle operation subject to current policy and authoritative evidence validation.
+
+## TransferAttestation security properties
+
+Release 0.3 TransferAttestation records contain only bounded structured fields: opaque identifiers, authenticated staff actor reference, timestamp, outcome, destination category, and completion-policy reference.
+
+They do not support free-form notes and must not contain message bodies, document contents, PHI/customer details, raw downstream record identifiers, credentials, access secrets, or unrestricted metadata.
+
+Corrections append explicit supersede/invalidate control records. Prior attestation records are not silently rewritten.
+
+## Authorization behavior
+
+Authentication is not implemented in Release 0.3. Tests use normalized synthetic actor contexts plus authoritative synthetic authorization records.
+
+Application services fail closed unless all applicable checks succeed:
+
+- actor deployment matches requested deployment;
+- authoritative thread exists in that deployment;
+- actor remains active;
+- normalized actor class matches authoritative actor record;
+- thread queue is within actor scope;
+- requested action permission is granted.
+
+For completion evidence, the historical attestation actor must also be authoritatively recognized as active staff with queue scope and transfer-attestation permission. Identifier possession or an in-memory list result never grants access.
 
 ## Browser and accessibility tests
 
-The Release 0.2 Playwright baseline runs Chromium at representative desktop and mobile viewport sizes. It verifies the engineering shell and `/health` route and runs `@axe-core/playwright` against WCAG A/AA tags.
+Playwright continues to run Chromium at representative desktop and mobile viewport sizes and runs `@axe-core/playwright` against WCAG A/AA tags.
 
-Feature releases must add browser coverage for the user-visible workflows they introduce. Accessibility failures are defects, not optional warnings.
-
-## Security/negative tests required as features arrive
-
-Required categories remain:
-
-- unauthenticated access;
-- wrong-role access;
-- wrong-queue access;
-- cross-deployment identifier substitution;
-- stale lifecycle mutation;
-- eventually consistent queue candidate followed by denied authoritative access;
-- expired/revoked access grant;
-- access-grant reuse behavior;
-- malicious/unknown upload status;
-- MIME/extension mismatch;
-- oversized upload;
-- unsafe filename rendering;
-- object retrieval denied when application authorization is absent;
-- opening/reading a thread does not create or satisfy download evidence;
-- successful download does not create or satisfy TransferAttestation evidence;
-- successful TransferAttestation does not itself transition a thread to `COMPLETED`;
-- completion policy requiring TransferAttestation rejects a missing attestation;
-- completion policy rejects failed, superseded/invalid, wrong-deployment, wrong-thread, unauthorized-actor, or otherwise non-qualifying attestation evidence;
-- completion validation does not trust an eventually consistent workflow-evidence summary when authoritative attestation data is required;
-- retention candidate that is no longer eligible;
-- enumeration/error-message leakage;
-- notification content leakage.
-
-## Tenant/deployment isolation
-
-When tenancy-aware business logic begins, synthetic tests use at least two deployment contexts and verify identifiers and TransferAttestation evidence cannot cross boundaries. Release 0.2 does not implement tenancy records or persistence.
+Release 0.3 adds no business UI, so browser coverage remains on the non-sensitive development shell and `/health` endpoint. Future user-visible workflows must add browser coverage when introduced.
 
 ## Secret and dependency checks
 
-Release 0.2 uses:
+Release 0.3 adds no dependency. The Release 0.2 controls remain:
 
-- Secretlint with its recommended preset for repository secret detection;
-- `npm audit --audit-level=high` for dependency vulnerability gating;
+- Secretlint with its recommended preset;
+- `npm audit --audit-level=high`;
 - committed `package-lock.json` with `npm ci` in CI;
+- strict reviewed install-script allowlist;
 - GitHub Actions `contents: read` permissions for normal validation.
 
 These automated controls supplement, rather than replace, the rule that secrets and regulated/customer data must never be committed.
@@ -117,4 +123,4 @@ A failing security, architecture, authorization, accessibility, or quality test 
 
 ## Production validation
 
-Regulated production requires additional deployment-specific evidence for IAM, network/exposure, identity/MFA, encryption, logging, backups, retention, malware scanning, incident response, and contractual coverage. Release 0.2 provides none of that production evidence and makes no compliance-ready claim.
+Regulated production requires additional deployment-specific evidence for IAM, network/exposure, identity/MFA, encryption, logging, backups, retention, malware scanning, incident response, and contractual coverage. Release 0.3 provides none of that production evidence and makes no compliance-ready claim.
