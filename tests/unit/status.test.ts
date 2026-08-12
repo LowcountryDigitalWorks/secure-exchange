@@ -7,7 +7,7 @@ describe("engineering status", () => {
     expect(getEngineeringStatus()).toEqual({
       service: "secure-exchange",
       status: "ok",
-      baseline: "0.3",
+      baseline: "0.4",
     });
   });
 });

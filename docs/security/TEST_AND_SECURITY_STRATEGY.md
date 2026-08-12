@@ -1,6 +1,6 @@
 # Test and Security Strategy
 
-Release 0.3 extends the Release 0.2 executable validation baseline with deterministic provider-neutral workflow-core tests. It remains a synthetic/local prototype and provides no production security/compliance evidence.
+Release 0.4 extends the Release 0.2 validation baseline and Release 0.3 workflow-core regression coverage with deterministic provider-neutral conversation/queue tests. It remains a synthetic/local prototype and provides no production security/compliance evidence.
 
 ## Complete validation gate
 
@@ -28,86 +28,102 @@ Architecture tests protect the Release 0.1 layering decision. The `domain` and `
 
 These tests should become more specific as features are introduced rather than being removed to accommodate coupling.
 
-## Release 0.3 unit coverage
+## Release 0.3 regression coverage
+
+Release 0.4 retains deterministic coverage for:
+
+- every lifecycle transition in the Release 0.3 matrix;
+- invalid/stale transitions and terminal `DISPOSED`;
+- completion/disposition timestamp semantics;
+- completion policy with or without required TransferAttestation;
+- failed/wrong-scope/unauthorized/superseded/invalidated evidence rejection;
+- authoritative deployment, queue, actor, and action permission checks;
+- Opened distinct from Downloaded;
+- Downloaded not creating TransferAttestation;
+- TransferAttestation not completing a thread;
+- all-or-nothing workflow mutation + audit rollback.
+
+## Release 0.4 unit coverage
 
 Deterministic domain tests cover:
 
-- every lifecycle transition implemented by the Release 0.3 matrix;
-- representative forbidden lifecycle transitions;
-- stale expected-version rejection;
-- terminal `DISPOSED` behavior;
-- completion/disposition timestamp semantics;
-- completion policy with and without required transfer/file evidence;
-- failed attestation rejection;
-- wrong-thread and wrong-deployment attestation rejection;
-- current-policy reference and destination-category validation;
-- unauthorized historical attestation actor rejection;
-- explicit superseded/invalidated evidence rejection;
-- fail-closed invalid required-attestation configuration.
+- bounded plain-text message creation and line-ending normalization;
+- rejection of empty, oversized, or unsafe control-character message input;
+- bounded queue/configuration normalization;
+- invalid/duplicate routing configuration rejection;
+- thread activity/version advancement without lifecycle or unread inference.
 
-## Release 0.3 integration coverage
+## Release 0.4 integration coverage
 
 Synthetic application/in-memory-adapter tests cover:
 
-- authoritative deployment ownership;
-- authoritative queue scope;
-- explicit action permission;
-- Opened evidence remaining distinct from Downloaded evidence;
-- Downloaded evidence not creating TransferAttestation;
-- TransferAttestation not completing a thread;
-- required-attestation completion success;
-- missing, failed, superseded, invalidated, wrong-thread, wrong-deployment, and unauthorized-actor completion failures;
-- generic transition being unable to bypass the completion-policy service;
-- stale lifecycle mutation rejection;
-- all-or-nothing thread mutation + audit rollback on synthetic transaction failure;
-- isolation between two synthetic deployment contexts.
+- valid accountless external initiation;
+- inactive/unsupported/cross-deployment routing rejection;
+- atomic thread + initial message + audit creation;
+- initiation rollback on synthetic transaction failure;
+- chronological message reads;
+- queue candidate scope and content minimization;
+- candidate membership not granting authoritative thread access;
+- authorized staff conversation read;
+- unauthorized queue/thread and cross-deployment denial;
+- Opened remaining distinct from Downloaded/TransferAttestation/completion;
+- explicit staff reply permission and STAFF actor requirement;
+- atomic reply + thread activity/version + audit commit;
+- reply rollback on transaction failure;
+- message bodies excluded from audit evidence;
+- staff reply not implying completion, download, or TransferAttestation;
+- stale reply/version failure before mutation;
+- attention metadata preserved without inventing per-user unread state.
 
-The local store's fault injection and map/array representation are test infrastructure only and are not production persistence contracts.
+## Message-content safety
+
+Release 0.4 messages use bounded plain text for synthetic/local development only.
+
+Message bodies:
+
+- are never copied into AuditEvent records;
+- are never included in queue candidate rows;
+- are loaded only after authoritative conversation authorization;
+- are not used as identifiers;
+- are bounded and reject unsafe control-character forms;
+- are not logged by the application services.
+
+The Release 0.4 representation is not a production storage/encryption contract.
+
+## Queue candidate versus authority
+
+Queue/list results are convenience candidate views. They can never satisfy authorization for content retrieval or mutation. Staff conversation operations reload the authoritative deployment/thread and validate current active actor, actor kind, queue scope, and explicit action permission before message content is loaded.
 
 ## Workflow evidence rules
 
-The following facts are always distinct:
+The following facts remain distinct:
 
 **Opened != Downloaded != Transferred/Filed != Completed.**
 
-- opening a thread appends an Opened audit event only;
-- successful download evidence is a separate audit event;
+- opening a conversation appends an Opened audit event only;
+- successful download evidence remains a separate audit event;
 - TransferAttestation is explicit authenticated staff business evidence;
 - TransferAttestation does not itself change lifecycle state;
-- completion is a separate authorized lifecycle operation subject to current policy and authoritative evidence validation.
+- completion is a separate authorized lifecycle operation subject to current policy and authoritative evidence validation;
+- appending a message does not imply any of those facts.
 
-## TransferAttestation security properties
+## Unread/read-position boundary
 
-Release 0.3 TransferAttestation records contain only bounded structured fields: opaque identifiers, authenticated staff actor reference, timestamp, outcome, destination category, and completion-policy reference.
+Release 0.4 does not create per-user unread/read-position state. Lifecycle `NEW`, `THREAD_OPENED`, `lastActivityAt`, and `attentionAt` are not treated as equivalent unread signals. If later UX needs per-user unread counts, a durable read-position/read-receipt model must be designed and tested explicitly.
 
-They do not support free-form notes and must not contain message bodies, document contents, PHI/customer details, raw downstream record identifiers, credentials, access secrets, or unrestricted metadata.
+## Attachment/download-evidence boundary
 
-Corrections append explicit supersede/invalidate control records. Prior attestation records are not silently rewritten.
-
-## Authorization behavior
-
-Authentication is not implemented in Release 0.3. Tests use normalized synthetic actor contexts plus authoritative synthetic authorization records.
-
-Application services fail closed unless all applicable checks succeed:
-
-- actor deployment matches requested deployment;
-- authoritative thread exists in that deployment;
-- actor remains active;
-- normalized actor class matches authoritative actor record;
-- thread queue is within actor scope;
-- requested action permission is granted.
-
-For completion evidence, the historical attestation actor must also be authoritatively recognized as active staff with queue scope and transfer-attestation permission. Identifier possession or an in-memory list result never grants access.
+Release 0.4 still has no attachment retrieval path. Future production `ATTACHMENT_DOWNLOADED` evidence must be emitted only after the authoritative successful retrieval path validates deployment/thread ownership, attachment ownership, current actor/access authority, retrievable lifecycle state, and a release-eligible malware state such as `CLEAN`. The standalone synthetic evidence method must not become a public/browser action.
 
 ## Browser and accessibility tests
 
 Playwright continues to run Chromium at representative desktop and mobile viewport sizes and runs `@axe-core/playwright` against WCAG A/AA tags.
 
-Release 0.3 adds no business UI, so browser coverage remains on the non-sensitive development shell and `/health` endpoint. Future user-visible workflows must add browser coverage when introduced.
+Release 0.4 adds no business UI or public endpoint, so browser coverage remains on the non-sensitive development shell and `/health`. Future user-visible conversation/submission workflows must add browser coverage when introduced.
 
 ## Secret and dependency checks
 
-Release 0.3 adds no dependency. The Release 0.2 controls remain:
+Release 0.4 adds no dependency. Existing controls remain:
 
 - Secretlint with its recommended preset;
 - `npm audit --audit-level=high`;
@@ -123,4 +139,4 @@ A failing security, architecture, authorization, accessibility, or quality test 
 
 ## Production validation
 
-Regulated production requires additional deployment-specific evidence for IAM, network/exposure, identity/MFA, encryption, logging, backups, retention, malware scanning, incident response, and contractual coverage. Release 0.3 provides none of that production evidence and makes no compliance-ready claim.
+Regulated production requires additional deployment-specific evidence for IAM, network/exposure, identity/MFA, encryption, logging, backups, retention, malware scanning, abuse controls, incident response, and contractual coverage. Release 0.4 provides none of that production evidence and makes no compliance-ready claim.

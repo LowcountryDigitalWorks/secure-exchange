@@ -9,14 +9,16 @@ test("prototype shell is available at representative viewport sizes", async ({
   await expect(
     page.getByRole("heading", { name: "Secure Exchange" }),
   ).toBeVisible();
-  await expect(page.getByText("Workflow core prototype only.")).toBeVisible();
+  await expect(
+    page.getByText("Conversation and queue core prototype only."),
+  ).toBeVisible();
 
   const health = await page.request.get("/health");
   expect(health.ok()).toBe(true);
   await expect(health.json()).resolves.toEqual({
     service: "secure-exchange",
     status: "ok",
-    baseline: "0.3",
+    baseline: "0.4",
   });
 });
 

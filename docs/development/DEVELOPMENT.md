@@ -40,11 +40,13 @@ npx playwright install --with-deps chromium
 | `npm run security:secrets` | Run Secretlint with the recommended secret-detection preset |
 | `npm run validate` | Run the complete repository validation gate in CI order |
 
-Focused Release 0.3 checks:
+Focused workflow checks:
 
 ```sh
 npm test -- tests/unit/thread-lifecycle.test.ts tests/unit/completion-policy.test.ts
 npm test -- tests/integration/workflow-service.test.ts
+npm test -- tests/unit/message.test.ts tests/unit/queue.test.ts tests/unit/thread-activity.test.ts
+npm test -- tests/integration/conversation-service.test.ts
 ```
 
 Do not weaken or skip a failed security/quality gate to obtain a green result.
@@ -53,10 +55,10 @@ Do not weaken or skip a failed security/quality gate to obtain a green result.
 
 ```text
 src/
-  domain/        provider/framework-independent workflow types and rules
-  application/   provider-independent workflow orchestration and ports
-  adapters/      provider adapters; Release 0.3 includes local in-memory test/dev persistence only
-  http/          Hono HTTP delivery boundary; no business workflow routes in 0.3
+  domain/        provider/framework-independent workflow, queue, message types and rules
+  application/   provider-independent workflow/conversation orchestration and ports
+  adapters/      provider adapters; local in-memory test/dev persistence only
+  http/          Hono HTTP delivery boundary; no conversation/business routes in 0.4
   web/           semantic development-shell presentation
   server.ts      Node.js delivery adapter/entry point
 scripts/         repository build tooling
@@ -69,26 +71,30 @@ tests/
 
 Architecture tests enforce that `src/domain` and `src/application` do not acquire Hono, AWS SDK, Node provider APIs, browser-runtime dependencies, or backwards dependencies on adapters/delivery layers.
 
-## Release 0.3 workflow-core implementation
+## Release 0.4 conversation/queue core
 
-The workflow core now implements:
+Release 0.4 extends—not replaces—the Release 0.3 workflow core with:
 
-- lifecycle states `NEW`, `IN_PROGRESS`, `AWAITING_EXTERNAL`, `AWAITING_STAFF`, `COMPLETED`, `EXPIRED`, and terminal `DISPOSED`;
-- expected-version optimistic concurrency without database-specific concepts;
-- completion and disposition timestamps on lifecycle transitions where applicable;
-- distinct Opened and Downloaded audit events;
-- immutable TransferAttestation records and append-only supersede/invalidate controls;
-- completion-policy validation against authoritative current policy and qualifying attestation evidence;
-- normalized synthetic actor identity plus authoritative deployment, queue-scope, and action-permission lookup;
-- local all-or-nothing mutation + audit/evidence commits.
+- deployment-bound active/inactive queues and bounded routing categories;
+- immutable bounded plain-text synthetic Message records;
+- thread routing category, last-activity, and attention metadata;
+- accountless external initiation through an application-only boundary;
+- authorized metadata-only queue candidate listing;
+- authoritative staff conversation open/read with chronological messages and distinct Opened evidence;
+- authorized immutable staff reply with atomic thread-activity + message + audit commit;
+- queue/list and reply permissions while preserving current queue-scope authorization.
 
-**Opened != Downloaded != Transferred/Filed != Completed.** No service infers one solely from another.
+**Queue candidate membership is not authorization proof.** Conversation contents load only after authoritative thread authorization.
 
-The in-memory store is intentionally a development/test adapter. Its maps, arrays, lookup helpers, and transaction implementation must not become a production persistence contract.
+**Opened != Downloaded != Transferred/Filed != Completed.** No conversation service infers one solely from another.
+
+Per-user unread/read-position state is deferred. `NEW`, Opened evidence, activity, and attention metadata are not interchangeable unread semantics.
+
+The Release 0.4 plain-text message representation and the in-memory store are synthetic development contracts only. They do not select production content storage, encryption, DynamoDB keys, indexes, or transaction expressions.
 
 ## Tooling choices
 
-Release 0.3 adds no runtime or development dependency. It uses the Release 0.2 toolchain:
+Release 0.4 adds no runtime or development dependency. It uses the Release 0.2 toolchain unchanged:
 
 - Hono plus its Node adapter for the thin development shell;
 - esbuild for production build validation;
@@ -135,15 +141,20 @@ Do not introduce a major framework, database, authentication product, analytics 
 - no `.env` or secret-bearing files;
 - no credentials, private keys, API tokens, customer data, or PHI;
 - synthetic fixtures only;
+- message bodies remain only in message records and never in audit/list rows;
 - TransferAttestation and audit structures contain only bounded non-sensitive metadata;
 - Secretlint is a supplemental control and does not make committing secrets acceptable.
 
-## Release 0.3 deliberate non-goals
+## Attachment/download evidence boundary
 
-Release 0.3 does **not** implement external submission UI/API, staff queue UI, full message/reply workflow, actual file upload, object storage, secure file retrieval, AccessGrant token mechanisms, malware scanning, email notifications, Cognito, SES, S3, DynamoDB, GuardDuty, KMS, API Gateway/Lambda deployment, AWS SDK adapters, infrastructure as code, production authentication, production secrets/configuration, customer integrations, PHI handling, billing, paid services, or production AWS resources.
+Release 0.4 still does not implement attachment retrieval. Future `ATTACHMENT_DOWNLOADED` evidence must be emitted only by the authoritative successful retrieval path after deployment/thread/attachment ownership, current access authority, lifecycle retrieval eligibility, and malware release state such as `CLEAN` have been validated.
+
+## Release 0.4 deliberate non-goals
+
+Release 0.4 does **not** implement production public submission, finished public/staff UI, production authentication, external secure retrieval/reply, AccessGrant secrets, attachment upload/download, object storage, malware scanning, email notifications, Cognito, SES, S3, DynamoDB, GuardDuty, KMS, API Gateway/Lambda deployment, AWS SDK adapters, infrastructure as code, production sessions/secrets/configuration, rate/bot implementation, customer integrations, PHI handling, billing, paid services, or production AWS resources.
 
 ## Infrastructure
 
-Infrastructure-as-code remains required before real AWS provisioning, but the IaC tool and production resource structure are not selected by Release 0.3.
+Infrastructure-as-code remains required before real AWS provisioning, but the IaC tool and production resource structure are not selected by Release 0.4.
 
 No production resource should be created manually as a substitute for a reviewed reproducible deployment process.

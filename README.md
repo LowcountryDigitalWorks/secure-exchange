@@ -4,9 +4,9 @@ Secure Exchange is a Lowcountry Digital Works product for secure, role-routed me
 
 ## Current status
 
-**Release 0.3 implements the provider-neutral workflow core prototype.** It adds authoritative thread lifecycle/version behavior, distinct workflow evidence, append-oriented `TransferAttestation` semantics, completion-policy enforcement, normalized authorization checks, and local in-memory transaction/persistence adapters used only for deterministic development tests.
+**Release 0.4 implements the provider-neutral Conversation & Queue Core Prototype.** It extends the Release 0.3 workflow core with synthetic/local queue configuration, accountless external initiation semantics, immutable thread messages, candidate queue views, authoritative staff conversation reads, authorized staff replies, and bounded activity/attention metadata.
 
-Release 0.3 does not add external submission/retrieval APIs or UI, production authentication, file/object handling, email delivery, AWS adapters, or production infrastructure.
+Release 0.4 remains an application/domain prototype. It does not expose a production public submission endpoint, finished public or staff UI, production authentication, attachment upload/download, external secure retrieval/reply, AccessGrant secrets, email delivery, AWS adapters, or production infrastructure.
 
 This repository is public. Development must use synthetic examples only. Do not commit customer data, PHI, credentials, secrets, private operational details, or production configuration.
 
@@ -28,11 +28,13 @@ For local development:
 npm run dev
 ```
 
-Focused workflow-core tests can be run with:
+Focused workflow tests can be run with:
 
 ```sh
 npm test -- tests/unit/thread-lifecycle.test.ts tests/unit/completion-policy.test.ts
 npm test -- tests/integration/workflow-service.test.ts
+npm test -- tests/unit/message.test.ts tests/unit/queue.test.ts tests/unit/thread-activity.test.ts
+npm test -- tests/integration/conversation-service.test.ts
 ```
 
 For a production-style local build/run of the non-sensitive shell:
@@ -42,7 +44,7 @@ npm run build
 npm start
 ```
 
-See [Development conventions](docs/development/DEVELOPMENT.md) for commands, project structure, CI behavior, dependency updates, security rules, and Release 0.3 boundaries.
+See [Development conventions](docs/development/DEVELOPMENT.md) for commands, project structure, CI behavior, dependency updates, security rules, and release boundaries.
 
 ## Product direction
 
@@ -58,20 +60,25 @@ The approved reference direction is:
 - semantic HTML/CSS with small TypeScript modules for the initial frontend;
 - DynamoDB as the initial AWS reference state store behind provider-neutral persistence abstractions.
 
-## Workflow-core rules
+## Conversation and workflow rules
 
-Release 0.3 preserves these independent facts:
+Release 0.4 preserves these independent facts:
 
 **Opened != Downloaded != Transferred/Filed != Completed.**
 
-`TransferAttestation` is authenticated staff business evidence. It does not imply completion. Completion is an explicit lifecycle transition that succeeds only after current authorization, authoritative thread/version validation, and configured completion-policy preconditions pass.
+Queue membership is candidate information only. A queue result or thread identifier never grants content access; authoritative deployment, thread, queue-scope, actor, and action permission checks occur before conversation content is loaded.
 
-The local in-memory store is a development/test adapter only. It is not the production persistence contract.
+Messages are immutable logical communications. Release 0.4 represents synthetic prototype message content as bounded plain text in the provider-neutral domain. That local representation is not an object-storage, encryption, DynamoDB, or production-content-storage contract.
+
+Per-user unread/read-position semantics are intentionally deferred. `NEW`, Opened evidence, last activity, and attention metadata must not be treated as interchangeable unread state.
+
+The local in-memory store is a development/test adapter only. Its maps, arrays, keys, and copy-on-write transaction implementation are not the production persistence contract.
 
 ## Authoritative documentation
 
 - [Product purpose and non-goals](docs/PRODUCT.md)
 - [MVP and roadmap](docs/MVP_AND_ROADMAP.md)
+- [Release 0.4 implementation boundary](docs/releases/0.4-conversation-queue-core.md)
 - [Architecture](docs/architecture/ARCHITECTURE.md)
 - [Data flows and trust boundaries](docs/architecture/DATA_FLOW.md)
 - [Domain model](docs/architecture/DOMAIN_MODEL.md)
