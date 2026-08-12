@@ -75,11 +75,13 @@ The Release 0.1 implementation-stack ADR already authorized npm, strict TypeScri
 - Secretlint for local/CI secret detection;
 - npm's built-in audit for dependency vulnerability gating.
 
+`playwright-core` is pinned directly to the same exact version used by `@playwright/test`. This prevents npm from satisfying `@axe-core/playwright`'s broad peer range with a second Playwright core version, which would create incompatible TypeScript `Page` identities. Update the Playwright Test/core pair together.
+
 These are engineering/tooling dependencies, not authorization to implement AWS providers or product workflows.
 
 ## CI
 
-`.github/workflows/ci.yml` runs on pull requests to `main` and pushes to release branches. The workflow grants only `contents: read`, installs Node.js 24, uses `npm ci`, installs Chromium for Playwright, then runs `npm run validate`.
+`.github/workflows/ci.yml` runs on pull requests to `main` and pushes to release branches. The workflow grants only `contents: read`, disables persisted checkout credentials, installs Node.js 24, uses `npm ci`, installs Chromium for Playwright, then runs `npm run validate`.
 
 The CI job must fail on formatting, lint, type, unit/integration/architecture test, browser/accessibility, build, high-or-critical npm audit, or Secretlint failures.
 
@@ -92,10 +94,17 @@ For any dependency update:
 1. verify purpose and maintenance status;
 2. review security/licensing/portability implications when material;
 3. update `package.json` and `package-lock.json` together;
-4. run `npm run validate`;
-5. review the resulting PR and CI output.
+4. review any newly introduced dependency install scripts before allowing them;
+5. run `npm run validate`;
+6. review the resulting PR and CI output.
 
 Do not introduce a major framework, database, authentication product, analytics system, or paid service through an incidental dependency update.
+
+## Dependency install-script policy
+
+`.npmrc` enables npm's strict install-script policy. A dependency with an unreviewed install-time lifecycle script causes installation to fail rather than being silently trusted.
+
+`package.json` explicitly approves only `esbuild@0.28.1`, whose pinned package uses a postinstall step as part of its platform-specific executable setup. New or changed install scripts require explicit review and a narrowly pinned `allowScripts` entry; do not use an allow-all bypass.
 
 ## Repository hygiene and secrets
 
