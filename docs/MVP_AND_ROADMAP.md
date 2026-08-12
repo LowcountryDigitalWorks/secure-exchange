@@ -24,20 +24,25 @@ The MVP allows an external participant to submit a message and approved document
 - new/unread indicators;
 - thread/conversation grouping;
 - chronological messages;
-- attachment status and controlled download;
-- lifecycle state transitions;
+- visible opened/read evidence distinct from download evidence;
+- attachment status and controlled download with distinct download evidence;
+- authenticated staff transfer/filing attestation when downstream transfer cannot be technically proven;
+- lifecycle state transitions kept separate from opened/read, download, and transfer/file evidence;
 - basic aging/attention indicators;
-- completion workflow;
+- completion workflow that enforces configured preconditions, including a valid transfer/filing attestation when required;
 - metadata search/filter appropriate to known access patterns.
+
+Opened, Downloaded, Transferred/Filed, and Completed are separate workflow facts. None is automatically inferred from another and they do not each need to be thread lifecycle states.
 
 ### Administration
 
 - queue/role configuration;
 - retention/disposition configuration within supported bounds;
+- completion-policy configuration within supported bounds;
 - file-type and size policy;
 - product branding configuration;
 - notification-template configuration for non-sensitive content;
-- audit visibility appropriate to authorized administrators.
+- audit and workflow-evidence visibility appropriate to authorized administrators.
 
 ### Security and operations
 
@@ -46,6 +51,7 @@ The MVP allows an external participant to submit a message and approved document
 - protected object storage;
 - malware-status gate before attachment release;
 - application audit events;
+- provider-neutral TransferAttestation evidence;
 - conservative logging;
 - rate/abuse controls;
 - explicit disposition;

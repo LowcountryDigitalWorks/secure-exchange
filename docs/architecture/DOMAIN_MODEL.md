@@ -72,6 +72,21 @@ Typical transitions:
 
 Implementation must reject invalid or stale transitions using authoritative state/version checks.
 
+### Lifecycle is distinct from workflow evidence
+
+Thread lifecycle answers where the work item is in the Secure Exchange workflow. It does not encode every fact about how staff interacted with the thread or its files.
+
+At minimum, Secure Exchange preserves these distinct facts:
+
+- **Opened** — an authorized actor opened/viewed the thread or permitted content;
+- **Downloaded** — an authorized attachment retrieval/download occurred;
+- **Transferred/Filed** — an authenticated staff user attested that downstream transfer or filing occurred, when Secure Exchange cannot prove that downstream action directly;
+- **Completed** — the thread entered the `COMPLETED` lifecycle state after all configured completion preconditions were satisfied.
+
+**Opened != Downloaded != Transferred/Filed != Completed.** None of these facts may be inferred solely from another.
+
+Opened and Downloaded are represented by distinct application audit/evidence events. Transferred/Filed is represented by a `TransferAttestation`. Completed remains a thread lifecycle state.
+
 ## Message
 
 An immutable logical communication within a thread.
@@ -140,6 +155,30 @@ Actor categories:
 - administrator;
 - system process.
 
+## TransferAttestation
+
+An authoritative, provider-neutral business record created by an authenticated staff user when downstream transfer or filing cannot be technically proven by Secure Exchange itself.
+
+A successful download does not create or imply a TransferAttestation.
+
+Minimum properties:
+
+- attestation identifier;
+- deployment identifier;
+- thread identifier;
+- authenticated staff actor reference;
+- attested timestamp;
+- outcome such as `TRANSFERRED`, `FILED`, or `FAILED`;
+- configured destination category appropriate to the deployment;
+- completion-policy/configuration version or equivalent policy reference when needed for later validation;
+- minimal non-sensitive structured metadata such as an approved reason/outcome code when justified.
+
+Attestations must not contain message bodies, document contents, patient/client details, raw downstream record identifiers, credentials, or unrestricted free-form sensitive notes.
+
+A TransferAttestation is append-oriented evidence. Corrections should supersede or invalidate a prior attestation through an explicit authoritative action rather than silently editing history.
+
+When completion policy requires transfer/filing evidence, a completion attempt must validate an authoritative, current, successful attestation for the same deployment and thread. A missing, failed, superseded/invalid, wrong-deployment, or otherwise non-qualifying attestation does not satisfy that completion policy.
+
 ## AuditEvent
 
 Append-oriented evidence of a meaningful product/security event.
@@ -157,6 +196,8 @@ Includes:
 
 Audit events must not duplicate message bodies, document contents, secret grants, or unnecessary sensitive metadata.
 
+Opened/read and successful download evidence use distinct event semantics. An Opened event is not download evidence; a download event is not transfer/filing evidence.
+
 ## RetentionPolicy
 
 Defines supported retention/disposition behavior.
@@ -171,7 +212,9 @@ Includes:
 
 ## ProductConfiguration
 
-Provider-neutral configuration for branding, queues, file constraints, notification wording, workflow defaults, and supported retention settings.
+Provider-neutral configuration for branding, queues, file constraints, notification wording, workflow defaults, supported retention settings, and completion policy.
+
+Completion policy may require a valid TransferAttestation before transition to `COMPLETED`.
 
 Secrets and provider credentials are not ProductConfiguration.
 
@@ -183,6 +226,7 @@ The domain/application layer depends on abstractions such as:
 - `MessageRepository`
 - `AttachmentRepository`
 - `AuditRepository`
+- `TransferAttestationRepository`
 - `AccessGrantRepository`
 - `RetentionRepository`
 - `ConfigurationRepository`

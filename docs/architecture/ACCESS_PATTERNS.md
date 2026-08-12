@@ -28,6 +28,10 @@ The persistence layer is hidden behind provider-neutral repository and transacti
 | AP-16 | Reporting | Operational counts by queue/state/date | Purpose-built counters/queries; no arbitrary content analytics |
 | AP-17 | Configuration | Load current deployment configuration/policy version | Authoritative or suitably cached with invalidation/versioning |
 | AP-18 | Transaction | State transition + related audit + related record creation | Atomic all-or-nothing application transaction |
+| AP-19 | Workflow evidence | Retrieve opened/read and download evidence for an authorized thread | Distinct evidence types; must follow authoritative thread authorization |
+| AP-20 | Transfer attestation | Append an authenticated staff TransferAttestation for a deployment/thread | Authoritative actor/thread/deployment validation; append/supersede semantics |
+| AP-21 | Transfer attestation | Retrieve current/qualifying TransferAttestation evidence for a thread | Authoritative lookup; do not infer from download/audit summaries |
+| AP-22 | Completion | Validate configured completion preconditions, including qualifying TransferAttestation when required, then transition to `COMPLETED` | Authoritative policy/thread/attestation validation; fail closed; conditional/transactional mutation |
 
 ## Search scope
 
@@ -41,7 +45,10 @@ Initial searchable/filterable dimensions may include:
 - created/updated date range;
 - attention age;
 - completion/disposition due state;
-- known thread identifier.
+- known thread identifier;
+- bounded workflow-evidence summaries such as opened/downloaded/transfer-attested status when purpose-built for the work view.
+
+Workflow-evidence summaries or secondary indexes are convenience views only. They are not authoritative proof for completion or other security-sensitive decisions.
 
 Full-text indexing of message bodies or attachment contents is deferred.
 
@@ -55,9 +62,20 @@ Examples:
 - aging buckets;
 - queue workload;
 - disposition due/failed counts;
-- notification or malware-status operational outcomes.
+- notification or malware-status operational outcomes;
+- opened/downloaded/transfer-attested workflow counts without copying sensitive content.
 
 Do not create content warehouses or copy message/document content for reporting.
+
+## Workflow-evidence semantics
+
+Opened/read, download, TransferAttestation, and thread completion are independent facts.
+
+- Opening a thread can append an opened/read audit event but does not prove a file was downloaded.
+- A successful file download can append download evidence but does not prove a downstream transfer or filing occurred.
+- A qualifying TransferAttestation is an authoritative staff business record, not an inference from a download event.
+- A TransferAttestation does not itself transition the thread to `COMPLETED`.
+- When completion policy requires transfer/filing evidence, AP-22 must load and validate qualifying authoritative attestation data before the completion transition is accepted.
 
 ## DynamoDB reference approach
 
@@ -78,7 +96,8 @@ Global secondary-index results may be eventually consistent.
 Therefore:
 
 - queue/search/index results identify candidates only;
-- opening, mutating, downloading, disposing, or authorizing a resource requires authoritative record validation where security or lifecycle correctness depends on current state;
+- opening, mutating, downloading, completing, disposing, or authorizing a resource requires authoritative record validation where security or lifecycle correctness depends on current state;
+- indexed/materialized workflow-evidence summaries cannot satisfy a completion attestation requirement without authoritative validation;
 - an index row can never grant access.
 
 ## Retention rule

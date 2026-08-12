@@ -4,7 +4,7 @@
 
 Secure Exchange provides a simple, secure workflow for organizations that need to exchange messages and documents with external participants who cannot reasonably be forced into a complex collaboration platform.
 
-The product focuses on the exchange workflow itself: intake, routing, conversation state, secure retrieval, lifecycle management, audit semantics, retention/disposition, and configurable product UX.
+The product focuses on the exchange workflow itself: intake, routing, conversation state, secure retrieval, lifecycle management, workflow evidence, audit semantics, retention/disposition, and configurable product UX.
 
 ## Target users
 
@@ -14,11 +14,11 @@ An outside sender or recipient who needs to submit or retrieve a message or docu
 
 ### Staff user
 
-An authenticated organization user who works from role-based queues, reads permitted threads, sends secure replies, manages lifecycle state, and completes workflow actions.
+An authenticated organization user who works from role-based queues, reads permitted threads, sends secure replies, manages lifecycle state, reviews opened/download evidence, records transfer/filing attestations when required, and completes workflow actions.
 
 ### Administrator
 
-An authenticated organization user who configures queues, authorization mappings, retention settings, permitted file characteristics, branding, and operational product settings.
+An authenticated organization user who configures queues, authorization mappings, retention settings, completion-policy settings, permitted file characteristics, branding, and operational product settings.
 
 ### System actor
 
@@ -32,6 +32,7 @@ Secure Exchange owns:
 - queues and routing semantics;
 - thread/message/attachment lifecycle;
 - workflow status and state transitions;
+- workflow-evidence semantics, including opened/read, download, and transfer/filing attestation evidence;
 - application authorization policy;
 - application audit semantics;
 - retention/disposition policy and orchestration;
@@ -39,6 +40,19 @@ Secure Exchange owns:
 - product UX.
 
 Commodity providers should supply infrastructure primitives such as identity, object storage, encryption/key management, notification delivery, infrastructure logging, malware scanning, and compute.
+
+## Workflow evidence versus lifecycle
+
+Secure Exchange intentionally distinguishes operational evidence from thread lifecycle.
+
+At minimum:
+
+- **Opened** records that an authorized actor opened/read the permitted thread context;
+- **Downloaded** records that an authorized file download/retrieval occurred;
+- **Transferred/Filed** is represented by an authenticated staff `TransferAttestation` when downstream transfer cannot be technically proven;
+- **Completed** is the thread lifecycle state reached only after configured completion preconditions are satisfied.
+
+**Opened != Downloaded != Transferred/Filed != Completed.** One fact must not be inferred solely from another. Product UX should make these facts visible where appropriate without turning each into a lifecycle state.
 
 ## Preferred deployment model
 
@@ -79,6 +93,7 @@ Regulated deployments require a documented end-to-end boundary covering vendors/
 - role-based routing over person-specific workflow design;
 - customer ownership of deployed data and infrastructure where practical;
 - provider-neutral domain contracts;
+- distinct authoritative workflow evidence rather than inferred downstream actions;
 - low operating complexity;
 - minimal dependencies;
 - accessible responsive UX;
