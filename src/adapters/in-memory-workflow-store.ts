@@ -1,19 +1,25 @@
 import { DomainError } from "../domain/errors.js";
-import type {
-  ActorAuthorization,
-  ActorRef,
-  AuditEvent,
-  CompletionPolicy,
-  DeploymentId,
-  Thread,
-  ThreadId,
-  TransferAttestation,
-  TransferAttestationControl,
+import {
+  validateQueue,
+  type ActorAuthorization,
+  type ActorRef,
+  type AuditEvent,
+  type CompletionPolicy,
+  type DeploymentId,
+  type Message,
+  type Queue,
+  type QueueId,
+  type Thread,
+  type ThreadId,
+  type TransferAttestation,
+  type TransferAttestationControl,
 } from "../domain/index.js";
 import type { WorkflowMutation, WorkflowStore } from "../application/ports.js";
 
 export interface InMemoryWorkflowSeed {
+  readonly queues?: readonly Queue[];
   readonly threads?: readonly Thread[];
+  readonly messages?: readonly Message[];
   readonly completionPolicies?: readonly CompletionPolicy[];
   readonly actorAuthorizations?: readonly ActorAuthorization[];
   readonly auditEvents?: readonly AuditEvent[];
@@ -26,7 +32,9 @@ function resourceKey(deploymentId: string, resourceId: string): string {
 }
 
 export class InMemoryWorkflowStore implements WorkflowStore {
+  private queues: Map<string, Queue>;
   private threads: Map<string, Thread>;
+  private messages: Message[];
   private completionPolicies: Map<string, CompletionPolicy>;
   private actorAuthorizations: Map<string, ActorAuthorization>;
   private auditEvents: AuditEvent[];
@@ -35,12 +43,22 @@ export class InMemoryWorkflowStore implements WorkflowStore {
   private failNextCommitRequested = false;
 
   constructor(seed: InMemoryWorkflowSeed = {}) {
+    this.queues = new Map(
+      (seed.queues ?? []).map((queue) => {
+        const validated = validateQueue(queue);
+        return [
+          resourceKey(validated.deploymentId, validated.queueId),
+          validated,
+        ];
+      }),
+    );
     this.threads = new Map(
       (seed.threads ?? []).map((thread) => [
         resourceKey(thread.deploymentId, thread.threadId),
         thread,
       ]),
     );
+    this.messages = [...(seed.messages ?? [])];
     this.completionPolicies = new Map(
       (seed.completionPolicies ?? []).map((policy) => [
         policy.deploymentId,
@@ -60,12 +78,50 @@ export class InMemoryWorkflowStore implements WorkflowStore {
     ];
   }
 
+  getQueue(
+    deploymentId: DeploymentId,
+    queueId: QueueId,
+  ): Promise<Queue | undefined> {
+    return Promise.resolve(this.queues.get(resourceKey(deploymentId, queueId)));
+  }
+
   getThread(
     deploymentId: DeploymentId,
     threadId: ThreadId,
   ): Promise<Thread | undefined> {
     return Promise.resolve(
       this.threads.get(resourceKey(deploymentId, threadId)),
+    );
+  }
+
+  listThreadsForQueue(
+    deploymentId: DeploymentId,
+    queueId: QueueId,
+  ): Promise<readonly Thread[]> {
+    return Promise.resolve(
+      [...this.threads.values()].filter(
+        (thread) =>
+          thread.deploymentId === deploymentId && thread.queueId === queueId,
+      ),
+    );
+  }
+
+  listMessages(
+    deploymentId: DeploymentId,
+    threadId: ThreadId,
+  ): Promise<readonly Message[]> {
+    return Promise.resolve(
+      this.messages
+        .filter(
+          (message) =>
+            message.deploymentId === deploymentId &&
+            message.threadId === threadId,
+        )
+        .sort(
+          (left, right) =>
+            left.createdAt.localeCompare(right.createdAt) ||
+            left.messageId.localeCompare(right.messageId),
+        ),
     );
   }
 
@@ -130,11 +186,29 @@ export class InMemoryWorkflowStore implements WorkflowStore {
 
   private commitSynchronously(mutation: WorkflowMutation): void {
     const nextThreads = new Map(this.threads);
+    const nextMessages = [...this.messages];
     const nextAuditEvents = [...this.auditEvents];
     const nextAttestations = [...this.transferAttestations];
     const nextControls = [...this.transferAttestationControls];
 
     this.validateMutationScope(mutation);
+
+    if (mutation.newThread !== undefined && mutation.nextThread !== undefined) {
+      throw new Error(
+        "A transaction cannot create and update the same thread.",
+      );
+    }
+
+    if (mutation.newThread !== undefined) {
+      const key = resourceKey(mutation.deploymentId, mutation.threadId);
+      if (nextThreads.has(key)) {
+        throw new Error("Thread identifier already exists.");
+      }
+      if (mutation.newThread.version !== 1) {
+        throw new Error("A newly created thread must start at version 1.");
+      }
+      nextThreads.set(key, mutation.newThread);
+    }
 
     if (mutation.nextThread !== undefined) {
       const key = resourceKey(mutation.deploymentId, mutation.threadId);
@@ -155,6 +229,25 @@ export class InMemoryWorkflowStore implements WorkflowStore {
         throw new Error("Next thread version must increment exactly once.");
       }
       nextThreads.set(key, mutation.nextThread);
+    }
+
+    if (
+      !nextThreads.has(resourceKey(mutation.deploymentId, mutation.threadId))
+    ) {
+      throw new Error("Mutation requires an authoritative thread.");
+    }
+
+    for (const message of mutation.messages ?? []) {
+      if (
+        nextMessages.some(
+          (item) =>
+            item.deploymentId === message.deploymentId &&
+            item.messageId === message.messageId,
+        )
+      ) {
+        throw new Error("Message identifier already exists.");
+      }
+      nextMessages.push(message);
     }
 
     for (const attestation of mutation.transferAttestations ?? []) {
@@ -194,18 +287,30 @@ export class InMemoryWorkflowStore implements WorkflowStore {
     }
 
     this.threads = nextThreads;
+    this.messages = nextMessages;
     this.auditEvents = nextAuditEvents;
     this.transferAttestations = nextAttestations;
     this.transferAttestationControls = nextControls;
   }
 
   private validateMutationScope(mutation: WorkflowMutation): void {
-    if (
-      mutation.nextThread !== undefined &&
-      (mutation.nextThread.deploymentId !== mutation.deploymentId ||
-        mutation.nextThread.threadId !== mutation.threadId)
-    ) {
-      throw new Error("Thread mutation escaped its authoritative scope.");
+    for (const thread of [mutation.newThread, mutation.nextThread]) {
+      if (
+        thread !== undefined &&
+        (thread.deploymentId !== mutation.deploymentId ||
+          thread.threadId !== mutation.threadId)
+      ) {
+        throw new Error("Thread mutation escaped its authoritative scope.");
+      }
+    }
+
+    for (const item of mutation.messages ?? []) {
+      if (
+        item.deploymentId !== mutation.deploymentId ||
+        item.threadId !== mutation.threadId
+      ) {
+        throw new Error("Message mutation escaped its authoritative scope.");
+      }
     }
 
     for (const item of mutation.transferAttestations ?? []) {

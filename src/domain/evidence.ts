@@ -1,10 +1,11 @@
 import type {
-  ActorKind,
   ActorRef,
   AttachmentId,
+  AuditActorKind,
   AuditEventId,
   CompletionPolicyRef,
   DeploymentId,
+  MessageId,
   ThreadId,
   TransferAttestationControlId,
   TransferAttestationId,
@@ -42,6 +43,8 @@ export interface TransferAttestationControl {
 }
 
 export type AuditEventType =
+  | "THREAD_CREATED"
+  | "MESSAGE_APPENDED"
   | "THREAD_OPENED"
   | "ATTACHMENT_DOWNLOADED"
   | "THREAD_LIFECYCLE_TRANSITIONED"
@@ -56,8 +59,9 @@ export interface AuditEvent {
   readonly threadId: ThreadId;
   readonly eventType: AuditEventType;
   readonly actorRef: ActorRef;
-  readonly actorKind: ActorKind;
+  readonly actorKind: AuditActorKind;
   readonly at: string;
+  readonly messageId?: MessageId;
   readonly attachmentId?: AttachmentId;
   readonly attestationId?: TransferAttestationId;
   readonly relatedAttestationId?: TransferAttestationId;

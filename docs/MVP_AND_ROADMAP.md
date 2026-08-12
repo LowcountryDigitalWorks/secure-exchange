@@ -101,7 +101,7 @@ Completed and merged. Establishes executable project scaffolding, package/lockfi
 
 ### Release 0.3 — Workflow Core Prototype
 
-Implements the first provider-neutral business behavior with synthetic/local persistence only:
+Completed and merged. Implements:
 
 - authoritative thread lifecycle and optimistic-version semantics;
 - explicit completion/disposition timestamps where applicable;
@@ -112,11 +112,28 @@ Implements the first provider-neutral business behavior with synthetic/local per
 - atomic local mutation + audit/evidence transactions;
 - deterministic two-deployment isolation tests.
 
-It deliberately adds no external submission/retrieval surface, production identity, attachment/object workflow, AWS adapter, or production infrastructure.
+### Release 0.4 — Conversation & Queue Core Prototype
+
+Implements the next provider-neutral business layer using synthetic/local persistence only:
+
+- bounded queue configuration and routing categories;
+- accountless external initiation as an application capability, with no public internet endpoint;
+- atomic creation of a `NEW` thread, initial immutable external message, and minimized audit evidence;
+- immutable bounded plain-text prototype messages;
+- metadata-only authorized queue candidate views;
+- authoritative staff open/read followed by chronological conversation retrieval;
+- distinct Opened evidence on staff conversation open;
+- authorized immutable staff replies with atomic message + activity + audit mutation;
+- thread routing, last-activity, and bounded attention metadata;
+- explicit preservation of candidate-view versus authoritative-access boundaries.
+
+Release 0.4 does not implement per-user unread/read-position state. `NEW`, Opened, activity, and attention metadata are not treated as equivalent to unread status. A later durable read-position/read-receipt design must be reviewed before per-user unread semantics are implemented.
+
+Release 0.4 also does not implement attachment retrieval. `ATTACHMENT_DOWNLOADED` remains synthetic workflow evidence only; its eventual production emission must occur only after successful authoritative retrieval validates deployment/thread/attachment ownership, current access authority, retrievable lifecycle state, and a release-eligible malware state such as `CLEAN`.
 
 ### Later prototype releases
 
-Add provider-neutral external/browser/API workflow behavior and additional local/synthetic adapters before production cloud adapters.
+Add provider-neutral external retrieval/reply authorization, attachment behavior, browser/API delivery, and additional local/synthetic adapters before production cloud adapters.
 
 ### AWS adapter releases
 

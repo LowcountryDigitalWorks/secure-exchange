@@ -41,14 +41,14 @@ export function renderEngineeringShell(status: EngineeringStatus): string {
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Secure Exchange Workflow Core Prototype</title>
+    <title>Secure Exchange Conversation & Queue Core Prototype</title>
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
     <main>
       <article class="card" aria-labelledby="page-title">
         <h1 id="page-title">Secure Exchange</h1>
-        <p>Workflow core prototype only. External exchange UI and production services are not implemented.</p>
+        <p>Conversation and queue core prototype only. Public exchange UI and production services are not implemented.</p>
         <p class="status">Status: ${status.status}</p>
         <p>Baseline: <code>${status.baseline}</code></p>
       </article>

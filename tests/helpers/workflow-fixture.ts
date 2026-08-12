@@ -2,12 +2,16 @@ import type {
   ActorAuthorization,
   ActorContext,
   CompletionPolicy,
+  Message,
+  Queue,
   Thread,
   ThreadLifecycleState,
   TransferAttestation,
   WorkflowPermission,
 } from "../../src/domain/index.js";
+import { createPlainTextMessageBody } from "../../src/domain/message.js";
 import { WorkflowService } from "../../src/application/workflow-service.js";
+import { ConversationService } from "../../src/application/conversation-service.js";
 import { InMemoryWorkflowStore } from "../../src/adapters/in-memory-workflow-store.js";
 
 export const DEPLOYMENT_A = "deployment-a";
@@ -15,14 +19,20 @@ export const DEPLOYMENT_B = "deployment-b";
 export const THREAD_A = "thread-a";
 export const THREAD_B = "thread-b";
 export const QUEUE_A = "queue-a";
+export const QUEUE_B = "queue-b";
 export const STAFF_A = "staff-a";
 export const STAFF_B = "staff-b";
 export const UNAUTHORIZED_STAFF = "staff-unauthorized";
+export const EXTERNAL_A = "external-participant-a";
 export const POLICY_A = "completion-policy-a-v1";
 export const POLICY_B = "completion-policy-b-v1";
+export const ROUTING_GENERAL = "GENERAL";
+export const ROUTING_RECORDS = "RECORDS";
 
 export const ALL_WORKFLOW_PERMISSIONS: readonly WorkflowPermission[] = [
+  "QUEUE_LIST",
   "THREAD_OPEN",
+  "THREAD_REPLY",
   "DOWNLOAD_EVIDENCE_RECORD",
   "THREAD_TRANSITION",
   "THREAD_DISPOSE",
@@ -32,15 +42,42 @@ export const ALL_WORKFLOW_PERMISSIONS: readonly WorkflowPermission[] = [
   "THREAD_COMPLETE",
 ];
 
+export function makeQueue(overrides: Partial<Queue> = {}): Queue {
+  return {
+    queueId: QUEUE_A,
+    deploymentId: DEPLOYMENT_A,
+    active: true,
+    displayLabel: "Synthetic General Queue",
+    allowedRoutingCategories: [ROUTING_GENERAL, ROUTING_RECORDS],
+    ...overrides,
+  };
+}
+
 export function makeThread(overrides: Partial<Thread> = {}): Thread {
   return {
     deploymentId: DEPLOYMENT_A,
     threadId: THREAD_A,
     queueId: QUEUE_A,
+    routingCategory: ROUTING_GENERAL,
     state: "IN_PROGRESS",
     createdAt: "2026-08-12T12:00:00.000Z",
     updatedAt: "2026-08-12T12:00:00.000Z",
+    lastActivityAt: "2026-08-12T12:00:00.000Z",
+    attentionAt: "2026-08-12T12:00:00.000Z",
     version: 3,
+    ...overrides,
+  };
+}
+
+export function makeMessage(overrides: Partial<Message> = {}): Message {
+  return {
+    messageId: "message-1",
+    deploymentId: DEPLOYMENT_A,
+    threadId: THREAD_A,
+    direction: "EXTERNAL_TO_STAFF",
+    actorRef: EXTERNAL_A,
+    createdAt: "2026-08-12T12:01:00.000Z",
+    body: createPlainTextMessageBody("Synthetic message body."),
     ...overrides,
   };
 }
@@ -104,13 +141,16 @@ export function makeFixture(
     readonly threadState?: ThreadLifecycleState;
     readonly threadVersion?: number;
     readonly policy?: CompletionPolicy;
+    readonly queues?: readonly Queue[];
     readonly additionalThreads?: readonly Thread[];
+    readonly messages?: readonly Message[];
     readonly additionalActors?: readonly ActorAuthorization[];
     readonly attestations?: readonly TransferAttestation[];
   } = {},
 ): {
   readonly store: InMemoryWorkflowStore;
   readonly service: WorkflowService;
+  readonly conversationService: ConversationService;
   readonly thread: Thread;
 } {
   const thread = makeThread({
@@ -122,7 +162,9 @@ export function makeFixture(
       : { version: options.threadVersion }),
   });
   const store = new InMemoryWorkflowStore({
+    queues: options.queues ?? [makeQueue()],
     threads: [thread, ...(options.additionalThreads ?? [])],
+    messages: options.messages ?? [],
     completionPolicies: [options.policy ?? makeCompletionPolicy()],
     actorAuthorizations: [
       makeActorAuthorization(),
@@ -132,5 +174,10 @@ export function makeFixture(
       ? {}
       : { transferAttestations: options.attestations }),
   });
-  return { store, service: new WorkflowService(store), thread };
+  return {
+    store,
+    service: new WorkflowService(store),
+    conversationService: new ConversationService(store),
+    thread,
+  };
 }
