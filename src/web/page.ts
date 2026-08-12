@@ -1,4 +1,4 @@
-import type { EngineeringStatus } from '../application/status.js';
+import type { EngineeringStatus } from "../application/status.js";
 
 export const shellStyles = `
 :root {
