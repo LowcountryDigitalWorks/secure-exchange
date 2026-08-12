@@ -30,7 +30,17 @@ function isSameOriginPost(request: Request): boolean {
   }
 
   try {
-    return new URL(origin).origin === new URL(request.url).origin;
+    const parsedOrigin = new URL(origin);
+    if (parsedOrigin.protocol !== "http:" && parsedOrigin.protocol !== "https:") {
+      return false;
+    }
+
+    const requestHost = request.headers.get("Host");
+    if (requestHost !== null) {
+      return parsedOrigin.host === requestHost;
+    }
+
+    return parsedOrigin.origin === new URL(request.url).origin;
   } catch {
     return false;
   }
