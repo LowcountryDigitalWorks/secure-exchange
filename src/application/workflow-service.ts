@@ -427,8 +427,7 @@ export class WorkflowService {
       input.actor.actorRef,
     );
     if (
-      authorization === undefined ||
-      !authorization.active ||
+      authorization?.active !== true ||
       authorization.deploymentId !== input.deploymentId ||
       authorization.actorKind !== input.actor.actorKind ||
       !authorization.allowedQueueIds.includes(thread.queueId) ||
@@ -447,7 +446,7 @@ export class WorkflowService {
     deploymentId: DeploymentId,
   ): Promise<CompletionPolicy> {
     const policy = await this.store.getCurrentCompletionPolicy(deploymentId);
-    if (policy === undefined || policy.deploymentId !== deploymentId) {
+    if (policy?.deploymentId !== deploymentId) {
       throw new ApplicationError(
         "POLICY_NOT_FOUND",
         "Current completion policy is unavailable for the deployment.",
