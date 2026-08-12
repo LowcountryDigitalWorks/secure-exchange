@@ -103,7 +103,7 @@ export function createApp(options: CreateAppOptions = {}): Hono {
     if (demo === undefined) {
       return context.notFound();
     }
-    await next();
+    return next();
   });
 
   if (demo !== undefined) {

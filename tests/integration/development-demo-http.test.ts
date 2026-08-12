@@ -40,7 +40,7 @@ function postForm(
   path: string,
   fields: Readonly<Record<string, string>>,
   origin = ORIGIN,
-): Promise<Response> {
+): Response | Promise<Response> {
   return app.request(`${ORIGIN}${path}`, {
     method: "POST",
     headers: {
