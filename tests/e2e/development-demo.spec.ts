@@ -12,7 +12,15 @@ test("synthetic development demo completes the browser vertical slice", async ({
   await page
     .getByLabel("Synthetic message")
     .fill("Synthetic browser vertical-slice message.");
+
+  const submissionResponsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      new URL(response.url()).pathname === "/demo/external",
+  );
   await page.getByRole("button", { name: "Submit synthetic exchange" }).click();
+  const submissionResponse = await submissionResponsePromise;
+  expect(submissionResponse.status()).toBe(303);
 
   await expect(
     page.getByRole("heading", { name: "Synthetic submission received" }),
