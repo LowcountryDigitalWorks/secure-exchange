@@ -1,0 +1,102 @@
+name: Apply Release 0.4 lint fix
+
+on:
+  push:
+    branches:
+      - release/0.4-conversation-queue-core
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out release branch
+        uses: actions/checkout@v6
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Apply lint-safe input validation
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync, writeFileSync } from 'node:fs';
+
+          function replaceRequired(path, before, after) {
+            const source = readFileSync(path, 'utf8');
+            if (!source.includes(before)) {
+              throw new Error(`Expected source fragment was not found in ${path}`);
+            }
+            writeFileSync(path, source.replace(before, after));
+          }
+
+          replaceRequired(
+            'src/domain/message.ts',
+            `import type {\n  ActorRef,\n  DeploymentId,\n  ExternalParticipantRef,\n  MessageId,\n  ThreadId,\n} from "./types.js";`,
+            `import type { DeploymentId, MessageId, ThreadId } from "./types.js";`,
+          );
+          replaceRequired(
+            'src/domain/message.ts',
+            `const DISALLOWED_MESSAGE_CONTROL =\n  /[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\u007F]/u;`,
+            `function containsDisallowedMessageControl(value: string): boolean {\n  for (const character of value) {\n    const codePoint = character.codePointAt(0);\n    if (\n      codePoint !== undefined &&\n      (codePoint === 0x7f ||\n        (codePoint < 0x20 && codePoint !== 0x09 && codePoint !== 0x0a))\n    ) {\n      return true;\n    }\n  }\n\n  return false;\n}`,
+          );
+          replaceRequired(
+            'src/domain/message.ts',
+            `readonly actorRef: ActorRef | ExternalParticipantRef;`,
+            `readonly actorRef: string;`,
+          );
+          replaceRequired(
+            'src/domain/message.ts',
+            `DISALLOWED_MESSAGE_CONTROL.test(normalized)`,
+            `containsDisallowedMessageControl(normalized)`,
+          );
+
+          replaceRequired(
+            'src/domain/queue.ts',
+            `const DISALLOWED_CONFIGURATION_CONTROL =\n  /[\\u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F\\u007F]/u;`,
+            `function containsConfigurationControl(value: string): boolean {\n  for (const character of value) {\n    const codePoint = character.codePointAt(0);\n    if (codePoint !== undefined && (codePoint < 0x20 || codePoint === 0x7f)) {\n      return true;\n    }\n  }\n\n  return false;\n}`,
+          );
+          replaceRequired(
+            'src/domain/queue.ts',
+            `DISALLOWED_CONFIGURATION_CONTROL.test(normalized)`,
+            `containsConfigurationControl(normalized)`,
+          );
+          replaceRequired(
+            'src/domain/queue.ts',
+            `DISALLOWED_CONFIGURATION_CONTROL.test(label)`,
+            `containsConfigurationControl(label)`,
+          );
+
+          replaceRequired(
+            'src/application/conversation-service.ts',
+            `const DISALLOWED_REFERENCE_CONTROL = /[\\u0000-\\u001F\\u007F]/u;`,
+            `function containsReferenceControl(value: string): boolean {\n  for (const character of value) {\n    const codePoint = character.codePointAt(0);\n    if (codePoint !== undefined && (codePoint < 0x20 || codePoint === 0x7f)) {\n      return true;\n    }\n  }\n\n  return false;\n}`,
+          );
+          replaceRequired(
+            'src/application/conversation-service.ts',
+            `DISALLOWED_REFERENCE_CONTROL.test(value)`,
+            `containsReferenceControl(value)`,
+          );
+          NODE
+          npx --no-install prettier --write src/domain/message.ts src/domain/queue.ts src/application/conversation-service.ts
+          npm run lint
+          npm run typecheck
+      - name: Commit source corrections
+        shell: bash
+        run: |
+          if git diff --quiet -- src/domain/message.ts src/domain/queue.ts src/application/conversation-service.ts; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- src/domain/message.ts src/domain/queue.ts src/application/conversation-service.ts
+          git commit -m "Fix Release 0.4 input validation lint"
+          git push origin HEAD:${GITHUB_REF_NAME}
