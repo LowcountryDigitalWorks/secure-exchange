@@ -104,7 +104,9 @@ Do not introduce a major framework, database, authentication product, analytics 
 
 `.npmrc` enables npm's strict install-script policy. A dependency with an unreviewed install-time lifecycle script causes installation to fail rather than being silently trusted.
 
-`package.json` explicitly approves only `esbuild@0.28.1`, whose pinned package uses a postinstall step as part of its platform-specific executable setup. New or changed install scripts require explicit review and a narrowly pinned `allowScripts` entry; do not use an allow-all bypass.
+`package.json` explicitly approves the pinned install-script packages required by this baseline: `esbuild@0.28.1` for its platform-specific executable setup and the already-locked optional macOS file-watcher packages `fsevents@2.3.2` and `fsevents@2.3.3`. The `fsevents` approvals are exact-version portability allowances for transitive development tooling; they do not add a new direct dependency.
+
+New or changed install scripts require explicit review and a narrowly pinned `allowScripts` entry. Do not use an allow-all bypass.
 
 ## Repository hygiene and secrets
 
