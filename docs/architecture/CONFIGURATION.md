@@ -37,10 +37,14 @@ Examples:
 
 - permitted lifecycle behavior within the supported state machine;
 - attention/aging thresholds;
-- completion defaults;
+- completion defaults and explicit completion preconditions;
+- whether a qualifying authenticated staff `TransferAttestation` is required before completion;
+- approved non-sensitive transfer/filing destination categories and outcome codes;
 - optional canned response identifiers.
 
-Configuration cannot enable otherwise-invalid state transitions.
+Configuration cannot enable otherwise-invalid state transitions. When a completion policy requires transfer/filing attestation, an indexed or cached workflow-evidence summary cannot substitute for authoritative attestation validation.
+
+Opened/read, download, transfer/filing attestation, and completion remain distinct workflow facts regardless of configuration.
 
 ### Upload policy
 
@@ -69,7 +73,7 @@ Templates are limited to non-sensitive notification content. Sensitive message/d
 
 ### Feature controls
 
-Only documented, security-reviewed feature switches are allowed. Feature flags must not silently weaken authorization, malware gates, or retention.
+Only documented, security-reviewed feature switches are allowed. Feature flags must not silently weaken authorization, malware gates, completion preconditions, or retention.
 
 ## Secrets are not product configuration
 
@@ -79,7 +83,7 @@ Production secret/key handling is an infrastructure responsibility and requires 
 
 ## Configuration validation
 
-Configuration must be schema-validated at startup/deployment and versioned where behavior affects authorization, lifecycle, retention, or audit interpretation.
+Configuration must be schema-validated at startup/deployment and versioned where behavior affects authorization, lifecycle, completion, retention, or audit interpretation.
 
 Invalid or ambiguous security-sensitive configuration must fail closed rather than silently defaulting to permissive behavior.
 
