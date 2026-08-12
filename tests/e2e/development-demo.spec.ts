@@ -23,9 +23,13 @@ test("synthetic development demo completes the browser vertical slice", async ({
   ).toBeVisible();
   await page.getByRole("button", { name: "Open conversation" }).first().click();
 
-  await expect(page.getByRole("heading", { name: "Conversation" })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Conversation" }),
+  ).toBeVisible();
   await expect(page.getByText("External → Staff").first()).toBeVisible();
-  await page.getByLabel("Synthetic reply").fill("Synthetic staff browser reply.");
+  await page
+    .getByLabel("Synthetic reply")
+    .fill("Synthetic staff browser reply.");
   await page
     .getByRole("button", { name: "Send synthetic staff reply" })
     .click();

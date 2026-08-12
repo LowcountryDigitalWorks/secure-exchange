@@ -13,8 +13,7 @@ if (!Number.isInteger(parsedPort) || parsedPort < 1 || parsedPort > 65_535) {
   throw new Error("PORT must be an integer between 1 and 65535.");
 }
 
-const demoEnabled =
-  process.env["SECURE_EXCHANGE_SYNTHETIC_DEMO"] === "enabled";
+const demoEnabled = process.env["SECURE_EXCHANGE_SYNTHETIC_DEMO"] === "enabled";
 const app = createApp({
   ...(demoEnabled ? { demo: createLocalDevelopmentDemoRuntime() } : {}),
 });

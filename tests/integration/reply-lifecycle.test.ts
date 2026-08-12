@@ -25,7 +25,9 @@ describe("conversation reply lifecycle", () => {
   it.each(permittedStates)(
     "appends a staff reply without changing permitted lifecycle state %s",
     async (state) => {
-      const { conversationService, store } = makeFixture({ threadState: state });
+      const { conversationService, store } = makeFixture({
+        threadState: state,
+      });
 
       const result = await conversationService.replyToConversation({
         actor: actorContext(),
@@ -50,7 +52,9 @@ describe("conversation reply lifecycle", () => {
   it.each(prohibitedStates)(
     "fails closed with no partial mutation for prohibited lifecycle state %s",
     async (state) => {
-      const { conversationService, store } = makeFixture({ threadState: state });
+      const { conversationService, store } = makeFixture({
+        threadState: state,
+      });
       const before = await store.getThread(DEPLOYMENT_A, THREAD_A);
 
       await expect(

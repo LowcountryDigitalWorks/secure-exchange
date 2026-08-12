@@ -36,7 +36,9 @@ function isSameOriginPost(request: Request): boolean {
   }
 }
 
-function parseExpectedVersion(value: FormDataEntryValue | null): number | undefined {
+function parseExpectedVersion(
+  value: FormDataEntryValue | null,
+): number | undefined {
   if (typeof value !== "string" || !/^[1-9][0-9]*$/u.test(value)) {
     return undefined;
   }
@@ -45,7 +47,9 @@ function parseExpectedVersion(value: FormDataEntryValue | null): number | undefi
   return Number.isSafeInteger(parsed) ? parsed : undefined;
 }
 
-function externalRoutingError(error: unknown): "bad-request" | "not-found" | "conflict" | "internal" {
+function externalRoutingError(
+  error: unknown,
+): "bad-request" | "not-found" | "conflict" | "internal" {
   if (error instanceof DomainError) {
     if (error.code === "STALE_VERSION" || error.code === "REPLY_NOT_ALLOWED") {
       return "conflict";
@@ -194,8 +198,9 @@ export function createApp(options: CreateAppOptions = {}): Hono {
           queueId: demo.queueId,
           routingCategory,
           threadId: demo.idGenerator.generate("thread"),
-          externalParticipantRef:
-            demo.idGenerator.generate("external-participant"),
+          externalParticipantRef: demo.idGenerator.generate(
+            "external-participant",
+          ),
           messageId: demo.idGenerator.generate("message"),
           initialMessage,
           threadCreatedAuditEventId: demo.idGenerator.generate("audit"),
@@ -221,11 +226,7 @@ export function createApp(options: CreateAppOptions = {}): Hono {
           queueId: demo.queueId,
         });
         return context.html(
-          renderStaffQueue(
-            candidates,
-            demo.queueLabel,
-            demo.staffContextLabel,
-          ),
+          renderStaffQueue(candidates, demo.queueLabel, demo.staffContextLabel),
         );
       } catch (error: unknown) {
         return renderMappedError(context, error, "/demo");
@@ -299,7 +300,9 @@ export function createApp(options: CreateAppOptions = {}): Hono {
       const backHref = `/demo/staff/threads/${encodeURIComponent(threadId)}`;
       try {
         const form = await context.req.raw.formData();
-        const expectedVersion = parseExpectedVersion(form.get("expectedVersion"));
+        const expectedVersion = parseExpectedVersion(
+          form.get("expectedVersion"),
+        );
         const messageBody = form.get("messageBody");
         if (expectedVersion === undefined || typeof messageBody !== "string") {
           return context.html(
@@ -344,7 +347,9 @@ export function createApp(options: CreateAppOptions = {}): Hono {
       const backHref = `/demo/staff/threads/${encodeURIComponent(threadId)}`;
       try {
         const form = await context.req.raw.formData();
-        const expectedVersion = parseExpectedVersion(form.get("expectedVersion"));
+        const expectedVersion = parseExpectedVersion(
+          form.get("expectedVersion"),
+        );
         if (expectedVersion === undefined) {
           return context.html(
             renderDemoError(

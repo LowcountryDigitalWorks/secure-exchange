@@ -154,9 +154,9 @@ describe("synthetic development HTTP vertical slice", () => {
       thread?.threadId ?? "",
     );
     expect(events).toHaveLength(2);
-    expect(events.every((event) => event.actorRef === "external-participant-2")).toBe(
-      true,
-    );
+    expect(
+      events.every((event) => event.actorRef === "external-participant-2"),
+    ).toBe(true);
     expect(JSON.stringify(events)).not.toContain("Synthetic browser message.");
   });
 
@@ -243,9 +243,9 @@ describe("synthetic development HTTP vertical slice", () => {
       "MESSAGE_APPENDED",
       "THREAD_OPENED",
     ]);
-    expect(afterOpen.some((event) => event.eventType === "ATTACHMENT_DOWNLOADED")).toBe(
-      false,
-    );
+    expect(
+      afterOpen.some((event) => event.eventType === "ATTACHMENT_DOWNLOADED"),
+    ).toBe(false);
     expect(
       await fixture.runtime.store.listTransferAttestations(
         fixture.runtime.deploymentId,
@@ -311,7 +311,9 @@ describe("synthetic development HTTP vertical slice", () => {
       "MESSAGE_APPENDED",
       "MESSAGE_APPENDED",
     ]);
-    expect(JSON.stringify(events)).not.toContain("Synthetic staff browser reply.");
+    expect(JSON.stringify(events)).not.toContain(
+      "Synthetic staff browser reply.",
+    );
   });
 
   it("rejects stale browser reply without partial message, audit, or activity mutation", async () => {
@@ -340,7 +342,10 @@ describe("synthetic development HTTP vertical slice", () => {
     );
     expect(response.status).toBe(409);
     expect(
-      await fixture.runtime.store.getThread(fixture.runtime.deploymentId, threadId),
+      await fixture.runtime.store.getThread(
+        fixture.runtime.deploymentId,
+        threadId,
+      ),
     ).toEqual(beforeThread);
     expect(
       await fixture.runtime.store.listMessages(
@@ -349,13 +354,17 @@ describe("synthetic development HTTP vertical slice", () => {
       ),
     ).toEqual(beforeMessages);
     expect(
-      fixture.runtime.store.listAuditEvents(fixture.runtime.deploymentId, threadId),
+      fixture.runtime.store.listAuditEvents(
+        fixture.runtime.deploymentId,
+        threadId,
+      ),
     ).toEqual(beforeEvents);
   });
 
   it("escapes HTML-like message content and sends conservative conversation headers", async () => {
     const fixture = createFixture();
-    const payload = '<script>alert("synthetic")</script><strong>unsafe</strong>';
+    const payload =
+      '<script>alert("synthetic")</script><strong>unsafe</strong>';
     const threadId = await submitSyntheticExchange(fixture, payload);
 
     const response = await fixture.app.request(
@@ -364,7 +373,9 @@ describe("synthetic development HTTP vertical slice", () => {
     const body = await response.text();
 
     expect(response.status).toBe(200);
-    expect(body).toContain("&lt;script&gt;alert(&quot;synthetic&quot;)&lt;/script&gt;");
+    expect(body).toContain(
+      "&lt;script&gt;alert(&quot;synthetic&quot;)&lt;/script&gt;",
+    );
     expect(body).not.toContain('<script>alert("synthetic")</script>');
     expect(body).not.toContain("<strong>unsafe</strong>");
     expect(response.headers.get("cache-control")).toBe("no-store");
@@ -385,7 +396,10 @@ describe("synthetic development HTTP vertical slice", () => {
 
     await postForm(fixture.app, `/demo/staff/threads/${threadId}/open`, {});
     expect(
-      await fixture.runtime.store.getThread(fixture.runtime.deploymentId, threadId),
+      await fixture.runtime.store.getThread(
+        fixture.runtime.deploymentId,
+        threadId,
+      ),
     ).toMatchObject({ state: "NEW", version: 1 });
 
     const response = await postForm(
@@ -395,7 +409,10 @@ describe("synthetic development HTTP vertical slice", () => {
     );
     expect(response.status).toBe(303);
     expect(
-      await fixture.runtime.store.getThread(fixture.runtime.deploymentId, threadId),
+      await fixture.runtime.store.getThread(
+        fixture.runtime.deploymentId,
+        threadId,
+      ),
     ).toMatchObject({ state: "IN_PROGRESS", version: 2 });
   });
 
@@ -407,7 +424,9 @@ describe("synthetic development HTTP vertical slice", () => {
     const body = await response.text();
 
     expect(response.status).toBe(404);
-    expect(body).toContain("requested synthetic development resource is not available");
+    expect(body).toContain(
+      "requested synthetic development resource is not available",
+    );
     expect(body).not.toContain("Actor is not authorized");
   });
 });

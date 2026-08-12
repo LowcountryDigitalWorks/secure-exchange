@@ -10,7 +10,9 @@ test("local development shell is available at representative viewport sizes", as
     page.getByRole("heading", { name: "Secure Exchange" }),
   ).toBeVisible();
   await expect(
-    page.getByText("Synthetic Development Demo is enabled for this local process."),
+    page.getByText(
+      "Synthetic Development Demo is enabled for this local process.",
+    ),
   ).toBeVisible();
 
   const health = await page.request.get("/health");

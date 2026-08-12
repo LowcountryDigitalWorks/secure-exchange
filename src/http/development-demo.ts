@@ -23,7 +23,10 @@ export interface DevelopmentDemoRuntime {
   readonly deploymentId: string;
   readonly queueId: string;
   readonly queueLabel: string;
-  readonly routingChoices: readonly { readonly value: string; readonly label: string }[];
+  readonly routingChoices: readonly {
+    readonly value: string;
+    readonly label: string;
+  }[];
   readonly staffActor: ActorContext;
   readonly staffContextLabel: string;
 }
