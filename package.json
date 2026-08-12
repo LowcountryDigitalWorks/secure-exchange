@@ -1,0 +1,53 @@
+{
+  "name": "@lowcountrydigitalworks/secure-exchange",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Engineering baseline for Lowcountry Digital Works Secure Exchange.",
+  "type": "module",
+  "engines": {
+    "node": ">=24.0.0 <25.0.0",
+    "npm": ">=11.0.0 <13.0.0"
+  },
+  "allowScripts": {
+    "esbuild@0.28.1": true,
+    "fsevents@2.3.2": true,
+    "fsevents@2.3.3": true
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "tsx watch src/server.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint . --max-warnings=0",
+    "security:audit": "npm audit --audit-level=high",
+    "security:secrets": "secretlint \"**/*\" \".github/**/*\" \".npmrc\"",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "test:a11y": "playwright test --grep @a11y",
+    "test:e2e": "playwright test",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "validate": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build && npm run test:e2e && npm run security:audit && npm run security:secrets"
+  },
+  "dependencies": {
+    "@hono/node-server": "2.0.12",
+    "hono": "4.13.1"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.12.1",
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.62.0",
+    "@secretlint/secretlint-rule-preset-recommend": "13.0.4",
+    "@types/node": "24.13.3",
+    "esbuild": "0.28.1",
+    "eslint": "10.8.0",
+    "globals": "17.7.0",
+    "playwright-core": "1.62.0",
+    "prettier": "3.9.6",
+    "secretlint": "13.0.4",
+    "tsx": "4.23.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.65.0",
+    "vitest": "4.1.10"
+  }
+}

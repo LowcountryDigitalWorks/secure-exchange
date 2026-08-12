@@ -59,7 +59,7 @@ Opened, Downloaded, Transferred/Filed, and Completed are separate workflow facts
 
 ## Deferred capabilities
 
-These are not Release 0.1 implementation commitments:
+These are not current MVP commitments:
 
 - Gmail, Outlook, or Zoho add-ins and shortcuts;
 - automatic ingestion from external mailboxes;
@@ -82,7 +82,7 @@ These are not Release 0.1 implementation commitments:
 
 ## Explicitly outside current scope
 
-- production AWS provisioning in Release 0.1;
+- production AWS provisioning in Release 0.2;
 - real customer/PHI processing during development;
 - representing a development build as compliance-ready;
 - production email/domain routing changes;
@@ -93,11 +93,11 @@ These are not Release 0.1 implementation commitments:
 
 ### Release 0.1 — Product & Architecture Foundation
 
-Documentation and engineering decisions only.
+Completed and merged. Establishes product, architecture, workflow-evidence, threat-model, authorization, retention, and provider-boundary decisions.
 
 ### Release 0.2 — Engineering Baseline
 
-Expected to establish executable project scaffolding, package/lockfiles, strict compilation, formatting/linting, unit-test baseline, browser-test baseline, accessibility checks, dependency/security checks, secret detection, and CI.
+Establishes executable project scaffolding, package/lockfiles, strict compilation, formatting/linting, unit/integration/architecture tests, browser and accessibility tests, dependency/security checks, secret detection, build validation, and CI. It deliberately implements no Secure Exchange business workflow.
 
 ### Prototype releases
 

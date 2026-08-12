@@ -1,81 +1,130 @@
 # Development Conventions
 
-## Approved implementation direction
+## Runtime and package manager
 
-When implementation begins:
+Release 0.2 requires:
 
-- language: strict TypeScript;
-- initial server runtime: Node.js 24;
-- HTTP layer: thin Hono-style Web-standards-oriented routing/middleware;
-- frontend: semantic HTML/CSS plus small TypeScript modules initially;
-- state store: DynamoDB reference adapter;
-- domain/business logic: independent of Hono, Lambda, browser presentation, and AWS SDKs.
+- Node.js 24.x;
+- npm 11.x or 12.x.
 
-A large frontend framework is not prohibited. It requires evidence that product complexity justifies the dependency and architectural surface.
+The required Node major is recorded in `.node-version` and `package.json`. `.npmrc` enables strict engine enforcement. Dependencies use exact versions and `package-lock.json` is committed.
 
-## Expected project layering
+## Install
 
-A future implementation should separate at least:
+```sh
+npm ci
+npx playwright install chromium
+```
 
-- domain;
-- application/use cases;
-- provider adapters;
-- HTTP delivery;
-- web presentation;
-- tests.
+On Linux environments that need Playwright system dependencies, use:
 
-Exact directories are deferred to the engineering-baseline release.
+```sh
+npx playwright install --with-deps chromium
+```
 
-## Package/tooling direction
+## Commands
 
-The implementation ADR recommends:
+| Command | Purpose |
+|---|---|
+| `npm run dev` | Run the minimal development shell with TypeScript watch execution |
+| `npm run build` | Build the Node.js server bundle into `dist/` |
+| `npm start` | Start the compiled engineering shell |
+| `npm run format` | Apply Prettier to in-scope engineering files |
+| `npm run format:check` | Fail on formatting drift |
+| `npm run lint` | Run type-aware ESLint rules |
+| `npm run typecheck` | Run strict TypeScript without emitting files |
+| `npm test` | Run Vitest unit, integration, and architecture tests |
+| `npm run test:e2e` | Run Playwright desktop/mobile Chromium browser tests including axe checks |
+| `npm run test:a11y` | Run the axe-tagged Playwright accessibility baseline |
+| `npm run security:audit` | Run `npm audit` and fail for high-or-critical findings |
+| `npm run security:secrets` | Run Secretlint with the recommended secret-detection preset |
+| `npm run validate` | Run the complete Release 0.2 baseline in CI order |
 
-- npm with committed lockfile;
-- TypeScript compiler in strict mode;
-- small build/bundling tooling;
-- Vitest for unit/integration testing;
-- Playwright for browser/responsive tests;
-- axe-core for automated accessibility checks.
+Do not weaken or skip a failed security/quality gate to obtain a green result.
 
-These packages are not added in Release 0.1.
+## Project structure
 
-## Repository hygiene
+```text
+src/
+  domain/        provider/framework-independent business domain (empty in 0.2)
+  application/   provider-independent use cases; only engineering status in 0.2
+  adapters/      infrastructure/provider implementations (empty in 0.2)
+  http/          Hono HTTP delivery boundary
+  web/           semantic web presentation
+  server.ts      Node.js delivery adapter/entry point
+scripts/         repository build tooling
+tests/
+  unit/          deterministic application/domain tests
+  integration/   delivery/application integration tests without external services
+  architecture/  dependency-boundary regression tests
+  e2e/           Playwright browser and accessibility tests
+```
 
-- LF line endings;
-- UTF-8;
-- final newline;
-- no generated build artifacts committed unless explicitly required;
+Release 0.2 architecture tests enforce that `src/domain` and `src/application` do not acquire Hono, AWS SDK, Node provider APIs, or browser-runtime dependencies. Later feature releases should add business behavior behind these boundaries rather than putting it in HTTP handlers or adapters.
+
+## Tooling choices
+
+The Release 0.1 implementation-stack ADR already authorized npm, strict TypeScript, a small build tool, Vitest, Playwright, and axe-core. Release 0.2 realizes that direction with:
+
+- Hono plus its Node adapter for the thin HTTP shell;
+- esbuild for production build validation;
+- ESLint with typescript-eslint typed rules;
+- Prettier for formatting;
+- Vitest for unit/integration/architecture tests;
+- Playwright with `@axe-core/playwright` for browser, responsive, and automated accessibility checks;
+- Secretlint for local/CI secret detection;
+- npm's built-in audit for dependency vulnerability gating.
+
+`playwright-core` is pinned directly to the same exact version used by `@playwright/test`. This prevents npm from satisfying `@axe-core/playwright`'s broad peer range with a second Playwright core version, which would create incompatible TypeScript `Page` identities. Update the Playwright Test/core pair together.
+
+These are engineering/tooling dependencies, not authorization to implement AWS providers or product workflows.
+
+## CI
+
+`.github/workflows/ci.yml` runs on pull requests to `main` and pushes to release branches. The workflow grants only `contents: read`, disables persisted checkout credentials, installs Node.js 24, uses `npm ci`, installs Chromium for Playwright, then runs `npm run validate`.
+
+The CI job must fail on formatting, lint, type, unit/integration/architecture test, browser/accessibility, build, high-or-critical npm audit, or Secretlint failures.
+
+## Dependency updates
+
+Dependency updates are reviewed changes, not automatic trust decisions.
+
+For any dependency update:
+
+1. verify purpose and maintenance status;
+2. review security/licensing/portability implications when material;
+3. update `package.json` and `package-lock.json` together;
+4. review any newly introduced dependency install scripts before allowing them;
+5. run `npm run validate`;
+6. review the resulting PR and CI output.
+
+Do not introduce a major framework, database, authentication product, analytics system, or paid service through an incidental dependency update.
+
+## Dependency install-script policy
+
+`.npmrc` enables npm's strict install-script policy. A dependency with an unreviewed install-time lifecycle script causes installation to fail rather than being silently trusted.
+
+`package.json` explicitly approves the pinned install-script packages required by this baseline: `esbuild@0.28.1` for its platform-specific executable setup and the already-locked optional macOS file-watcher packages `fsevents@2.3.2` and `fsevents@2.3.3`. The `fsevents` approvals are exact-version portability allowances for transitive development tooling; they do not add a new direct dependency.
+
+New or changed install scripts require explicit review and a narrowly pinned `allowScripts` entry. Do not use an allow-all bypass.
+
+## Repository hygiene and secrets
+
+- LF line endings and UTF-8;
+- no generated `dist/`, coverage, Playwright reports, or test results committed;
 - no `.env` or secret-bearing files;
-- synthetic fixtures only.
+- no credentials, private keys, API tokens, customer data, or PHI;
+- synthetic fixtures only;
+- Secretlint is a supplemental control and does not make committing secrets acceptable.
 
-## Branch and PR workflow
+## Release 0.2 deliberate non-goals
 
-Meaningful changes use branch -> PR -> validation -> review -> squash merge.
+Release 0.2 does **not** implement external submission, secure retrieval, queues, messages, attachments, TransferAttestation, authentication, Cognito, SES, S3, DynamoDB, GuardDuty, KMS, API Gateway/Lambda deployment, AWS SDK adapters, production configuration, customer integrations, PHI handling, billing, or production infrastructure.
 
-Protected `main` is authoritative.
-
-Before changing code:
-
-- inspect current `main`;
-- inspect open/recent PRs;
-- inspect docs and ADRs;
-- inspect workflows/tests/dependencies;
-- identify the current source of truth.
-
-## Dependency changes
-
-Every new runtime dependency requires a clear purpose and should be evaluated for maintenance, security, size, licensing, portability, and whether the standard platform can do the job instead.
+The `/health` route and engineering shell exist only to prove the runtime, delivery boundary, build, browser testing, and accessibility toolchain.
 
 ## Infrastructure
 
-Infrastructure-as-code is expected before real AWS provisioning, but the tool and structure are not selected in Release 0.1.
+Infrastructure-as-code remains required before real AWS provisioning, but the IaC tool and production resource structure are not selected by Release 0.2.
 
 No production resource should be created manually as a substitute for a reviewed reproducible deployment process.
-
-## Synthetic data
-
-Development names, addresses, messages, documents, organizations, and identifiers must be fictional and must not reproduce real customer/PHI content.
-
-## Documentation persistence
-
-Important architecture/security decisions belong in the repository, especially ADRs, deployment notes, recovery/rollback instructions, ownership boundaries, and release history as those artifacts are introduced.

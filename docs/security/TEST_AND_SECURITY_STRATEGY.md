@@ -1,37 +1,38 @@
 # Test and Security Strategy
 
-Release 0.1 contains no executable product code. This document defines the validation baseline expected as implementation begins.
+Release 0.2 establishes the first executable validation baseline while preserving the Release 0.1 security model. It deliberately contains no Secure Exchange business workflow implementation.
 
-## Release 0.1 documentation validation
+## Release 0.2 executable baseline
 
-Before merge, validate:
+The complete engineering gate is:
 
-- authoritative documents do not conflict;
-- product scope and non-goals are consistent;
-- architecture and data-flow trust boundaries agree;
-- authorization rules agree with queue/search/index behavior;
-- lifecycle states agree with retention/disposition semantics;
-- opened/read, download, TransferAttestation, and completion evidence remain explicitly distinct and are not inferred from one another;
-- configured completion policy can require authoritative TransferAttestation evidence and fails closed when qualifying evidence is absent;
-- state-store access patterns cover queue, thread, message, attachment, lifecycle, audit, workflow evidence/TransferAttestation, retention, search/filter, transaction, and reporting needs;
-- provider dependencies have purpose, data exposure, security/privacy, cost characteristic, lock-in, and replacement path;
-- deferred capabilities are marked deferred;
-- no compliance claim is made;
-- no secrets, production credentials, customer data, or PHI are present;
-- Markdown links resolve.
+```sh
+npm run validate
+```
 
-## Engineering baseline expected next
+It fails on applicable:
 
-### Static quality
+- formatting drift;
+- ESLint/type-aware lint errors;
+- strict TypeScript errors;
+- Vitest unit/integration/architecture failures;
+- production build failures;
+- Playwright browser/responsive failures;
+- axe-core WCAG A/AA violations detected by the baseline pages;
+- high-or-critical `npm audit` findings;
+- Secretlint findings.
 
-- formatting;
-- linting;
-- strict TypeScript checking;
-- build validation.
+The GitHub Actions workflow runs the same command with least-privileged repository permissions.
 
-### Unit tests
+## Architecture-boundary regression baseline
 
-Prioritize deterministic domain behavior:
+Release 0.2 includes an automated architecture test that protects the Release 0.1 layering decision. The `domain` and `application` layers must not acquire Hono, AWS SDK, Node provider API, or browser-runtime dependencies.
+
+As features are introduced, these tests should become more specific rather than being removed to accommodate coupling.
+
+## Unit tests
+
+As business implementation begins, prioritize deterministic domain behavior:
 
 - state transitions;
 - authorization policy;
@@ -44,9 +45,11 @@ Prioritize deterministic domain behavior:
 - file policy rules;
 - audit-event derivation.
 
-### Integration tests
+Release 0.2's unit test covers only the non-sensitive engineering-status use case.
 
-Use synthetic adapters/fixtures to test:
+## Integration tests
+
+Future synthetic adapters/fixtures should test:
 
 - transaction boundaries;
 - repository contracts;
@@ -58,30 +61,17 @@ Use synthetic adapters/fixtures to test:
 - atomic/conditional completion with configured attestation requirements;
 - disposition orchestration.
 
-### Browser tests
+Release 0.2 integration tests cover only the in-process HTTP shell and security-header behavior; no external service is contacted.
 
-Use representative responsive widths and keyboard-only flows.
+## Browser and accessibility tests
 
-Cover:
+The Release 0.2 Playwright baseline runs Chromium at representative desktop and mobile viewport sizes. It verifies the engineering shell and `/health` route and runs `@axe-core/playwright` against WCAG A/AA tags.
 
-- public submission;
-- staff queue;
-- thread view;
-- visible opened/read, download, transfer/filing, and completion facts without conflating them;
-- transfer/filing attestation action where authorized;
-- reply;
-- attachment state;
-- lifecycle actions;
-- completion denied when a configured attestation prerequisite is unmet;
-- error/empty states.
+Feature releases must add browser coverage for the user-visible workflows they introduce. Accessibility failures are defects, not optional warnings.
 
-### Accessibility
+## Security/negative tests required as features arrive
 
-Automate axe-core checks and include manual keyboard/focus/semantic review for critical flows.
-
-### Security/negative tests
-
-Required categories:
+Required categories remain:
 
 - unauthenticated access;
 - wrong-role access;
@@ -106,23 +96,25 @@ Required categories:
 - enumeration/error-message leakage;
 - notification content leakage.
 
-### Tenant/deployment isolation
+## Tenant/deployment isolation
 
-Even though the reference production model is isolated per customer, synthetic tests use at least two deployment contexts and verify that identifiers and TransferAttestation evidence cannot cross boundaries.
+When tenancy-aware business logic begins, synthetic tests use at least two deployment contexts and verify identifiers and TransferAttestation evidence cannot cross boundaries. Release 0.2 does not implement tenancy records or persistence.
 
-### Secret and dependency checks
+## Secret and dependency checks
 
-Expected CI:
+Release 0.2 uses:
 
-- secret detection;
-- dependency vulnerability review;
-- lockfile integrity;
-- minimal permissions.
+- Secretlint with its recommended preset for repository secret detection;
+- `npm audit --audit-level=high` for dependency vulnerability gating;
+- committed `package-lock.json` with `npm ci` in CI;
+- GitHub Actions `contents: read` permissions for normal validation.
+
+These automated controls supplement, rather than replace, the rule that secrets and regulated/customer data must never be committed.
 
 ## No test weakening
 
-A failing security or authorization test is fixed in implementation or design. Tests are not removed or weakened merely to obtain a green build.
+A failing security, architecture, authorization, accessibility, or quality test is fixed in implementation or design. Tests are not removed or weakened merely to obtain a green build.
 
 ## Production validation
 
-Regulated production requires additional deployment-specific evidence for IAM, network/exposure, identity/MFA, encryption, logging, backups, retention, malware scanning, incident response, and contractual coverage.
+Regulated production requires additional deployment-specific evidence for IAM, network/exposure, identity/MFA, encryption, logging, backups, retention, malware scanning, incident response, and contractual coverage. Release 0.2 provides none of that production evidence and makes no compliance-ready claim.
