@@ -10,6 +10,10 @@ import type {
   TransferAttestationControlId,
   TransferAttestationId,
 } from "./types.js";
+import type {
+  AttachmentSafetyState,
+  AttachmentScanOutcome,
+} from "./attachment.js";
 import type { ThreadLifecycleState } from "./thread.js";
 
 export type TransferAttestationOutcome = "TRANSFERRED" | "FILED" | "FAILED";
@@ -46,6 +50,11 @@ export type AuditEventType =
   | "THREAD_CREATED"
   | "MESSAGE_APPENDED"
   | "THREAD_OPENED"
+  | "ATTACHMENT_REGISTERED"
+  | "ATTACHMENT_QUARANTINED"
+  | "ATTACHMENT_SCAN_ACCEPTED"
+  | "ATTACHMENT_SCAN_INDETERMINATE"
+  | "ATTACHMENT_REJECTED"
   | "ATTACHMENT_DOWNLOADED"
   | "THREAD_LIFECYCLE_TRANSITIONED"
   | "TRANSFER_ATTESTED"
@@ -63,6 +72,8 @@ export interface AuditEvent {
   readonly at: string;
   readonly messageId?: MessageId;
   readonly attachmentId?: AttachmentId;
+  readonly attachmentState?: AttachmentSafetyState;
+  readonly scanOutcome?: AttachmentScanOutcome;
   readonly attestationId?: TransferAttestationId;
   readonly relatedAttestationId?: TransferAttestationId;
   readonly fromState?: ThreadLifecycleState;

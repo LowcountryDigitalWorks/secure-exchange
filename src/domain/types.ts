@@ -8,6 +8,8 @@ export type AuditEventId = string;
 export type TransferAttestationId = string;
 export type TransferAttestationControlId = string;
 export type AttachmentId = string;
+export type ProtectedContentRef = string;
+export type AttachmentPolicyRef = string;
 export type CompletionPolicyRef = string;
 
 export type ActorKind = "STAFF" | "ADMIN" | "SYSTEM";
@@ -17,7 +19,7 @@ export type WorkflowPermission =
   | "QUEUE_LIST"
   | "THREAD_OPEN"
   | "THREAD_REPLY"
-  | "DOWNLOAD_EVIDENCE_RECORD"
+  | "ATTACHMENT_READ"
   | "THREAD_TRANSITION"
   | "THREAD_DISPOSE"
   | "TRANSFER_ATTEST"
