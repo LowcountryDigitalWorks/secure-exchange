@@ -11,11 +11,7 @@ describe("thread activity metadata", () => {
       attentionAt: "2026-08-12T12:30:00.000Z",
     });
 
-    const next = recordThreadActivity(
-      thread,
-      5,
-      "2026-08-12T14:00:00.000Z",
-    );
+    const next = recordThreadActivity(thread, 5, "2026-08-12T14:00:00.000Z");
 
     expect(next).toMatchObject({
       state: "AWAITING_EXTERNAL",

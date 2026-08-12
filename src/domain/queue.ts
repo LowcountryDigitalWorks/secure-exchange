@@ -47,7 +47,9 @@ export function validateQueue(queue: Queue): Queue {
     );
   }
 
-  const categories = queue.allowedRoutingCategories.map(validateRoutingCategory);
+  const categories = queue.allowedRoutingCategories.map(
+    validateRoutingCategory,
+  );
   if (new Set(categories).size !== categories.length) {
     throw new DomainError(
       "INVALID_QUEUE_CONFIGURATION",

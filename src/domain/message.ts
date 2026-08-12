@@ -29,9 +29,7 @@ export interface Message {
   readonly body: PlainTextMessageBody;
 }
 
-export function createPlainTextMessageBody(
-  text: string,
-): PlainTextMessageBody {
+export function createPlainTextMessageBody(text: string): PlainTextMessageBody {
   const normalized = text.replace(/\r\n?/gu, "\n");
 
   if (

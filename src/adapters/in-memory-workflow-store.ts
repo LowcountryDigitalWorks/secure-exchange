@@ -82,9 +82,7 @@ export class InMemoryWorkflowStore implements WorkflowStore {
     deploymentId: DeploymentId,
     queueId: QueueId,
   ): Promise<Queue | undefined> {
-    return Promise.resolve(
-      this.queues.get(resourceKey(deploymentId, queueId)),
-    );
+    return Promise.resolve(this.queues.get(resourceKey(deploymentId, queueId)));
   }
 
   getThread(
@@ -196,7 +194,9 @@ export class InMemoryWorkflowStore implements WorkflowStore {
     this.validateMutationScope(mutation);
 
     if (mutation.newThread !== undefined && mutation.nextThread !== undefined) {
-      throw new Error("A transaction cannot create and update the same thread.");
+      throw new Error(
+        "A transaction cannot create and update the same thread.",
+      );
     }
 
     if (mutation.newThread !== undefined) {

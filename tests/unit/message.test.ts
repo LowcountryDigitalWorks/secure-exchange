@@ -7,12 +7,12 @@ import {
 
 describe("message body", () => {
   it("accepts bounded plain text and normalizes line endings", () => {
-    expect(createPlainTextMessageBody("Synthetic line one.\r\nLine two.")).toEqual(
-      {
-        kind: "PLAIN_TEXT",
-        text: "Synthetic line one.\nLine two.",
-      },
-    );
+    expect(
+      createPlainTextMessageBody("Synthetic line one.\r\nLine two."),
+    ).toEqual({
+      kind: "PLAIN_TEXT",
+      text: "Synthetic line one.\nLine two.",
+    });
   });
 
   it("rejects empty or whitespace-only message bodies", () => {
@@ -28,8 +28,8 @@ describe("message body", () => {
   });
 
   it("rejects disallowed control characters", () => {
-    expect(() => createPlainTextMessageBody("Synthetic\u0000body")).toThrowError(
-      expect.objectContaining({ code: "INVALID_MESSAGE_BODY" }),
-    );
+    expect(() =>
+      createPlainTextMessageBody("Synthetic\u0000body"),
+    ).toThrowError(expect.objectContaining({ code: "INVALID_MESSAGE_BODY" }));
   });
 });
