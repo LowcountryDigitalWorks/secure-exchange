@@ -10,7 +10,7 @@ describe("HTTP engineering shell", () => {
     await expect(response.json()).resolves.toEqual({
       service: "secure-exchange",
       status: "ok",
-      baseline: "0.2",
+      baseline: "0.3",
     });
   });
 
@@ -24,7 +24,9 @@ describe("HTTP engineering shell", () => {
     );
     expect(response.headers.get("x-content-type-options")).toBe("nosniff");
     expect(body).toContain('<h1 id="page-title">Secure Exchange</h1>');
-    expect(body).toContain("Secure messaging workflows are not implemented.");
+    expect(body).toContain(
+      "Workflow core prototype only. External exchange UI and production services are not implemented.",
+    );
   });
 
   it("returns a generic 404 response", async () => {
