@@ -199,46 +199,81 @@ async function moveThread(
   });
 }
 
-function staleCommitProxy(inner: InMemoryWorkflowStore): {
+function staleCommitStore(inner: InMemoryWorkflowStore): {
   readonly store: WorkflowStore;
   arm(): void;
 } {
   let armed = false;
-  const proxy = new Proxy(inner as WorkflowStore, {
-    get(target, property, receiver) {
-      if (property === "commit") {
-        return async (mutation: WorkflowMutation): Promise<void> => {
-          if (armed && (mutation.messages?.length ?? 0) > 0) {
-            armed = false;
-            const current = await inner.getThread(
-              mutation.deploymentId,
-              mutation.threadId,
-            );
-            if (current === undefined) {
-              throw new Error("Synthetic authoritative thread is missing.");
-            }
-            await inner.commit({
-              deploymentId: mutation.deploymentId,
-              threadId: mutation.threadId,
-              expectedThreadVersion: current.version,
-              nextThread: recordThreadActivity(
-                current,
-                current.version,
-                "2026-08-13T04:00:30.000Z",
-              ),
-            });
-          }
-          await inner.commit(mutation);
-        };
-      }
-
-      const value = Reflect.get(target, property, receiver);
-      return typeof value === "function" ? value.bind(target) : value;
+  const store: WorkflowStore = {
+    getQueue(deploymentId, queueId) {
+      return inner.getQueue(deploymentId, queueId);
     },
-  });
+    getThread(deploymentId, threadId) {
+      return inner.getThread(deploymentId, threadId);
+    },
+    listThreadsForQueue(deploymentId, queueId) {
+      return inner.listThreadsForQueue(deploymentId, queueId);
+    },
+    listMessages(deploymentId, threadId) {
+      return inner.listMessages(deploymentId, threadId);
+    },
+    getMessage(deploymentId, threadId, messageId) {
+      return inner.getMessage(deploymentId, threadId, messageId);
+    },
+    getAttachment(deploymentId, attachmentId) {
+      return inner.getAttachment(deploymentId, attachmentId);
+    },
+    listAttachmentsForMessage(deploymentId, threadId, messageId) {
+      return inner.listAttachmentsForMessage(deploymentId, threadId, messageId);
+    },
+    getCurrentAttachmentFilePolicy(deploymentId) {
+      return inner.getCurrentAttachmentFilePolicy(deploymentId);
+    },
+    getAccessGrant(deploymentId, accessGrantId) {
+      return inner.getAccessGrant(deploymentId, accessGrantId);
+    },
+    getCurrentAccessGrantPolicy(deploymentId) {
+      return inner.getCurrentAccessGrantPolicy(deploymentId);
+    },
+    getCurrentCompletionPolicy(deploymentId) {
+      return inner.getCurrentCompletionPolicy(deploymentId);
+    },
+    getActorAuthorization(deploymentId, actorRef) {
+      return inner.getActorAuthorization(deploymentId, actorRef);
+    },
+    listTransferAttestations(deploymentId, threadId) {
+      return inner.listTransferAttestations(deploymentId, threadId);
+    },
+    listTransferAttestationControls(deploymentId, threadId) {
+      return inner.listTransferAttestationControls(deploymentId, threadId);
+    },
+    async commit(mutation: WorkflowMutation): Promise<void> {
+      if (armed && (mutation.messages?.length ?? 0) > 0) {
+        armed = false;
+        const current = await inner.getThread(
+          mutation.deploymentId,
+          mutation.threadId,
+        );
+        if (current === undefined) {
+          throw new Error("Synthetic authoritative thread is missing.");
+        }
+        await inner.commit({
+          deploymentId: mutation.deploymentId,
+          threadId: mutation.threadId,
+          expectedThreadVersion: current.version,
+          nextThread: recordThreadActivity(
+            current,
+            current.version,
+            "2026-08-13T04:00:30.000Z",
+          ),
+        });
+      }
+      await inner.commit(mutation);
+    },
+  };
 
   return {
-    store: proxy,
+    store,
     arm() {
       armed = true;
     },
@@ -581,7 +616,7 @@ describe("AccessGrant external reply core", () => {
 
   it("fails a stale concurrent reply without partially appending message or audit", async () => {
     const inner = fixture();
-    const guarded = staleCommitProxy(inner.store);
+    const guarded = staleCommitStore(inner.store);
     const service = createService(guarded.store, inner.clock);
     const grant = await issue(service);
     const beforeMessages = await inner.store.listMessages(
