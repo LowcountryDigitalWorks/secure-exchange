@@ -10,7 +10,6 @@ import type {
 import { WorkflowService } from "../../src/application/workflow-service.js";
 import { InMemoryWorkflowStore } from "../../src/adapters/in-memory-workflow-store.js";
 import { WebCryptoAccessGrantSecretManager } from "../../src/adapters/web-crypto-access-grant-secret.js";
-import type { AccessGrantOperation } from "../../src/domain/access-grant.js";
 import {
   DEPLOYMENT_A,
   DEPLOYMENT_B,
@@ -229,7 +228,7 @@ describe("AccessGrant service", () => {
         threadId: THREAD_A,
         grantId: issued.grantId,
         secret: issued.secret,
-        operation: "ATTACHMENT_READ" as unknown as AccessGrantOperation,
+        operation: "ATTACHMENT_READ",
       }),
       "EXTERNAL_ACCESS_DENIED",
     );
