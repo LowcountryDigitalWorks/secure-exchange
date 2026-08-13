@@ -109,7 +109,9 @@ export class AccessGrantService {
     private readonly clock: Clock,
   ) {}
 
-  async issueAccessGrant(input: IssueAccessGrantInput): Promise<IssuedAccessGrant> {
+  async issueAccessGrant(
+    input: IssueAccessGrantInput,
+  ): Promise<IssuedAccessGrant> {
     const { thread, authorization } = await this.loadAuthorizedThread(
       input,
       "ACCESS_GRANT_ISSUE",
@@ -353,7 +355,10 @@ export class AccessGrantService {
 
     let secretMatches = false;
     try {
-      secretMatches = await this.secrets.matches(input.secret, grant.verifierDigest);
+      secretMatches = await this.secrets.matches(
+        input.secret,
+        grant.verifierDigest,
+      );
     } catch {
       secretMatches = false;
     }

@@ -10,7 +10,10 @@ import type { ProtectedContentStore } from "../../src/application/protected-cont
 import { InMemoryProtectedContentStore } from "../../src/adapters/in-memory-protected-content-store.js";
 import { InMemoryWorkflowStore } from "../../src/adapters/in-memory-workflow-store.js";
 import { DomainError } from "../../src/domain/errors.js";
-import type { Attachment, AttachmentFilePolicy } from "../../src/domain/index.js";
+import type {
+  Attachment,
+  AttachmentFilePolicy,
+} from "../../src/domain/index.js";
 import {
   DEPLOYMENT_A,
   THREAD_A,
@@ -62,7 +65,9 @@ class TwoWriterBarrierContentStore implements ProtectedContentStore {
   }
 }
 
-function policy(overrides: Partial<AttachmentFilePolicy> = {}): AttachmentFilePolicy {
+function policy(
+  overrides: Partial<AttachmentFilePolicy> = {},
+): AttachmentFilePolicy {
   return {
     policyRef: "attachment-policy-v1",
     deploymentId: DEPLOYMENT_A,
@@ -140,7 +145,9 @@ describe("authoritative attachment count enforcement", () => {
     expect(rejected).toHaveLength(1);
     const reason = (rejected[0] as PromiseRejectedResult).reason;
     expect(reason).toBeInstanceOf(ApplicationError);
-    expect((reason as ApplicationError).code).toBe("ATTACHMENT_POLICY_REJECTED");
+    expect((reason as ApplicationError).code).toBe(
+      "ATTACHMENT_POLICY_REJECTED",
+    );
     expect(
       await store.listAttachmentsForMessage(DEPLOYMENT_A, THREAD_A, MESSAGE_A),
     ).toHaveLength(1);

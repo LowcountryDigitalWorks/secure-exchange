@@ -49,20 +49,21 @@ class MutableClock implements Clock {
   }
 }
 
-function fixture(options: {
-  readonly clock?: MutableClock;
-  readonly actorPermissions?: readonly ReturnType<
-    typeof makeActorAuthorization
-  >["permissions"];
-  readonly threadState?: ReturnType<typeof makeThread>["state"];
-} = {}): {
+function fixture(
+  options: {
+    readonly clock?: MutableClock;
+    readonly actorPermissions?: readonly ReturnType<
+      typeof makeActorAuthorization
+    >["permissions"];
+    readonly threadState?: ReturnType<typeof makeThread>["state"];
+  } = {},
+): {
   readonly store: InMemoryWorkflowStore;
   readonly service: AccessGrantService;
   readonly workflow: WorkflowService;
   readonly clock: MutableClock;
 } {
-  const clock =
-    options.clock ?? new MutableClock("2026-08-13T01:00:00.000Z");
+  const clock = options.clock ?? new MutableClock("2026-08-13T01:00:00.000Z");
   const thread = makeThread({ state: options.threadState ?? "IN_PROGRESS" });
   const messages = [
     makeMessage(),
@@ -162,10 +163,7 @@ describe("AccessGrant service", () => {
     );
 
     const denied = fixture({ actorPermissions: ["THREAD_OPEN"] });
-    await expectApplicationCode(
-      issue(denied.service),
-      "AUTHORIZATION_DENIED",
-    );
+    await expectApplicationCode(issue(denied.service), "AUTHORIZATION_DENIED");
   });
 
   it("fails issuance closed for expired or disposed threads", async () => {
@@ -288,7 +286,9 @@ describe("AccessGrant service", () => {
 
     expect(first).toEqual(replay);
     expect(
-      auditAfterFirst.filter((event) => event.eventType === "ACCESS_GRANT_REVOKED"),
+      auditAfterFirst.filter(
+        (event) => event.eventType === "ACCESS_GRANT_REVOKED",
+      ),
     ).toHaveLength(1);
     expect(
       store
@@ -335,7 +335,9 @@ describe("AccessGrant service", () => {
       await store.listTransferAttestations(DEPLOYMENT_A, THREAD_A),
     ).toEqual([]);
     expect(
-      store.listAuditEvents(DEPLOYMENT_A, THREAD_A).map((event) => event.eventType),
+      store
+        .listAuditEvents(DEPLOYMENT_A, THREAD_A)
+        .map((event) => event.eventType),
     ).toEqual(["ACCESS_GRANT_ISSUED", "EXTERNAL_THREAD_RETRIEVED"]);
   });
 

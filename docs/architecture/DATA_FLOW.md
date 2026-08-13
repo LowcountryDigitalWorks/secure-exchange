@@ -125,3 +125,19 @@ Release 0.6 adds three application-only synthetic flows.
 **Staff retrieval:** the application first validates actor deployment, authoritative thread, live staff authorization, queue scope, `ATTACHMENT_READ`, authoritative message, attachment deployment/thread/message association, exactly `CLEAN` safety state, and no deletion marker. Only after those checks does it resolve bytes through `ProtectedContentStore`. Missing/failed/inconsistent content fails with no download evidence. Once bytes resolve successfully, the application commits `ATTACHMENT_DOWNLOADED`; only after that audit commit succeeds does it return a provider-neutral retrieval result.
 
 Release 0.6 adds no browser upload/download route, permanent/public URL, AccessGrant, presigned URL, filesystem path, or AWS object-store contract.
+
+## Release 0.7 AccessGrant issuance and external-read flow
+
+Release 0.7 adds application-only external authority; it does not add a public retrieval route or email-link delivery.
+
+**Issuance:** an authorized STAFF or ADMIN actor with current queue scope and `ACCESS_GRANT_ISSUE` requests bounded `THREAD_READ` authority for an authoritative thread. The application loads current grant policy, verifies current thread eligibility, derives the single opaque external-participant reference from authoritative external messages, obtains server time, generates a 256-bit random bearer secret and one-way verifier, and atomically stores only the grant/verifier plus minimized `ACCESS_GRANT_ISSUED` evidence. The raw secret is returned only in the issuance result.
+
+**Validation and retrieval:** a caller must present deployment, thread, grant ID, raw secret, and the requested operation. The application loads the authoritative grant, verifies the secret against the stored verifier, checks revocation and server-time expiry, confirms the explicit operation, reloads the authoritative thread and current eligible lifecycle state, then returns only the external conversation projection. Grant ID, thread ID, queue candidates, or previously valid state never substitute for bearer-secret proof. Successful retrieval appends minimized `EXTERNAL_THREAD_RETRIEVED` evidence without the raw secret or verifier.
+
+**Revocation:** an authorized `ACCESS_GRANT_REVOKE` action updates the retained grant record with optimistic version protection and `revokedAt`; exact replay is idempotent and does not duplicate revocation evidence. Revocation immediately causes later validation to fail.
+
+The external projection contains only thread ID plus chronological message direction, creation time, and bounded message body. It excludes queue/routing data, lifecycle/admin metadata, message IDs, actor references, audit events, permissions, and grant verifier material.
+
+External attachment retrieval remains deferred so a later release can reuse the Release 0.6 authoritative clean-attachment/content/download-evidence path rather than create a parallel implementation. External reply is also deferred because no approved external-reply lifecycle eligibility rule exists yet.
+
+Release 0.7 also closes the Release 0.6 attachment-count race: attachment publication carries a message-scoped current-policy guard into the authoritative metadata transaction. The transaction rechecks the current policy and post-mutation count, and a losing concurrent staged object is compensated through the provider-neutral protected-content delete operation.

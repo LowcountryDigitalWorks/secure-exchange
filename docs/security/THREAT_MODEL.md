@@ -302,3 +302,13 @@ Content is staged under an opaque server-generated reference independent of the 
 Retrieval is metadata-authoritative and occurs before no object read: deployment, thread, staff authorization, queue scope, permission, message association, attachment association, safety state, and deletion state are all checked before protected bytes are requested. Object-store existence alone never grants access.
 
 Audit intentionally excludes file bytes, message bodies, unrestricted filenames, provider storage paths, credentials, grant secrets, and raw scanner payloads. Release 0.6 uses synthetic bytes in process memory only and adds no disk persistence, localStorage, public URLs, inline preview, parser, archive extraction, OCR, or AI processing.
+
+## Release 0.7 bearer-grant threat controls
+
+Release 0.7 treats the future external bearer secret as a credential. It uses 256 bits of Web Crypto random material, returns the raw secret only at issuance, and persists only a versioned SHA-256 verifier. Password hashing is intentionally not used for this high-entropy random bearer value; guessing resistance comes from random entropy while the non-reversible verifier avoids storing the credential itself.
+
+Threats include guessed/leaked grant IDs, stolen bearer secrets, replay after revocation, stale authorization after thread-state change, clock manipulation, verifier disclosure, and cross-deployment scope confusion. Controls include secret proof in addition to grant ID, authoritative deployment/thread lookup, explicit operation checks, current thread-state revalidation, server-controlled injectable time, bounded expiry, optimistic retained-record revocation, conservative external errors, and audit minimization.
+
+Grant audit records contain the opaque grant ID and actor attribution where needed but never the raw secret or verifier. No bearer token is placed in a URL, repository fixture, documentation example, or browser route in Release 0.7 because public delivery is not yet implemented.
+
+The attachment-count race is also addressed as a storage-exhaustion/data-policy correctness control: concurrent ingestion can no longer rely solely on a stale application count. The authoritative metadata transaction checks current policy plus resulting per-message count before publication; losing staged content is removed through compensation.

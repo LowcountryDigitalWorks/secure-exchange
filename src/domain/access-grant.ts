@@ -31,7 +31,9 @@ export interface AccessGrant {
   readonly version: number;
 }
 
-const ACCESS_GRANT_OPERATIONS: readonly AccessGrantOperation[] = ["THREAD_READ"];
+const ACCESS_GRANT_OPERATIONS: readonly AccessGrantOperation[] = [
+  "THREAD_READ",
+];
 const MAX_REFERENCE_LENGTH = 128;
 const VERIFIER_PATTERN = /^sha256:v1:[A-Za-z0-9_-]{43}$/u;
 

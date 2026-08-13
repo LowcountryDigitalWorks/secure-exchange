@@ -80,24 +80,19 @@ describe("AccessGrant domain model", () => {
   });
 
   it("revokes with optimistic versioning and treats replay as idempotent", () => {
-    const revoked = revokeAccessGrant(
-      grant(),
-      1,
-      "2026-08-13T01:15:00.000Z",
-    );
+    const revoked = revokeAccessGrant(grant(), 1, "2026-08-13T01:15:00.000Z");
     expect(revoked).toMatchObject({
       revokedAt: "2026-08-13T01:15:00.000Z",
       version: 2,
     });
-    expect(
-      revokeAccessGrant(revoked, 1, "2026-08-13T01:20:00.000Z"),
-    ).toBe(revoked);
+    expect(revokeAccessGrant(revoked, 1, "2026-08-13T01:20:00.000Z")).toBe(
+      revoked,
+    );
   });
 
   it("rejects stale first-time revocation", () => {
     expectDomainCode(
-      () =>
-        revokeAccessGrant(grant(), 9, "2026-08-13T01:15:00.000Z"),
+      () => revokeAccessGrant(grant(), 9, "2026-08-13T01:15:00.000Z"),
       "STALE_VERSION",
     );
   });
@@ -113,11 +108,11 @@ describe("Web Crypto AccessGrant secret manager", () => {
     expect(first.verifierDigest).toMatch(/^sha256:v1:[A-Za-z0-9_-]{43}$/u);
     expect(first.secret).not.toBe(second.secret);
     expect(first.verifierDigest).not.toBe(first.secret);
-    await expect(manager.matches(first.secret, first.verifierDigest)).resolves.toBe(
-      true,
-    );
-    await expect(manager.matches(second.secret, first.verifierDigest)).resolves.toBe(
-      false,
-    );
+    await expect(
+      manager.matches(first.secret, first.verifierDigest),
+    ).resolves.toBe(true);
+    await expect(
+      manager.matches(second.secret, first.verifierDigest),
+    ).resolves.toBe(false);
   });
 });

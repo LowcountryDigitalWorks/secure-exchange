@@ -143,3 +143,11 @@ The in-memory WorkflowStore now supports authoritative attachment metadata looku
 Protected bytes are intentionally separate behind `ProtectedContentStore` (`put`, `get`, `delete`) using opaque `ProtectedContentRef` values. The Release 0.6 in-memory implementation stores cloned `Uint8Array` values for tests/development only. Its map keys are not S3 keys, filesystem paths, DynamoDB keys, or a future provider schema.
 
 Production adapters must preserve the ordering/compensation invariant demonstrated here: content staging can succeed before metadata publication, so metadata publication failure requires cleanup/orphan handling rather than assuming a distributed transaction. Retrieval must authorize against authoritative metadata before object access and must not emit successful download evidence until the object is actually resolved.
+
+## Release 0.7 AccessGrant and attachment-count access patterns
+
+Release 0.7 adds executable access patterns to issue one thread-scoped AccessGrant using current authoritative staff/admin authorization, current thread state, current AccessGrant policy, and expected thread version; resolve one grant by deployment plus opaque grant ID for bearer-verifier validation; revalidate deployment/thread scope, explicit operation, revocation, server-time expiry, and current thread eligibility before external content is loaded; retain/version a grant for explicit revocation; and append minimized grant evidence without persisting the raw secret or exposing the verifier.
+
+New attachment publication also requires an authoritative message-scoped guard carrying the current attachment-policy reference. The transaction validates the current policy and post-mutation per-message count before publication.
+
+A grant ID, queue/index projection, or cached state is never authorization truth. The in-memory maps are development adapters only and do not select DynamoDB keys or indexes. Future provider implementations must preserve verifier checks, current-state revalidation, optimistic mutation semantics, and the authoritative attachment-count guard.

@@ -4,9 +4,9 @@ Secure Exchange is a Lowcountry Digital Works product for secure, role-routed me
 
 ## Current status
 
-**Release 0.6 implements the Attachment Safety Core Prototype.** It adds provider-neutral attachment metadata and policy semantics, quarantine/scan-state handling, a protected-content port with an in-memory synthetic adapter, authoritative staff attachment retrieval, and download evidence that can only be created by a successful authoritative retrieval.
+**Release 0.7 implements the AccessGrant & External Retrieval Core Prototype.** It adds provider-neutral temporary external thread-read authority, one-time high-entropy bearer-secret issuance with verifier-only persistence, explicit expiry/revocation, a minimized external conversation projection, and authoritative concurrent attachment-count enforcement.
 
-Release 0.6 remains a synthetic/local application prototype. It does not expose arbitrary browser file upload/download, production authentication, a production public portal, real malware scanning, production object storage, AWS infrastructure, AccessGrant, customer data, or PHI.
+Release 0.7 remains application/domain + synthetic local infrastructure. It exposes no public external retrieval route, email-link delivery, production authentication, external attachment/reply endpoint, AWS infrastructure, customer data, or PHI.
 
 This repository is public. Development must use synthetic examples only. Do not commit or enter real customer, patient, client, confidential, regulated, or PHI data, credentials, secrets, private operational details, or production configuration.
 
@@ -49,6 +49,7 @@ npm test -- tests/integration/conversation-service.test.ts
 npm test -- tests/unit/reply-eligibility.test.ts tests/integration/reply-lifecycle.test.ts
 npm test -- tests/integration/development-demo-http.test.ts tests/integration/same-origin-http.test.ts
 npm test -- tests/unit/attachment.test.ts tests/integration/attachment-service.test.ts
+npm test -- tests/unit/access-grant.test.ts tests/integration/access-grant-service.test.ts tests/integration/attachment-count-concurrency.test.ts
 ```
 
 See [Development conventions](docs/development/DEVELOPMENT.md) for commands, project structure, CI behavior, dependency updates, security rules, and release boundaries.
@@ -89,6 +90,7 @@ The local in-memory store is a development/test adapter only. Its maps, arrays, 
 
 - [Product purpose and non-goals](docs/PRODUCT.md)
 - [MVP and roadmap](docs/MVP_AND_ROADMAP.md)
+- [Release 0.7 implementation boundary](docs/releases/0.7-access-grant-core.md)
 - [Release 0.6 implementation boundary](docs/releases/0.6-attachment-safety-core.md)
 - [Release 0.5 implementation boundary](docs/releases/0.5-local-development-vertical-slice.md)
 - [Release 0.4 implementation boundary](docs/releases/0.4-conversation-queue-core.md)

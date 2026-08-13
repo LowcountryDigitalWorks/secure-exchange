@@ -173,3 +173,13 @@ New unit coverage verifies bounded valid metadata, size/type/extension rejection
 New integration coverage verifies QUARANTINED publication, per-message count enforcement, protected-content write failure, metadata-commit compensation, successful clean scan/retrieval, malicious/indeterminate handling, scan replay and rollback, cross-deployment scan rejection, cross-deployment/wrong-thread/wrong-message retrieval denial, missing queue scope/permission denial, missing/failed content behavior, DELETED fail-closed behavior, exact successful-download audit creation, no TransferAttestation/completion/thread mutation from download, and absence of content/unrestricted filename values from audit.
 
 Every Release 0.2-0.5 regression remains part of `npm run validate`, including desktop/mobile Playwright and accessibility coverage for the existing synthetic browser demo. Release 0.6 deliberately adds no attachment browser route, so no new attachment-specific browser test is required.
+
+## Release 0.7 AccessGrant and concurrency coverage
+
+Release 0.7 adds deterministic tests for Web Crypto secret issuance and verifier matching; raw-secret non-persistence; verifier non-exposure; wrong secret, deployment, thread, and operation denial; bounded lifetime; server-time expiry at the exact boundary; issue permission and terminal-thread denial; retained-record revocation and idempotent replay; current thread-state revalidation; conservative external denial; explicit external conversation projection minimization; and preservation of lifecycle/TransferAttestation independence.
+
+The external projection regression verifies that queue ID, routing category, staff/external actor references, and audit metadata are absent. Grant issuance/revocation/retrieval audit serialization is checked to exclude raw secret and verifier material.
+
+Release 0.7 also adds a deterministic two-writer barrier test for `maxAttachmentsPerMessage`. Both ingestion attempts pass the earlier application pre-check and stage content, but only one can publish when the authoritative limit is one; the losing staged content is compensated. Additional tests reject a stale attachment-policy reference and reject direct attachment publication that omits the authoritative count guard.
+
+Every Release 0.2-0.6 regression remains in `npm run validate`. No new browser retrieval test exists because Release 0.7 intentionally adds no public external retrieval route.

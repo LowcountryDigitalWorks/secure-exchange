@@ -96,7 +96,10 @@ export class InMemoryWorkflowStore implements WorkflowStore {
     this.accessGrants = new Map(
       (seed.accessGrants ?? []).map((grant) => {
         const validated = validateAccessGrant(grant);
-        return [resourceKey(validated.deploymentId, validated.grantId), validated];
+        return [
+          resourceKey(validated.deploymentId, validated.grantId),
+          validated,
+        ];
       }),
     );
     this.accessGrantPolicies = new Map(
@@ -393,11 +396,7 @@ export class InMemoryWorkflowStore implements WorkflowStore {
       nextAttachments.set(key, validateAttachment(attachment));
     }
 
-    this.validateAttachmentCountGuards(
-      mutation,
-      nextAttachments,
-      nextMessages,
-    );
+    this.validateAttachmentCountGuards(mutation, nextAttachments, nextMessages);
 
     for (const update of mutation.attachmentUpdates ?? []) {
       const attachment = validateAttachment(update.attachment);
@@ -445,7 +444,9 @@ export class InMemoryWorkflowStore implements WorkflowStore {
         );
       }
       if (grant.version !== current.version + 1) {
-        throw new Error("Next AccessGrant version must increment exactly once.");
+        throw new Error(
+          "Next AccessGrant version must increment exactly once.",
+        );
       }
       if (
         grant.deploymentId !== current.deploymentId ||
@@ -624,7 +625,9 @@ export class InMemoryWorkflowStore implements WorkflowStore {
         item.deploymentId !== mutation.deploymentId ||
         item.threadId !== mutation.threadId
       ) {
-        throw new Error("AccessGrant mutation escaped its authoritative scope.");
+        throw new Error(
+          "AccessGrant mutation escaped its authoritative scope.",
+        );
       }
     }
 

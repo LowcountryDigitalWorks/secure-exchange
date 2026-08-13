@@ -45,9 +45,7 @@ async function digestSecret(secret: string): Promise<string> {
   return `${VERIFIER_PREFIX}${base64UrlEncode(new Uint8Array(digest))}`;
 }
 
-export class WebCryptoAccessGrantSecretManager
-  implements AccessGrantSecretManager
-{
+export class WebCryptoAccessGrantSecretManager implements AccessGrantSecretManager {
   async issue(): Promise<IssuedAccessGrantSecret> {
     const randomBytes = new Uint8Array(32);
     globalThis.crypto.getRandomValues(randomBytes);
@@ -59,7 +57,10 @@ export class WebCryptoAccessGrantSecretManager
   }
 
   async matches(secret: string, verifierDigest: string): Promise<boolean> {
-    if (!SECRET_PATTERN.test(secret) || !VERIFIER_PATTERN.test(verifierDigest)) {
+    if (
+      !SECRET_PATTERN.test(secret) ||
+      !VERIFIER_PATTERN.test(verifierDigest)
+    ) {
       return false;
     }
     const candidate = await digestSecret(secret);
