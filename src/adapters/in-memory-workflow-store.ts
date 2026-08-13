@@ -1,12 +1,18 @@
 import { DomainError } from "../domain/errors.js";
 import {
+  validateAttachment,
+  validateAttachmentFilePolicy,
   validateQueue,
   type ActorAuthorization,
+  type Attachment,
+  type AttachmentFilePolicy,
+  type AttachmentId,
   type ActorRef,
   type AuditEvent,
   type CompletionPolicy,
   type DeploymentId,
   type Message,
+  type MessageId,
   type Queue,
   type QueueId,
   type Thread,
@@ -20,6 +26,8 @@ export interface InMemoryWorkflowSeed {
   readonly queues?: readonly Queue[];
   readonly threads?: readonly Thread[];
   readonly messages?: readonly Message[];
+  readonly attachments?: readonly Attachment[];
+  readonly attachmentPolicies?: readonly AttachmentFilePolicy[];
   readonly completionPolicies?: readonly CompletionPolicy[];
   readonly actorAuthorizations?: readonly ActorAuthorization[];
   readonly auditEvents?: readonly AuditEvent[];
@@ -35,6 +43,8 @@ export class InMemoryWorkflowStore implements WorkflowStore {
   private queues: Map<string, Queue>;
   private threads: Map<string, Thread>;
   private messages: Message[];
+  private attachments: Map<string, Attachment>;
+  private attachmentPolicies: Map<string, AttachmentFilePolicy>;
   private completionPolicies: Map<string, CompletionPolicy>;
   private actorAuthorizations: Map<string, ActorAuthorization>;
   private auditEvents: AuditEvent[];
@@ -59,6 +69,21 @@ export class InMemoryWorkflowStore implements WorkflowStore {
       ]),
     );
     this.messages = [...(seed.messages ?? [])];
+    this.attachments = new Map(
+      (seed.attachments ?? []).map((attachment) => {
+        const validated = validateAttachment(attachment);
+        return [
+          resourceKey(validated.deploymentId, validated.attachmentId),
+          validated,
+        ];
+      }),
+    );
+    this.attachmentPolicies = new Map(
+      (seed.attachmentPolicies ?? []).map((policy) => {
+        const validated = validateAttachmentFilePolicy(policy);
+        return [validated.deploymentId, validated];
+      }),
+    );
     this.completionPolicies = new Map(
       (seed.completionPolicies ?? []).map((policy) => [
         policy.deploymentId,
@@ -125,6 +150,51 @@ export class InMemoryWorkflowStore implements WorkflowStore {
     );
   }
 
+  getMessage(
+    deploymentId: DeploymentId,
+    threadId: ThreadId,
+    messageId: MessageId,
+  ): Promise<Message | undefined> {
+    return Promise.resolve(
+      this.messages.find(
+        (message) =>
+          message.deploymentId === deploymentId &&
+          message.threadId === threadId &&
+          message.messageId === messageId,
+      ),
+    );
+  }
+
+  getAttachment(
+    deploymentId: DeploymentId,
+    attachmentId: AttachmentId,
+  ): Promise<Attachment | undefined> {
+    return Promise.resolve(
+      this.attachments.get(resourceKey(deploymentId, attachmentId)),
+    );
+  }
+
+  listAttachmentsForMessage(
+    deploymentId: DeploymentId,
+    threadId: ThreadId,
+    messageId: MessageId,
+  ): Promise<readonly Attachment[]> {
+    return Promise.resolve(
+      [...this.attachments.values()].filter(
+        (attachment) =>
+          attachment.deploymentId === deploymentId &&
+          attachment.threadId === threadId &&
+          attachment.messageId === messageId,
+      ),
+    );
+  }
+
+  getCurrentAttachmentFilePolicy(
+    deploymentId: DeploymentId,
+  ): Promise<AttachmentFilePolicy | undefined> {
+    return Promise.resolve(this.attachmentPolicies.get(deploymentId));
+  }
+
   getCurrentCompletionPolicy(
     deploymentId: DeploymentId,
   ): Promise<CompletionPolicy | undefined> {
@@ -187,6 +257,7 @@ export class InMemoryWorkflowStore implements WorkflowStore {
   private commitSynchronously(mutation: WorkflowMutation): void {
     const nextThreads = new Map(this.threads);
     const nextMessages = [...this.messages];
+    const nextAttachments = new Map(this.attachments);
     const nextAuditEvents = [...this.auditEvents];
     const nextAttestations = [...this.transferAttestations];
     const nextControls = [...this.transferAttestationControls];
@@ -268,6 +339,38 @@ export class InMemoryWorkflowStore implements WorkflowStore {
       nextControls.push(control);
     }
 
+    for (const attachment of mutation.newAttachments ?? []) {
+      const key = resourceKey(attachment.deploymentId, attachment.attachmentId);
+      if (nextAttachments.has(key)) {
+        throw new Error("Attachment identifier already exists.");
+      }
+      if (attachment.version !== 1) {
+        throw new Error(
+          "A newly published attachment must start at version 1.",
+        );
+      }
+      nextAttachments.set(key, validateAttachment(attachment));
+    }
+
+    for (const update of mutation.attachmentUpdates ?? []) {
+      const attachment = validateAttachment(update.attachment);
+      const key = resourceKey(attachment.deploymentId, attachment.attachmentId);
+      const current = nextAttachments.get(key);
+      if (current === undefined) {
+        throw new Error("Authoritative attachment is missing during commit.");
+      }
+      if (current.version !== update.expectedVersion) {
+        throw new DomainError(
+          "STALE_VERSION",
+          "Attachment version changed before the transaction committed.",
+        );
+      }
+      if (attachment.version !== current.version + 1) {
+        throw new Error("Next attachment version must increment exactly once.");
+      }
+      nextAttachments.set(key, attachment);
+    }
+
     for (const event of mutation.auditEvents ?? []) {
       if (
         nextAuditEvents.some(
@@ -288,6 +391,7 @@ export class InMemoryWorkflowStore implements WorkflowStore {
 
     this.threads = nextThreads;
     this.messages = nextMessages;
+    this.attachments = nextAttachments;
     this.auditEvents = nextAuditEvents;
     this.transferAttestations = nextAttestations;
     this.transferAttestationControls = nextControls;
@@ -310,6 +414,24 @@ export class InMemoryWorkflowStore implements WorkflowStore {
         item.threadId !== mutation.threadId
       ) {
         throw new Error("Message mutation escaped its authoritative scope.");
+      }
+    }
+
+    for (const item of mutation.newAttachments ?? []) {
+      if (
+        item.deploymentId !== mutation.deploymentId ||
+        item.threadId !== mutation.threadId
+      ) {
+        throw new Error("Attachment mutation escaped its authoritative scope.");
+      }
+    }
+
+    for (const update of mutation.attachmentUpdates ?? []) {
+      if (
+        update.attachment.deploymentId !== mutation.deploymentId ||
+        update.attachment.threadId !== mutation.threadId
+      ) {
+        throw new Error("Attachment update escaped its authoritative scope.");
       }
     }
 

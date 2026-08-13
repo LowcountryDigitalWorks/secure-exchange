@@ -91,29 +91,6 @@ describe("workflow service", () => {
     ).toEqual([]);
   });
 
-  it("records Downloaded distinctly without creating TransferAttestation", async () => {
-    const { store, service } = makeFixture();
-
-    await service.recordDownloadEvidence({
-      actor: actorContext(),
-      deploymentId: DEPLOYMENT_A,
-      threadId: THREAD_A,
-      auditEventId: "audit-download",
-      attachmentId: "attachment-synthetic",
-      at: "2026-08-12T13:01:00.000Z",
-    });
-
-    expect(store.listAuditEvents(DEPLOYMENT_A, THREAD_A)).toEqual([
-      expect.objectContaining({
-        eventType: "ATTACHMENT_DOWNLOADED",
-        attachmentId: "attachment-synthetic",
-      }),
-    ]);
-    expect(
-      await store.listTransferAttestations(DEPLOYMENT_A, THREAD_A),
-    ).toEqual([]);
-  });
-
   it("appends TransferAttestation without completing the thread", async () => {
     const { store, service } = makeFixture();
 

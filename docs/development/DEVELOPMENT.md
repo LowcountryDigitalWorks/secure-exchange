@@ -183,3 +183,17 @@ WebCryptoOpaqueIdGenerator uses Web Crypto randomUUID() only as a local developm
 Staff reply is a provider-neutral business rule: allowed in NEW, IN_PROGRESS, AWAITING_EXTERNAL, and AWAITING_STAFF; rejected in COMPLETED, EXPIRED, and DISPOSED. Reply does not transition lifecycle state.
 
 Use only synthetic data. Production authentication, external retrieval, attachments, AWS adapters/infrastructure, customer data, PHI, and paid services remain absent.
+
+## Release 0.6 attachment prototype development boundary
+
+Attachment ingestion, scan processing, and retrieval are application/integration-test driven in Release 0.6. The Release 0.5 browser demo has no arbitrary attachment upload/download UI or route.
+
+`InMemoryProtectedContentStore` is development/test-only and may hold cloned synthetic byte arrays in process memory. Do not use real customer/client/patient/regulated data or PHI. Do not substitute disk files, browser localStorage, public URLs, or provider credentials into this prototype.
+
+The attachment policy validates declared metadata only. It is intentionally not a file parser or signature detector. Do not describe a passing filename/MIME/extension policy check as proof of actual content type.
+
+Focused attachment tests:
+
+```sh
+npm test -- tests/unit/attachment.test.ts tests/integration/attachment-service.test.ts
+```

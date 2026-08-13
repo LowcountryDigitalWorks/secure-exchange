@@ -160,3 +160,24 @@ Release 0.5 implements the first browser-driven development vertical slice witho
 Staff reply is allowed only in NEW, IN_PROGRESS, AWAITING_EXTERNAL, and AWAITING_STAFF. COMPLETED, EXPIRED, and DISPOSED fail closed. Reply never automatically changes lifecycle state.
 
 Still deferred: production authentication/sessions, real external identity/contact fields, AccessGrant/external retrieval, attachments and file handling, notifications, AWS adapters/infrastructure, durable production persistence, customer integrations, analytics, and regulated deployment readiness.
+
+## Release 0.6 implemented attachment-safety core
+
+Release 0.6 implements, with synthetic bytes only:
+
+- provider-neutral Attachment metadata and five approved safety states;
+- bounded per-deployment attachment policy for individual size, per-message count, declared media category/type, and extension;
+- separate original display filename and derived safe-download filename;
+- opaque provider-neutral protected-content references independent of filenames;
+- a protected-content port plus process-memory development adapter;
+- application-only ingestion that publishes new content as `QUARANTINED`;
+- trusted SYSTEM scan-result handling for `CLEAN`, `MALICIOUS`, and `INDETERMINATE` outcomes;
+- replay-safe/current-state attachment scan transitions;
+- authoritative staff retrieval requiring live deployment/thread/message/attachment/queue/permission/state checks before content access;
+- `ATTACHMENT_DOWNLOADED` creation only after protected content resolves successfully;
+- staged-content compensation when metadata publication fails;
+- deterministic failure coverage for partial content/metadata boundaries.
+
+`ATTACHMENT_DOWNLOADED` remains independent from `THREAD_OPENED`, TransferAttestation, thread lifecycle, and completion. The old standalone workflow download-evidence operation is removed so future HTTP/browser code cannot bypass authoritative attachment retrieval.
+
+Still deferred: browser upload/download delivery, content-signature/type detection, real malware scanning, production object storage, attachment deletion/disposition orchestration, AccessGrant/external retrieval, notifications, durable production persistence, AWS adapters/infrastructure, customer data/PHI, archive extraction, OCR, parsing, preview, and AI processing.

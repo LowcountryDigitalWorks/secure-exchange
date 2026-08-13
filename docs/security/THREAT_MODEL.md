@@ -292,3 +292,13 @@ Additional development-delivery controls include:
 - bounded generic error mapping without authorization details or message content.
 
 These controls do not make the demo safe for customer/regulated data or public production exposure. Production authentication, session/CSRF design, rate limiting/bot controls, external identity verification, and deployment-specific security controls remain separate pre-production gates.
+
+## Release 0.6 attachment-safety controls
+
+Release 0.6 treats every supplied attachment as untrusted. Filename, extension, declared MIME type, and declared media category are not proof of actual content. The current policy gate only bounds declared metadata; production content-signature/type verification remains mandatory before arbitrary untrusted browser ingestion can be considered safe.
+
+Content is staged under an opaque server-generated reference independent of the filename and is published as `QUARANTINED`. Only a validated clean normalized scan outcome can move the attachment to `CLEAN`; malicious results become `REJECTED`, and indeterminate/failure outcomes remain non-retrievable. Unknown/invalid/current-state-violating scan results fail closed.
+
+Retrieval is metadata-authoritative and occurs before no object read: deployment, thread, staff authorization, queue scope, permission, message association, attachment association, safety state, and deletion state are all checked before protected bytes are requested. Object-store existence alone never grants access.
+
+Audit intentionally excludes file bytes, message bodies, unrestricted filenames, provider storage paths, credentials, grant secrets, and raw scanner payloads. Release 0.6 uses synthetic bytes in process memory only and adds no disk persistence, localStorage, public URLs, inline preview, parser, archive extraction, OCR, or AI processing.

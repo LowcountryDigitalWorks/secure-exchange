@@ -107,3 +107,13 @@ Release 0.5 adds a disabled-by-default **Synthetic Development Demo** as a local
 The demo accepts only a permitted routing category and bounded synthetic message text for accountless initiation. It uses a server-held synthetic STAFF context for queue, open/read, reply, and the optional explicit Start work action. Browser input cannot choose staff actor IDs, permissions, deployment IDs, queue grants, or authoritative external/thread/message/audit identifiers.
 
 Production authentication, real external identity/contact modeling, external secure retrieval/reply, attachments, notifications, customer data, PHI, and production infrastructure remain outside Release 0.5.
+
+## Release 0.6 attachment-safety boundary
+
+Release 0.6 adds the provider-neutral attachment safety core required before browser file transfer can be considered. The implemented boundary is application/integration-test driven and synthetic only. It introduces attachment metadata, bounded declared-metadata policy checks, quarantine and normalized scan outcomes, protected-content storage behind an application port, authoritative staff retrieval, and retrieval-coupled Downloaded evidence.
+
+New content is never silently trusted. Successful ingestion stages synthetic bytes under an opaque content reference and atomically publishes attachment metadata in `QUARANTINED`. A clean normalized scan result is required before the normal retrieval service can return bytes. `PENDING_UPLOAD`, `QUARANTINED`, `REJECTED`, and `DELETED` all fail closed for normal retrieval.
+
+Declared filename extension, media category, and MIME type are policy inputs only. Release 0.6 does not perform content-signature/file-format verification; production ingestion must add an authoritative content-classification/type-verification gate before untrusted uploads are released.
+
+Arbitrary browser upload/download, real malware scanning, production object storage, AccessGrant, production authentication, customer data, PHI, and AWS infrastructure remain outside this release.

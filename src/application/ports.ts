@@ -1,10 +1,14 @@
 import type {
   ActorAuthorization,
+  Attachment,
+  AttachmentFilePolicy,
+  AttachmentId,
   ActorRef,
   AuditEvent,
   CompletionPolicy,
   DeploymentId,
   Message,
+  MessageId,
   Queue,
   QueueId,
   Thread,
@@ -13,6 +17,11 @@ import type {
   TransferAttestationControl,
 } from "../domain/index.js";
 
+export interface AttachmentUpdate {
+  readonly expectedVersion: number;
+  readonly attachment: Attachment;
+}
+
 export interface WorkflowMutation {
   readonly deploymentId: DeploymentId;
   readonly threadId: ThreadId;
@@ -20,6 +29,8 @@ export interface WorkflowMutation {
   readonly newThread?: Thread;
   readonly nextThread?: Thread;
   readonly messages?: readonly Message[];
+  readonly newAttachments?: readonly Attachment[];
+  readonly attachmentUpdates?: readonly AttachmentUpdate[];
   readonly auditEvents?: readonly AuditEvent[];
   readonly transferAttestations?: readonly TransferAttestation[];
   readonly transferAttestationControls?: readonly TransferAttestationControl[];
@@ -45,6 +56,27 @@ export interface WorkflowStore {
     deploymentId: DeploymentId,
     threadId: ThreadId,
   ): Promise<readonly Message[]>;
+
+  getMessage(
+    deploymentId: DeploymentId,
+    threadId: ThreadId,
+    messageId: MessageId,
+  ): Promise<Message | undefined>;
+
+  getAttachment(
+    deploymentId: DeploymentId,
+    attachmentId: AttachmentId,
+  ): Promise<Attachment | undefined>;
+
+  listAttachmentsForMessage(
+    deploymentId: DeploymentId,
+    threadId: ThreadId,
+    messageId: MessageId,
+  ): Promise<readonly Attachment[]>;
+
+  getCurrentAttachmentFilePolicy(
+    deploymentId: DeploymentId,
+  ): Promise<AttachmentFilePolicy | undefined>;
 
   getCurrentCompletionPolicy(
     deploymentId: DeploymentId,

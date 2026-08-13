@@ -3,7 +3,6 @@ import {
   transitionThread,
   type ActorAuthorization,
   type ActorContext,
-  type AttachmentId,
   type AuditEvent,
   type AuditEventId,
   type CompletionPolicy,
@@ -30,12 +29,6 @@ interface ThreadActionInput {
 
 export interface RecordOpenedInput extends ThreadActionInput {
   readonly auditEventId: AuditEventId;
-  readonly at: string;
-}
-
-export interface RecordDownloadEvidenceInput extends ThreadActionInput {
-  readonly auditEventId: AuditEventId;
-  readonly attachmentId: AttachmentId;
   readonly at: string;
 }
 
@@ -103,33 +96,6 @@ export class WorkflowService {
           input.auditEventId,
           input.at,
         ),
-      ],
-    });
-  }
-
-  async recordDownloadEvidence(
-    input: RecordDownloadEvidenceInput,
-  ): Promise<void> {
-    const { thread, authorization } = await this.loadAuthorizedThread(
-      input,
-      "DOWNLOAD_EVIDENCE_RECORD",
-    );
-
-    await this.store.commit({
-      deploymentId: input.deploymentId,
-      threadId: input.threadId,
-      auditEvents: [
-        {
-          ...this.auditEvent(
-            input,
-            authorization,
-            thread,
-            "ATTACHMENT_DOWNLOADED",
-            input.auditEventId,
-            input.at,
-          ),
-          attachmentId: input.attachmentId,
-        },
       ],
     });
   }
