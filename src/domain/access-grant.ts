@@ -22,6 +22,7 @@ export interface AccessGrant {
   readonly deploymentId: DeploymentId;
   readonly threadId: ThreadId;
   readonly externalParticipantRef: ExternalParticipantRef;
+  readonly policyRef: AccessGrantPolicyRef;
   readonly verifierDigest: string;
   readonly permittedOperations: readonly AccessGrantOperation[];
   readonly issuedAt: string;
@@ -95,6 +96,7 @@ export function validateAccessGrant(grant: AccessGrant): AccessGrant {
     grant.externalParticipantRef,
     "External participant reference",
   );
+  assertBoundedReference(grant.policyRef, "AccessGrant policy reference");
   if (!VERIFIER_PATTERN.test(grant.verifierDigest)) {
     throw new DomainError(
       "INVALID_ACCESS_GRANT",
