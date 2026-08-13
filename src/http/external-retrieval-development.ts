@@ -1,13 +1,22 @@
 import type { Context, Hono } from "hono";
 
-import type { AccessGrantOperation } from "../domain/index.js";
+import { DomainError } from "../domain/errors.js";
+import {
+  isExternalReplyAllowed,
+  type AccessGrantOperation,
+} from "../domain/index.js";
 import {
   renderExternalAccessForm,
-  renderExternalAccessSession,
   renderExternalAccessUnavailable,
   renderExternalAttachmentCandidates,
   renderExternalConversationPage,
 } from "../web/page.js";
+import {
+  renderExternalDevelopmentSession,
+  renderExternalReplyForm,
+  renderExternalReplyInvalid,
+  renderExternalReplySubmitted,
+} from "../web/external-reply-development-page.js";
 import type { DevelopmentDemoRuntime } from "./development-demo.js";
 
 export const EXTERNAL_RETRIEVAL_ROUTE_PREFIX = "/demo/external/access";
@@ -128,29 +137,55 @@ function readCapability(
   }
 }
 
+async function operationIsCurrentlyUsable(
+  demo: DevelopmentDemoRuntime,
+  capability: ExternalBrowserCapability,
+  operation: AccessGrantOperation,
+): Promise<boolean> {
+  try {
+    await demo.accessGrantService.validatePresentedAccessGrant({
+      deploymentId: demo.deploymentId,
+      threadId: capability.threadId,
+      grantId: capability.grantId,
+      secret: capability.secret,
+      operation,
+    });
+    if (operation === "THREAD_REPLY") {
+      const thread = await demo.store.getThread(
+        demo.deploymentId,
+        capability.threadId,
+      );
+      return thread !== undefined && isExternalReplyAllowed(thread.state);
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function validatedOperations(
+  demo: DevelopmentDemoRuntime,
+  capability: ExternalBrowserCapability,
+): Promise<readonly AccessGrantOperation[]> {
+  const operations: readonly AccessGrantOperation[] = [
+    "THREAD_READ",
+    "ATTACHMENT_READ",
+    "THREAD_REPLY",
+  ];
+  const usable: AccessGrantOperation[] = [];
+  for (const operation of operations) {
+    if (await operationIsCurrentlyUsable(demo, capability, operation)) {
+      usable.push(operation);
+    }
+  }
+  return usable;
+}
+
 async function validatesForAnyOperation(
   demo: DevelopmentDemoRuntime,
   capability: ExternalBrowserCapability,
 ): Promise<boolean> {
-  const operations: readonly AccessGrantOperation[] = [
-    "THREAD_READ",
-    "ATTACHMENT_READ",
-  ];
-  for (const operation of operations) {
-    try {
-      await demo.accessGrantService.validatePresentedAccessGrant({
-        deploymentId: demo.deploymentId,
-        threadId: capability.threadId,
-        grantId: capability.grantId,
-        secret: capability.secret,
-        operation,
-      });
-      return true;
-    } catch {
-      // The observable result remains one generic denial.
-    }
-  }
-  return false;
+  return (await validatedOperations(demo, capability)).length > 0;
 }
 
 function unavailable(context: Context, clear = false): Response {
@@ -232,13 +267,14 @@ export function registerExternalRetrievalDevelopmentRoutes(
 
   app.get(`${EXTERNAL_RETRIEVAL_ROUTE_PREFIX}/session`, async (context) => {
     const capability = readCapability(context.req.raw);
-    if (
-      capability === undefined ||
-      !(await validatesForAnyOperation(demo, capability))
-    ) {
+    if (capability === undefined) {
       return unavailable(context, true);
     }
-    return context.html(renderExternalAccessSession());
+    const operations = await validatedOperations(demo, capability);
+    if (operations.length === 0) {
+      return unavailable(context, true);
+    }
+    return context.html(renderExternalDevelopmentSession(operations));
   });
 
   app.get(
@@ -284,6 +320,58 @@ export function registerExternalRetrievalDevelopmentRoutes(
     } catch {
       return protectedUnavailable(context, demo, capability);
     }
+  });
+
+  app.get(`${EXTERNAL_RETRIEVAL_ROUTE_PREFIX}/reply`, async (context) => {
+    const capability = readCapability(context.req.raw);
+    if (capability === undefined) {
+      return unavailable(context, true);
+    }
+    if (!(await operationIsCurrentlyUsable(demo, capability, "THREAD_REPLY"))) {
+      return protectedUnavailable(context, demo, capability);
+    }
+    return context.html(renderExternalReplyForm());
+  });
+
+  app.post(`${EXTERNAL_RETRIEVAL_ROUTE_PREFIX}/reply`, async (context) => {
+    if (!isSameOriginPost(context.req.raw)) {
+      return unavailable(context);
+    }
+    const capability = readCapability(context.req.raw);
+    if (capability === undefined) {
+      return unavailable(context, true);
+    }
+
+    try {
+      const form = await context.req.raw.formData();
+      const messageBody = form.get("messageBody");
+      if (typeof messageBody !== "string") {
+        return context.html(renderExternalReplyInvalid(), 400);
+      }
+      await demo.accessGrantService.replyExternalConversation({
+        deploymentId: demo.deploymentId,
+        threadId: capability.threadId,
+        grantId: capability.grantId,
+        secret: capability.secret,
+        messageBody,
+      });
+      return context.redirect(
+        `${EXTERNAL_RETRIEVAL_ROUTE_PREFIX}/reply/sent`,
+        303,
+      );
+    } catch (error: unknown) {
+      if (error instanceof DomainError && error.code === "INVALID_MESSAGE_BODY") {
+        return context.html(renderExternalReplyInvalid(), 400);
+      }
+      return protectedUnavailable(context, demo, capability);
+    }
+  });
+
+  app.get(`${EXTERNAL_RETRIEVAL_ROUTE_PREFIX}/reply/sent`, (context) => {
+    if (readCapability(context.req.raw) === undefined) {
+      return unavailable(context, true);
+    }
+    return context.html(renderExternalReplySubmitted());
   });
 
   app.post(`${EXTERNAL_RETRIEVAL_ROUTE_PREFIX}/download`, async (context) => {
