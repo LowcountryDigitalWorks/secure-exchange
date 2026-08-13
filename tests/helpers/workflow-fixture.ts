@@ -1,4 +1,5 @@
 import type {
+  AccessGrantPolicy,
   ActorAuthorization,
   ActorContext,
   CompletionPolicy,
@@ -26,6 +27,7 @@ export const UNAUTHORIZED_STAFF = "staff-unauthorized";
 export const EXTERNAL_A = "external-participant-a";
 export const POLICY_A = "completion-policy-a-v1";
 export const POLICY_B = "completion-policy-b-v1";
+export const ACCESS_POLICY_A = "access-policy-a-v1";
 export const ROUTING_GENERAL = "GENERAL";
 export const ROUTING_RECORDS = "RECORDS";
 
@@ -34,6 +36,8 @@ export const ALL_WORKFLOW_PERMISSIONS: readonly WorkflowPermission[] = [
   "THREAD_OPEN",
   "THREAD_REPLY",
   "ATTACHMENT_READ",
+  "ACCESS_GRANT_ISSUE",
+  "ACCESS_GRANT_REVOKE",
   "THREAD_TRANSITION",
   "THREAD_DISPOSE",
   "TRANSFER_ATTEST",
@@ -120,6 +124,18 @@ export function makeCompletionPolicy(
   };
 }
 
+export function makeAccessGrantPolicy(
+  overrides: Partial<AccessGrantPolicy> = {},
+): AccessGrantPolicy {
+  return {
+    policyRef: ACCESS_POLICY_A,
+    deploymentId: DEPLOYMENT_A,
+    maxLifetimeSeconds: 3_600,
+    allowedOperations: ["THREAD_READ"],
+    ...overrides,
+  };
+}
+
 export function makeAttestation(
   overrides: Partial<TransferAttestation> = {},
 ): TransferAttestation {
@@ -141,6 +157,7 @@ export function makeFixture(
     readonly threadState?: ThreadLifecycleState;
     readonly threadVersion?: number;
     readonly policy?: CompletionPolicy;
+    readonly accessGrantPolicy?: AccessGrantPolicy;
     readonly queues?: readonly Queue[];
     readonly additionalThreads?: readonly Thread[];
     readonly messages?: readonly Message[];
@@ -165,6 +182,7 @@ export function makeFixture(
     queues: options.queues ?? [makeQueue()],
     threads: [thread, ...(options.additionalThreads ?? [])],
     messages: options.messages ?? [],
+    accessGrantPolicies: [options.accessGrantPolicy ?? makeAccessGrantPolicy()],
     completionPolicies: [options.policy ?? makeCompletionPolicy()],
     actorAuthorizations: [
       makeActorAuthorization(),
