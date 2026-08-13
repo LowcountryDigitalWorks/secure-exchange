@@ -253,3 +253,13 @@ The current application ingestion operation stages bytes and publishes the attac
 Only `CLEAN` with no deletion marker is eligible for normal retrieval. The other states are non-retrievable. Release 0.6 models `DELETED` as non-retrievable but deliberately does not introduce a general attachment deletion/disposition application operation.
 
 Filename is never a storage locator. The original value is retained only as bounded untrusted display metadata; `safeDownloadFilename` removes directory semantics/control characters and is separately length-bounded for a future HTTP adapter.
+
+## Release 0.7 implemented AccessGrant model
+
+Release 0.7 makes the approved `AccessGrant` concept executable as temporary, provider-neutral external authority. An authoritative grant records an opaque grant ID, deployment/thread scope, one opaque external-participant actor reference, the access-policy reference used at issuance, a persisted one-way verifier digest, explicit permitted operations, issue/expiry timestamps, optional revocation timestamp, and optimistic version.
+
+The Release 0.7 operation vocabulary contains only `THREAD_READ`, because external attachment retrieval and external reply are not implemented in this release. A vague unrestricted access operation is not used.
+
+The browser/email-facing bearer secret and the stored grant record are deliberately different artifacts. The raw high-entropy secret is generated server-side and returned only at issuance. Only a versioned SHA-256 verifier of that random secret is persisted. The grant ID is neither the bearer secret nor a substitute for it. The opaque external-participant reference is actor attribution derived from authoritative thread messages; it is not client-supplied identity proof.
+
+A grant remains separate from thread lifecycle. Current external access is allowed for `NEW`, `IN_PROGRESS`, `AWAITING_EXTERNAL`, `AWAITING_STAFF`, and `COMPLETED`, subject to all other grant checks. `EXPIRED` and `DISPOSED` fail closed. Grant use, expiry, or revocation does not itself transition or complete a thread.

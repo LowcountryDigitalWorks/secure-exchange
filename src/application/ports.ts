@@ -1,8 +1,12 @@
 import type {
+  AccessGrant,
+  AccessGrantId,
+  AccessGrantPolicy,
   ActorAuthorization,
   Attachment,
   AttachmentFilePolicy,
   AttachmentId,
+  AttachmentPolicyRef,
   ActorRef,
   AuditEvent,
   CompletionPolicy,
@@ -22,6 +26,16 @@ export interface AttachmentUpdate {
   readonly attachment: Attachment;
 }
 
+export interface AccessGrantUpdate {
+  readonly expectedVersion: number;
+  readonly accessGrant: AccessGrant;
+}
+
+export interface AttachmentCountGuard {
+  readonly messageId: MessageId;
+  readonly attachmentPolicyRef: AttachmentPolicyRef;
+}
+
 export interface WorkflowMutation {
   readonly deploymentId: DeploymentId;
   readonly threadId: ThreadId;
@@ -31,6 +45,9 @@ export interface WorkflowMutation {
   readonly messages?: readonly Message[];
   readonly newAttachments?: readonly Attachment[];
   readonly attachmentUpdates?: readonly AttachmentUpdate[];
+  readonly attachmentCountGuards?: readonly AttachmentCountGuard[];
+  readonly newAccessGrants?: readonly AccessGrant[];
+  readonly accessGrantUpdates?: readonly AccessGrantUpdate[];
   readonly auditEvents?: readonly AuditEvent[];
   readonly transferAttestations?: readonly TransferAttestation[];
   readonly transferAttestationControls?: readonly TransferAttestationControl[];
@@ -77,6 +94,15 @@ export interface WorkflowStore {
   getCurrentAttachmentFilePolicy(
     deploymentId: DeploymentId,
   ): Promise<AttachmentFilePolicy | undefined>;
+
+  getAccessGrant(
+    deploymentId: DeploymentId,
+    accessGrantId: AccessGrantId,
+  ): Promise<AccessGrant | undefined>;
+
+  getCurrentAccessGrantPolicy(
+    deploymentId: DeploymentId,
+  ): Promise<AccessGrantPolicy | undefined>;
 
   getCurrentCompletionPolicy(
     deploymentId: DeploymentId,

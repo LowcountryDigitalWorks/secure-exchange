@@ -1,3 +1,4 @@
+export * from "./access-grant.js";
 export * from "./attachment.js";
 export * from "./errors.js";
 export * from "./evidence.js";

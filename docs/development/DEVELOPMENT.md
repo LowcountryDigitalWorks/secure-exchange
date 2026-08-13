@@ -197,3 +197,19 @@ Focused attachment tests:
 ```sh
 npm test -- tests/unit/attachment.test.ts tests/integration/attachment-service.test.ts
 ```
+
+## Release 0.7 development boundary
+
+Release 0.7 remains application/domain plus synthetic local infrastructure. AccessGrant tests use an injectable clock and Web Crypto secret manager; concrete bearer secrets are generated only at runtime and must never be copied into fixtures, documentation, logs, screenshots, issues, or commits.
+
+The only implemented grant operation is `THREAD_READ`. There is no public retrieval route, email-link generator, external attachment endpoint, or external reply endpoint. Do not add one without a later authorized delivery/security release.
+
+The in-memory WorkflowStore now proves two additional transaction properties: AccessGrant issuance/revocation uses authoritative thread/version and policy checks, and new attachment publication requires a current policy/count guard at commit time. Future persistence adapters must reproduce these invariants using their own conditional/transactional mechanisms without leaking provider-specific concepts into domain/application contracts.
+
+Focused Release 0.7 tests:
+
+```sh
+npm test -- tests/unit/access-grant.test.ts
+npm test -- tests/integration/access-grant-service.test.ts
+npm test -- tests/integration/attachment-count-concurrency.test.ts
+```

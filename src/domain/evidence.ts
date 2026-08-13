@@ -1,4 +1,5 @@
 import type {
+  AccessGrantId,
   ActorRef,
   AttachmentId,
   AuditActorKind,
@@ -56,6 +57,9 @@ export type AuditEventType =
   | "ATTACHMENT_SCAN_INDETERMINATE"
   | "ATTACHMENT_REJECTED"
   | "ATTACHMENT_DOWNLOADED"
+  | "ACCESS_GRANT_ISSUED"
+  | "ACCESS_GRANT_REVOKED"
+  | "EXTERNAL_THREAD_RETRIEVED"
   | "THREAD_LIFECYCLE_TRANSITIONED"
   | "TRANSFER_ATTESTED"
   | "TRANSFER_ATTESTATION_SUPERSEDED"
@@ -72,6 +76,7 @@ export interface AuditEvent {
   readonly at: string;
   readonly messageId?: MessageId;
   readonly attachmentId?: AttachmentId;
+  readonly accessGrantId?: AccessGrantId;
   readonly attachmentState?: AttachmentSafetyState;
   readonly scanOutcome?: AttachmentScanOutcome;
   readonly attestationId?: TransferAttestationId;

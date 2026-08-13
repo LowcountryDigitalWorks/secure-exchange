@@ -11,6 +11,8 @@ export type AttachmentId = string;
 export type ProtectedContentRef = string;
 export type AttachmentPolicyRef = string;
 export type CompletionPolicyRef = string;
+export type AccessGrantId = string;
+export type AccessGrantPolicyRef = string;
 
 export type ActorKind = "STAFF" | "ADMIN" | "SYSTEM";
 export type AuditActorKind = ActorKind | "EXTERNAL";
@@ -20,6 +22,8 @@ export type WorkflowPermission =
   | "THREAD_OPEN"
   | "THREAD_REPLY"
   | "ATTACHMENT_READ"
+  | "ACCESS_GRANT_ISSUE"
+  | "ACCESS_GRANT_REVOKE"
   | "THREAD_TRANSITION"
   | "THREAD_DISPOSE"
   | "TRANSFER_ATTEST"

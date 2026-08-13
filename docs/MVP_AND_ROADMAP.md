@@ -181,3 +181,9 @@ Release 0.6 implements, with synthetic bytes only:
 `ATTACHMENT_DOWNLOADED` remains independent from `THREAD_OPENED`, TransferAttestation, thread lifecycle, and completion. The old standalone workflow download-evidence operation is removed so future HTTP/browser code cannot bypass authoritative attachment retrieval.
 
 Still deferred: browser upload/download delivery, content-signature/type detection, real malware scanning, production object storage, attachment deletion/disposition orchestration, AccessGrant/external retrieval, notifications, durable production persistence, AWS adapters/infrastructure, customer data/PHI, archive extraction, OCR, parsing, preview, and AI processing.
+
+## Release 0.7 implemented AccessGrant core
+
+Release 0.7 implements temporary external thread-read authority without exposing it through a browser or notification channel: provider-neutral AccessGrant metadata/policy; explicit `THREAD_READ` only; server-generated 256-bit one-time bearer secret; persisted versioned SHA-256 verifier only; bounded server-time expiry; authorized issuance and retained-record optimistic revocation; conservative authoritative validation on every use; an external conversation projection excluding internal queue, actor, lifecycle, audit, and administrative metadata; minimized grant evidence; and authoritative transaction-time enforcement of the per-message attachment-count policy under concurrent ingestion.
+
+External attachment retrieval is deferred so it can reuse the Release 0.6 clean-attachment retrieval/download-evidence path. External reply is deferred until an explicit lifecycle eligibility rule is approved. Also still deferred: public retrieval routes, email-link/notification delivery, production authentication, production persistence, AWS adapters/infrastructure, customer data, PHI, and regulated-deployment readiness.
