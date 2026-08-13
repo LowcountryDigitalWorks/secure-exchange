@@ -1,4 +1,5 @@
 import {
+  DomainError,
   applyAttachmentScanResult,
   normalizeDeclaredAttachmentMetadata,
   requireAttachmentRetrievable,
@@ -138,6 +139,12 @@ export class AttachmentService {
         deploymentId: input.deploymentId,
         threadId: input.threadId,
         newAttachments: [attachment],
+        attachmentCountGuards: [
+          {
+            messageId: input.messageId,
+            attachmentPolicyRef: policy.policyRef,
+          },
+        ],
         auditEvents: [
           this.systemAudit(
             attachment,
@@ -153,13 +160,23 @@ export class AttachmentService {
           ),
         ],
       });
-    } catch {
+    } catch (error: unknown) {
       try {
         await this.contentStore.delete(contentRef);
       } catch {
         throw new ApplicationError(
           "ATTACHMENT_PUBLICATION_FAILED",
           "Attachment metadata publication failed and staged-content cleanup could not be confirmed.",
+        );
+      }
+      if (
+        error instanceof DomainError &&
+        (error.code === "ATTACHMENT_COUNT_LIMIT_EXCEEDED" ||
+          error.code === "STALE_ATTACHMENT_POLICY")
+      ) {
+        throw new ApplicationError(
+          "ATTACHMENT_POLICY_REJECTED",
+          "Attachment publication no longer satisfies the authoritative policy.",
         );
       }
       throw new ApplicationError(
