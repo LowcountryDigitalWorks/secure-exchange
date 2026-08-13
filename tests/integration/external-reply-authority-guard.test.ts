@@ -85,10 +85,7 @@ class RevocationRaceStore extends InMemoryWorkflowStore {
       this.armedGrantId = undefined;
       this.armedRevokedAt = undefined;
       const current = await this.getAccessGrant(mutation.deploymentId, grantId);
-      if (
-        current === undefined ||
-        current.threadId !== mutation.threadId
-      ) {
+      if (current === undefined || current.threadId !== mutation.threadId) {
         throw new Error("Synthetic authoritative AccessGrant is missing.");
       }
       const revoked = revokeAccessGrantRecord(
@@ -193,12 +190,12 @@ describe("AccessGrant external reply authority guard", () => {
       beforeMessages,
     );
     expect(store.listAuditEvents(DEPLOYMENT_A, THREAD_A)).toEqual(beforeAudit);
-    expect(await store.getAccessGrant(DEPLOYMENT_A, grant.grantId)).toMatchObject(
-      {
-        version: 2,
-        revokedAt: "2026-08-13T04:00:05.000Z",
-      },
-    );
+    expect(
+      await store.getAccessGrant(DEPLOYMENT_A, grant.grantId),
+    ).toMatchObject({
+      version: 2,
+      revokedAt: "2026-08-13T04:00:05.000Z",
+    });
   });
 
   it("fails closed when initial validation is pre-expiry but the authoritative reply timestamp is expired", async () => {
@@ -223,11 +220,11 @@ describe("AccessGrant external reply authority guard", () => {
       beforeMessages,
     );
     expect(store.listAuditEvents(DEPLOYMENT_A, THREAD_A)).toEqual(beforeAudit);
-    expect(await store.getAccessGrant(DEPLOYMENT_A, grant.grantId)).toMatchObject(
-      {
-        version: 1,
-        revokedAt: undefined,
-      },
-    );
+    expect(
+      await store.getAccessGrant(DEPLOYMENT_A, grant.grantId),
+    ).toMatchObject({
+      version: 1,
+      revokedAt: undefined,
+    });
   });
 });

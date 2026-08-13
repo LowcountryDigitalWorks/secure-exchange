@@ -376,6 +376,16 @@ export class AccessGrantService {
         deploymentId: input.deploymentId,
         threadId: input.threadId,
         expectedThreadVersion: thread.version,
+        accessGrantAuthorityGuards: [
+          {
+            deploymentId: input.deploymentId,
+            threadId: input.threadId,
+            grantId: grant.grantId,
+            expectedVersion: grant.version,
+            requiredOperation: "THREAD_REPLY",
+            validAt: at,
+          },
+        ],
         nextThread,
         messages: [message],
         auditEvents: [
@@ -397,7 +407,8 @@ export class AccessGrantService {
       if (
         error instanceof Error &&
         "code" in error &&
-        error.code === "STALE_VERSION"
+        (error.code === "STALE_VERSION" ||
+          error.code === "ACCESS_GRANT_AUTHORITY_CHANGED")
       ) {
         throw this.externalAccessDenied();
       }
