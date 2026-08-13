@@ -320,3 +320,9 @@ Release 0.8 treats bearer-secret theft, operation confusion, cross-deployment/th
 Mitigations include high-entropy server-generated bearer material with persisted one-way verifier only, explicit `ATTACHMENT_READ`, current policy enforcement at issuance, per-use grant and thread revalidation, authoritative message/attachment ownership checks, exactly-`CLEAN` retrieval, protected-content byte-length integrity validation, minimized audit, and conservative external denial responses.
 
 No browser or email delivery mechanism exists in this release, so URL leakage, cookie capability handling, browser caching, response-header hardening, and delivery-channel replay controls remain a Release 0.9 trust-boundary review rather than being guessed here.
+
+## Release 0.9 browser delivery threats
+
+The synthetic delivery adapter explicitly addresses bearer leakage through URLs/history/referrers, cross-site form submission, overly broad cookies, stale browser state after revocation/expiry, response-header injection, inline-content execution, frame embedding, cache persistence, and accidental operation broadening.
+
+Mitigations include POST-only credential presentation, no bearer in redirects or generated links, host-only HttpOnly Strict cookies scoped to the external-development namespace, Secure on HTTPS, same-origin POST validation, per-use AccessGrant revalidation, server-side HTML escaping, restrictive CSP/frame protections, no-store/no-referrer headers, defensive attachment disposition, and no request-body/Cookie/secret logging. The release intentionally does not claim anonymous Internet safety: production abuse/rate controls, email/bootstrap delivery, production identity/deployment, and operational monitoring remain unresolved gates.

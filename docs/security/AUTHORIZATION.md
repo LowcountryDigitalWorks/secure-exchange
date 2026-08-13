@@ -143,3 +143,9 @@ Release 0.7 implements only `THREAD_READ`. External attachment authorization and
 Every external attachment use revalidates the bearer verifier, grant deployment/thread, explicit operation, revocation, expiry using authoritative server time, and current external-access thread eligibility. `EXPIRED` and `DISPOSED` threads remain ineligible and grant use never transitions lifecycle.
 
 After grant authorization, authoritative message and attachment ownership and the Release 0.6 attachment safety/content invariant are mandatory. No identifier alone is authority. External failures remain conservative and do not expose internal authorization or storage details.
+
+## Release 0.9 browser delivery authorization
+
+Credential presentation does not create a second session authority. The browser capability merely carries the already-issued bearer credential for subsequent same-origin requests. Every protected browser operation reuses the existing application layer to revalidate verifier proof, deployment/thread scope, explicit operation, revocation, server-time expiry, and current thread eligibility.
+
+`THREAD_READ` authorizes only the bounded external conversation projection. `ATTACHMENT_READ` authorizes only candidate metadata and the authoritative Release 0.8 download path. The HTTP adapter does not broaden grants, infer authority from identifiers, or reproduce attachment safety rules.

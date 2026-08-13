@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 
+import { registerExternalRetrievalDevelopmentRoutes } from "./external-retrieval-development.js";
 import { ApplicationError } from "../application/errors.js";
 import { getEngineeringStatus } from "../application/status.js";
 import { DomainError, isStaffReplyAllowed } from "../domain/index.js";
@@ -17,6 +18,7 @@ import type { DevelopmentDemoRuntime } from "./development-demo.js";
 
 export interface CreateAppOptions {
   readonly demo?: DevelopmentDemoRuntime;
+  readonly externalRetrievalEnabled?: boolean;
 }
 
 function contentSecurityPolicy(demoEnabled: boolean): string {
@@ -91,6 +93,8 @@ function externalRoutingError(
 export function createApp(options: CreateAppOptions = {}): Hono {
   const demo = options.demo;
   const demoEnabled = demo !== undefined;
+  const externalRetrievalEnabled =
+    demoEnabled && options.externalRetrievalEnabled === true;
   const app = new Hono();
 
   app.use("*", async (context, next) => {
@@ -125,6 +129,10 @@ export function createApp(options: CreateAppOptions = {}): Hono {
   });
 
   if (demo !== undefined) {
+    if (externalRetrievalEnabled) {
+      registerExternalRetrievalDevelopmentRoutes(app, demo);
+    }
+
     const rejectCrossSitePost = (request: Request): boolean =>
       !isSameOriginPost(request);
 

@@ -219,3 +219,11 @@ npm test -- tests/integration/attachment-count-concurrency.test.ts
 External attachment retrieval is application-layer only. Do not add an HTTP route, grant secret in a URL/path/query, capability cookie, email delivery, external reply, cloud persistence adapter, or production identity integration as part of this release.
 
 New retrieval implementations must reuse `retrieveAuthorizedAttachment` after their authority source is established rather than reimplementing attachment ownership, `CLEAN` state, protected-content, byte-length, or download-evidence checks. Provider-specific delivery and storage adapters must remain outside domain semantics.
+
+## Release 0.9 external retrieval development adapter
+
+The existing local workflow demo remains controlled by `SECURE_EXCHANGE_SYNTHETIC_DEMO=enabled`. External retrieval additionally requires `DEMO_EXTERNAL_RETRIEVAL_ENABLED=enabled`; if either gate is absent, `/demo/external/access` routes are not registered. Do not enable this surface on a shared production/public deployment.
+
+The credential form is `GET /demo/external/access` with same-origin `POST /demo/external/access`. Protected development routes are `/demo/external/access/session`, `/conversation`, `/attachments`, POST `/download`, and POST `/end`. There is no HTTP AccessGrant issuance route, email bootstrap, external reply, browser upload, production authentication/session, or production persistence adapter.
+
+Tests may create grants and clean synthetic attachments directly through the application services and then exercise the browser routes. The capability cookie is delivery-only; do not replace per-use AccessGrant validation with cookie presence. Production/public delivery still requires explicit abuse/rate controls and operational review.
