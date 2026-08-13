@@ -157,3 +157,10 @@ AccessGrant external authority now uses three independent operations: `THREAD_RE
 Reply issuance additionally requires the current authoritative thread to be reply-eligible. At use time, the application revalidates the bearer verifier, deployment/thread scope, explicit reply operation, revocation, authoritative expiry, broad external-access eligibility, and the stricter reply lifecycle rule. `COMPLETED` remains readable with valid `THREAD_READ` authority but cannot accept external replies.
 
 External actor attribution comes only from the validated grant's opaque `externalParticipantRef`. Caller-provided body text, email/display name, IP address, browser fields, or extra request properties cannot select or override actor identity, actor kind, deployment, message ID, audit actor, or timestamp. Unsafe external failures remain collapsed to conservative `EXTERNAL_ACCESS_DENIED` behavior.
+
+## Release 0.11 browser reply authorization
+
+Browser possession of the synthetic capability cookie is never sufficient authorization. Every reply POST delegates to the authoritative Release 0.10 application operation and must pass current AccessGrant lookup/scope, verifier proof, explicit `THREAD_REPLY`, revocation, expiry, current thread reply eligibility, expected thread version, and the atomic `AccessGrantAuthorityGuard` bound to the authoritative reply timestamp.
+
+Browser-supplied actor, actor kind, message ID, audit ID, timestamp, or lifecycle values are not accepted as authority inputs.
+

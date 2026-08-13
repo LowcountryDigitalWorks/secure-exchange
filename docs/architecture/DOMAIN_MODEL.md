@@ -281,3 +281,8 @@ External reply eligibility is an explicit lifecycle rule separate from external 
 A successful external reply creates one immutable `EXTERNAL_TO_STAFF` message whose actor reference is the AccessGrant's authoritative opaque `externalParticipantRef`. The caller cannot select actor identity, actor kind, deployment identity, message ID, audit ID, or authoritative timestamp. The existing bounded `PLAIN_TEXT` message representation remains authoritative for the body.
 
 External reply does not transition lifecycle. It updates `updatedAt` and `lastActivityAt` for authoritative activity and advances `attentionAt` to reflect new external activity requiring staff attention. `attentionAt` is not a per-user unread marker or read receipt and does not assert that every staff user has not read the message.
+
+## Release 0.11 delivery note
+
+Release 0.11 adds no new domain authority or lifecycle state. It only exposes the existing Release 0.10 `THREAD_REPLY` capability through the synthetic/local browser adapter. `THREAD_REPLY` remains independent from `THREAD_READ` and `ATTACHMENT_READ`; successful reply still creates one immutable `EXTERNAL_TO_STAFF` message, advances external activity/attention metadata, and makes no automatic lifecycle transition.
+

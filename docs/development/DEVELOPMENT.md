@@ -235,3 +235,10 @@ Tests may create grants and clean synthetic attachments directly through the app
 External replies are allowed only in `NEW`, `IN_PROGRESS`, `AWAITING_EXTERNAL`, and `AWAITING_STAFF`. They do not change lifecycle state. They advance `lastActivityAt` and `attentionAt` to represent new external activity requiring staff attention; `attentionAt` is not per-user unread/read-receipt state.
 
 Do not add an HTTP `/reply` route, reply form/button, client JavaScript, browser upload, email delivery, production authentication/session, or cloud adapter as part of Release 0.10. Release 0.11 must separately review browser reply delivery and same-origin/capability-cookie behavior. No dependency is added in this release.
+
+## Release 0.11 synthetic external reply
+
+External browser reply is available only when both development-only gates are enabled: `SECURE_EXCHANGE_SYNTHETIC_DEMO=enabled` and `DEMO_EXTERNAL_RETRIEVAL_ENABLED=enabled`. The external namespace remains `/demo/external/access`; reply uses `GET /reply`, `POST /reply`, and fixed `GET /reply/sent` confirmation beneath that prefix.
+
+Use synthetic data only. The browser capability remains short-lived transport, not a production session. No production public deployment, identity provider, notification delivery, AWS adapter, customer data, or PHI is part of this slice.
+

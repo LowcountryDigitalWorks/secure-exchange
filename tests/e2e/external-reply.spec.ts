@@ -27,14 +27,18 @@ async function withExternalServer<T>(
   const address = server.address();
   if (address === null || typeof address === "string") {
     server.close();
-    throw new Error("Synthetic external reply server did not expose a TCP port.");
+    throw new Error(
+      "Synthetic external reply server did not expose a TCP port.",
+    );
   }
   const baseURL = `http://127.0.0.1:${address.port}`;
   try {
     return await run(baseURL, fixture);
   } finally {
     await new Promise<void>((resolve, reject) => {
-      server.close((error) => (error === undefined ? resolve() : reject(error)));
+      server.close((error) =>
+        error === undefined ? resolve() : reject(error),
+      );
     });
   }
 }

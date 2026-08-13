@@ -27,17 +27,31 @@ function notice(): string {
 
 function nav(operations: readonly AccessGrantOperation[]): string {
   const links = [`<a href="${ACCESS_PREFIX}/session">Access home</a>`];
-  if (operations.includes("THREAD_READ")) links.push(`<a href="${ACCESS_PREFIX}/conversation">Conversation</a>`);
-  if (operations.includes("ATTACHMENT_READ")) links.push(`<a href="${ACCESS_PREFIX}/attachments">Attachments</a>`);
-  if (operations.includes("THREAD_REPLY")) links.push(`<a href="${ACCESS_PREFIX}/reply">Reply</a>`);
+  if (operations.includes("THREAD_READ"))
+    links.push(`<a href="${ACCESS_PREFIX}/conversation">Conversation</a>`);
+  if (operations.includes("ATTACHMENT_READ"))
+    links.push(`<a href="${ACCESS_PREFIX}/attachments">Attachments</a>`);
+  if (operations.includes("THREAD_REPLY"))
+    links.push(`<a href="${ACCESS_PREFIX}/reply">Reply</a>`);
   return `<nav aria-label="Synthetic external secure access">${links.join("\n")}</nav>`;
 }
 
-export function renderExternalDevelopmentSession(operations: readonly AccessGrantOperation[]): string {
+export function renderExternalDevelopmentSession(
+  operations: readonly AccessGrantOperation[],
+): string {
   const actions: string[] = [];
-  if (operations.includes("THREAD_READ")) actions.push(`<a class="button-link" href="${ACCESS_PREFIX}/conversation">Read conversation</a>`);
-  if (operations.includes("ATTACHMENT_READ")) actions.push(`<a class="button-link" href="${ACCESS_PREFIX}/attachments">View eligible attachments</a>`);
-  if (operations.includes("THREAD_REPLY")) actions.push(`<a class="button-link" href="${ACCESS_PREFIX}/reply">Send reply</a>`);
+  if (operations.includes("THREAD_READ"))
+    actions.push(
+      `<a class="button-link" href="${ACCESS_PREFIX}/conversation">Read conversation</a>`,
+    );
+  if (operations.includes("ATTACHMENT_READ"))
+    actions.push(
+      `<a class="button-link" href="${ACCESS_PREFIX}/attachments">View eligible attachments</a>`,
+    );
+  if (operations.includes("THREAD_REPLY"))
+    actions.push(
+      `<a class="button-link" href="${ACCESS_PREFIX}/reply">Send reply</a>`,
+    );
   return page(
     "Secure Access — Synthetic Development Demo",
     `${notice()}${nav(operations)}<section class="card" aria-labelledby="session-title"><h1 id="session-title">Synthetic secure access</h1><p>The browser capability is short-lived transport only. Each protected action revalidates the authoritative AccessGrant and its exact operation.</p><div class="actions">${actions.join("\n")}</div><form method="post" action="${ACCESS_PREFIX}/end" class="actions"><button type="submit">End secure access</button></form></section>`,

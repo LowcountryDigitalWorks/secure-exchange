@@ -360,7 +360,10 @@ export function registerExternalRetrievalDevelopmentRoutes(
         303,
       );
     } catch (error: unknown) {
-      if (error instanceof DomainError && error.code === "INVALID_MESSAGE_BODY") {
+      if (
+        error instanceof DomainError &&
+        error.code === "INVALID_MESSAGE_BODY"
+      ) {
         return context.html(renderExternalReplyInvalid(), 400);
       }
       return protectedUnavailable(context, demo, capability);

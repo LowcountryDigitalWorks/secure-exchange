@@ -203,3 +203,8 @@ All existing attachment-state, protected-content integrity, TransferAttestation/
 Deterministic unit coverage proves the explicit reply lifecycle matrix and external activity/attention version semantics. Integration coverage proves `THREAD_REPLY` is independent from read/attachment authority; reply-only and mixed grants; policy rejection; wrong-secret/revoked/expired/wrong-scope denial; grant-ID-without-secret denial; authoritative grant actor attribution; all four allowed and all three denied lifecycle states; active-grant denial after completion; bounded plain-text validation; immutable chronological external messages; minimized audit; no lifecycle/download/open/TransferAttestation/completion inference; transaction rollback; and stale concurrent expected-version failure without partial publication.
 
 Existing staff-reply behavior and all Release 0.7–0.9 AccessGrant, attachment, browser, accessibility, secret, dependency, workflow, and evidence regressions remain part of `npm run validate`. Release 0.10 deliberately adds no browser reply surface, so the existing browser suite remains regression coverage rather than a reply-delivery test.
+
+## Release 0.11 browser reply regression boundary
+
+Release 0.11 adds deterministic HTTP/browser checks for operation independence, disabled-by-default routing, same-origin reply POST, safe fixed PRG navigation, bounded plain-text validation, authoritative actor attribution, revocation/expiry/lifecycle denial, activity/attention semantics, audit minimization, and accessibility. Release 0.10 stale-thread, concurrent-revocation, and expiry-crossing tests remain intact and continue to prove the transaction boundary below HTTP.
+

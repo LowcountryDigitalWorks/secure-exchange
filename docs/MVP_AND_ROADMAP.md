@@ -209,3 +209,10 @@ Release 0.10 adds provider-neutral AccessGrant-authorized external reply as an a
 External reply is allowed only while the authoritative thread is `NEW`, `IN_PROGRESS`, `AWAITING_EXTERNAL`, or `AWAITING_STAFF`. It fails closed while `COMPLETED`, `EXPIRED`, or `DISPOSED`. This is intentionally narrower than external read eligibility: a valid `THREAD_READ` grant may still read a `COMPLETED` conversation, but `THREAD_REPLY` cannot reply to it.
 
 A successful external reply creates one immutable `EXTERNAL_TO_STAFF` plain-text message attributed to the AccessGrant's authoritative external participant. It advances thread activity and staff-attention timestamps without creating per-user unread/read-receipt state and without automatically changing lifecycle state. Browser reply delivery remains deferred to Release 0.11.
+
+## Release 0.11 — External Reply Development Slice
+
+Release 0.11 wires the Release 0.10 `THREAD_REPLY` application core into the existing disabled-by-default synthetic external browser development namespace. The browser capability cookie remains transport only; `THREAD_READ`, `ATTACHMENT_READ`, and `THREAD_REPLY` stay independent, and every reply re-enters the authoritative AccessGrant application service before mutation.
+
+Browser reply uses same-origin POST plus a fixed local Post/Redirect/Get confirmation. The existing two development gates remain required: `SECURE_EXCHANGE_SYNTHETIC_DEMO=enabled` and `DEMO_EXTERNAL_RETRIEVAL_ENABLED=enabled`. Release 0.11 does not authorize a production public portal, production authentication, AWS infrastructure, customer data, PHI, or paid services.
+

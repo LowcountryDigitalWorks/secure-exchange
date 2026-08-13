@@ -334,3 +334,10 @@ Release 0.10 explicitly addresses operation-confusion/privilege broadening, stal
 Controls include a distinct `THREAD_REPLY` operation with policy opt-in, use-time bearer/scope/revocation/expiry revalidation, a separate domain reply-state rule that excludes `COMPLETED`, grant-derived external actor attribution, bounded plain-text validation, server-generated identifiers/time, minimized audit with no body/secret/verifier, and expected-version atomic message/thread/audit commit.
 
 `attentionAt` records staff-facing attention to new external activity only; it is not a global unread/read-receipt assertion. Release 0.10 adds no browser reply route, upload capability, email bootstrap, public deployment, production identity/session, or cloud infrastructure; those delivery/abuse controls remain later trust-boundary work.
+
+## Release 0.11 synthetic browser reply boundary
+
+The reply form increases only the disabled synthetic/local browser development surface. CSRF resistance continues to rely on the existing strict same-origin mutation check plus the host-only `HttpOnly`, `SameSite=Strict`, path-scoped capability cookie. No permissive CORS is added. Capability secrets, verifier material, and reply contents are excluded from URLs and redirects. The UI is not an authorization boundary; stale UI must still fail at the authoritative application/store transaction.
+
+Production Internet exposure, abuse/rate controls, production authentication, credential bootstrap, notification delivery, and operational monitoring remain separate future gates.
+
