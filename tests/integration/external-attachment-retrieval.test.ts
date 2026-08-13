@@ -173,7 +173,9 @@ async function issue(
 function retrievalInput(
   issued: Awaited<ReturnType<typeof issue>>,
   overrides: Partial<
-    Parameters<ExternalAttachmentRetrievalService["retrieveExternalAttachment"]>[0]
+    Parameters<
+      ExternalAttachmentRetrievalService["retrieveExternalAttachment"]
+    >[0]
   > = {},
 ) {
   return {
@@ -262,7 +264,10 @@ describe("external attachment retrieval", () => {
 
   it("allows a mixed-operation grant to exercise each authority independently", async () => {
     const { grantService, externalService } = await fixture();
-    const issued = await issue(grantService, ["THREAD_READ", "ATTACHMENT_READ"]);
+    const issued = await issue(grantService, [
+      "THREAD_READ",
+      "ATTACHMENT_READ",
+    ]);
 
     await expect(
       grantService.retrieveExternalConversation({
@@ -278,7 +283,9 @@ describe("external attachment retrieval", () => {
   });
 
   it("rejects ATTACHMENT_READ issuance when the current policy does not permit it", async () => {
-    const { grantService } = await fixture({ allowedOperations: ["THREAD_READ"] });
+    const { grantService } = await fixture({
+      allowedOperations: ["THREAD_READ"],
+    });
     await expect(
       issue(grantService, ["ATTACHMENT_READ"]),
     ).rejects.toMatchObject({ code: "ACCESS_GRANT_POLICY_REJECTED" });
@@ -443,16 +450,19 @@ describe("external attachment retrieval", () => {
   it("revalidates current thread eligibility and never lets a grant override EXPIRED or DISPOSED", async () => {
     for (const state of ["EXPIRED", "DISPOSED"] as const) {
       const current = await fixture({ threadState: state });
-      await expect(
-        issue(current.grantService),
-      ).rejects.toMatchObject({ code: "ACCESS_GRANT_POLICY_REJECTED" });
+      await expect(issue(current.grantService)).rejects.toMatchObject({
+        code: "ACCESS_GRANT_POLICY_REJECTED",
+      });
     }
   });
 
   it("emits minimized external ATTACHMENT_DOWNLOADED evidence only after successful integrity validation", async () => {
     const { store, grantService, externalService } = await fixture();
     const issued = await issue(grantService);
-    const storedGrant = await store.getAccessGrant(DEPLOYMENT_A, issued.grantId);
+    const storedGrant = await store.getAccessGrant(
+      DEPLOYMENT_A,
+      issued.grantId,
+    );
 
     await externalService.retrieveExternalAttachment(retrievalInput(issued));
 
@@ -472,9 +482,13 @@ describe("external attachment retrieval", () => {
       store.listAuditEvents(DEPLOYMENT_A, THREAD_A),
     );
     expect(serializedAudit).not.toContain(issued.secret);
-    expect(serializedAudit).not.toContain(storedGrant?.verifierDigest ?? "never");
+    expect(serializedAudit).not.toContain(
+      storedGrant?.verifierDigest ?? "never",
+    );
     expect(serializedAudit).not.toContain(CONTENT_A);
-    expect(serializedAudit).not.toContain("synthetic external attachment bytes");
+    expect(serializedAudit).not.toContain(
+      "synthetic external attachment bytes",
+    );
   });
 
   it("keeps external download distinct from TransferAttestation and thread completion", async () => {

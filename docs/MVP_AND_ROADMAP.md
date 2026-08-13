@@ -187,3 +187,11 @@ Still deferred: browser upload/download delivery, content-signature/type detecti
 Release 0.7 implements temporary external thread-read authority without exposing it through a browser or notification channel: provider-neutral AccessGrant metadata/policy; explicit `THREAD_READ` only; server-generated 256-bit one-time bearer secret; persisted versioned SHA-256 verifier only; bounded server-time expiry; authorized issuance and retained-record optimistic revocation; conservative authoritative validation on every use; an external conversation projection excluding internal queue, actor, lifecycle, audit, and administrative metadata; minimized grant evidence; and authoritative transaction-time enforcement of the per-message attachment-count policy under concurrent ingestion.
 
 External attachment retrieval is deferred so it can reuse the Release 0.6 clean-attachment retrieval/download-evidence path. External reply is deferred until an explicit lifecycle eligibility rule is approved. Also still deferred: public retrieval routes, email-link/notification delivery, production authentication, production persistence, AWS adapters/infrastructure, customer data, PHI, and regulated-deployment readiness.
+
+## Release 0.8 — external attachment retrieval core
+
+Release 0.8 adds provider-neutral external attachment retrieval behind explicit `ATTACHMENT_READ` AccessGrant authority. `THREAD_READ` and `ATTACHMENT_READ` remain independent capabilities: neither implies the other, and current AccessGrant policy must explicitly permit every operation requested at issuance.
+
+The browser-delivery trust boundary remains deferred. Release 0.8 adds no public grant URL, email delivery, capability cookie, public attachment endpoint, or external reply surface. A later release must separately review delivery of the bearer credential and HTTP response controls.
+
+External attachment download remains evidence only: `Opened != Downloaded != Transferred/Filed != Completed`. Download does not create TransferAttestation and does not complete or otherwise transition a thread.

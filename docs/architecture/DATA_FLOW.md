@@ -141,3 +141,15 @@ The external projection contains only thread ID plus chronological message direc
 External attachment retrieval remains deferred so a later release can reuse the Release 0.6 authoritative clean-attachment/content/download-evidence path rather than create a parallel implementation. External reply is also deferred because no approved external-reply lifecycle eligibility rule exists yet.
 
 Release 0.7 also closes the Release 0.6 attachment-count race: attachment publication carries a message-scoped current-policy guard into the authoritative metadata transaction. The transaction rechecks the current policy and post-mutation count, and a losing concurrent staged object is compensated through the provider-neutral protected-content delete operation.
+
+## Release 0.8 external attachment retrieval flow
+
+1. The caller presents deployment ID, thread ID, grant ID, bearer secret, message ID, and attachment ID to the application-layer external retrieval service.
+2. Existing AccessGrant validation authoritatively proves verifier match, deployment/thread scope, explicit `ATTACHMENT_READ`, unrevoked state, server-time expiry, and current thread eligibility.
+3. The shared attachment retrieval path loads the authoritative message and attachment and verifies deployment/thread/message ownership.
+4. Retrieval proceeds only when the attachment is exactly `CLEAN` and not deleted.
+5. Protected content is resolved through the existing provider-neutral content port and its returned byte length must equal authoritative attachment metadata.
+6. Only after successful content and integrity validation is minimized `ATTACHMENT_DOWNLOADED` evidence committed with opaque external actor/grant attribution.
+7. The application returns only safe download filename, normalized media type, byte length, and bytes required by a future delivery adapter.
+
+Staff retrieval follows the same steps after its separate current staff/queue authorization gate. There is no second weaker attachment safety pipeline.

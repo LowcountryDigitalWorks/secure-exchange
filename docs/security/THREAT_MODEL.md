@@ -312,3 +312,11 @@ Threats include guessed/leaked grant IDs, stolen bearer secrets, replay after re
 Grant audit records contain the opaque grant ID and actor attribution where needed but never the raw secret or verifier. No bearer token is placed in a URL, repository fixture, documentation example, or browser route in Release 0.7 because public delivery is not yet implemented.
 
 The attachment-count race is also addressed as a storage-exhaustion/data-policy correctness control: concurrent ingestion can no longer rely solely on a stale application count. The authoritative metadata transaction checks current policy plus resulting per-message count before publication; losing staged content is removed through compensation.
+
+## Release 0.8 external attachment retrieval threats
+
+Release 0.8 treats bearer-secret theft, operation confusion, cross-deployment/thread attachment access, identifier enumeration, stale/revoked/expired authority, unsafe attachment-state bypass, protected-content substitution or absence, and metadata/content length mismatch as explicit threats.
+
+Mitigations include high-entropy server-generated bearer material with persisted one-way verifier only, explicit `ATTACHMENT_READ`, current policy enforcement at issuance, per-use grant and thread revalidation, authoritative message/attachment ownership checks, exactly-`CLEAN` retrieval, protected-content byte-length integrity validation, minimized audit, and conservative external denial responses.
+
+No browser or email delivery mechanism exists in this release, so URL leakage, cookie capability handling, browser caching, response-header hardening, and delivery-channel replay controls remain a Release 0.9 trust-boundary review rather than being guessed here.
