@@ -8,7 +8,7 @@ import type {
 } from "./types.js";
 import type { Thread, ThreadLifecycleState } from "./thread.js";
 
-export type AccessGrantOperation = "THREAD_READ" | "ATTACHMENT_READ";
+export type AccessGrantOperation = "THREAD_READ";
 
 export interface AccessGrantPolicy {
   readonly policyRef: AccessGrantPolicyRef;
@@ -30,10 +30,7 @@ export interface AccessGrant {
   readonly version: number;
 }
 
-const ACCESS_GRANT_OPERATIONS: readonly AccessGrantOperation[] = [
-  "THREAD_READ",
-  "ATTACHMENT_READ",
-];
+const ACCESS_GRANT_OPERATIONS: readonly AccessGrantOperation[] = ["THREAD_READ"];
 const MAX_REFERENCE_LENGTH = 128;
 const VERIFIER_PATTERN = /^sha256:v1:[A-Za-z0-9_-]{43}$/u;
 
