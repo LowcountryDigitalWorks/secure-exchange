@@ -1,0 +1,140 @@
+name: Release 0.11 Finalizer
+
+on:
+  push:
+    branches:
+      - release/0.11-external-reply-development-slice
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-0.11-finalizer
+  cancel-in-progress: true
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release branch
+        uses: actions/checkout@v6
+        with:
+          ref: release/0.11-external-reply-development-slice
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium and system dependencies
+        run: npx --no-install playwright install --with-deps chromium
+
+      - name: Finalize release metadata and durable documentation
+        shell: python
+        run: |
+          import json
+          from pathlib import Path
+
+          package = Path("package.json")
+          data = json.loads(package.read_text())
+          data["version"] = "0.11.0"
+          package.write_text(json.dumps(data, indent=2) + "\n")
+
+          lock = Path("package-lock.json")
+          lock_data = json.loads(lock.read_text())
+          lock_data["version"] = "0.11.0"
+          if isinstance(lock_data.get("packages"), dict) and "" in lock_data["packages"]:
+              lock_data["packages"][""]["version"] = "0.11.0"
+          lock.write_text(json.dumps(lock_data, indent=2) + "\n")
+
+          sections = {
+              "docs/MVP_AND_ROADMAP.md": """
+
+          ## Release 0.11 — External Reply Development Slice
+
+          Release 0.11 wires the Release 0.10 `THREAD_REPLY` application core into the existing disabled-by-default synthetic external browser development namespace. The browser capability cookie remains transport only; `THREAD_READ`, `ATTACHMENT_READ`, and `THREAD_REPLY` stay independent, and every reply re-enters the authoritative AccessGrant application service before mutation.
+
+          Browser reply uses same-origin POST plus a fixed local Post/Redirect/Get confirmation. The existing two development gates remain required: `SECURE_EXCHANGE_SYNTHETIC_DEMO=enabled` and `DEMO_EXTERNAL_RETRIEVAL_ENABLED=enabled`. Release 0.11 does not authorize a production public portal, production authentication, AWS infrastructure, customer data, PHI, or paid services.
+          """,
+              "docs/architecture/ACCESS_PATTERNS.md": """
+
+          ## Release 0.11 browser reply access pattern
+
+          The synthetic external browser capability remains a short-lived transport container rather than authorization truth. The session UI may expose reply only when `THREAD_REPLY` is currently usable, but UI visibility never authorizes the mutation. `POST /demo/external/access/reply` delegates to `AccessGrantService.replyExternalConversation()`, which revalidates bearer/verifier proof, deployment/thread scope, explicit `THREAD_REPLY`, revocation, expiry, current lifecycle, expected thread version, and the Release 0.10 `AccessGrantAuthorityGuard` at commit.
+
+          Reply-only authority does not grant conversation read, and read-only authority does not grant reply. The adapter does not widen an AccessGrant.
+          """,
+              "docs/architecture/DATA_FLOW.md": """
+
+          ## Release 0.11 external browser reply flow
+
+          Synthetic credential POST -> scoped HttpOnly capability cookie -> server-rendered reply form -> same-origin reply POST -> Release 0.10 AccessGrant reply service -> atomic message/activity/attention/audit commit -> fixed local 303 confirmation.
+
+          The capability secret and reply body never enter path, query, fragment, or redirect data. The reply application transaction preserves both expected-thread-version concurrency and the AccessGrant authority/version/expiry guard. A failed authority or lifecycle check publishes no reply message, activity/attention change, or reply audit evidence.
+          """,
+              "docs/architecture/DOMAIN_MODEL.md": """
+
+          ## Release 0.11 delivery note
+
+          Release 0.11 adds no new domain authority or lifecycle state. It only exposes the existing Release 0.10 `THREAD_REPLY` capability through the synthetic/local browser adapter. `THREAD_REPLY` remains independent from `THREAD_READ` and `ATTACHMENT_READ`; successful reply still creates one immutable `EXTERNAL_TO_STAFF` message, advances external activity/attention metadata, and makes no automatic lifecycle transition.
+          """,
+              "docs/development/DEVELOPMENT.md": """
+
+          ## Release 0.11 synthetic external reply
+
+          External browser reply is available only when both development-only gates are enabled: `SECURE_EXCHANGE_SYNTHETIC_DEMO=enabled` and `DEMO_EXTERNAL_RETRIEVAL_ENABLED=enabled`. The external namespace remains `/demo/external/access`; reply uses `GET /reply`, `POST /reply`, and fixed `GET /reply/sent` confirmation beneath that prefix.
+
+          Use synthetic data only. The browser capability remains short-lived transport, not a production session. No production public deployment, identity provider, notification delivery, AWS adapter, customer data, or PHI is part of this slice.
+          """,
+              "docs/security/AUTHORIZATION.md": """
+
+          ## Release 0.11 browser reply authorization
+
+          Browser possession of the synthetic capability cookie is never sufficient authorization. Every reply POST delegates to the authoritative Release 0.10 application operation and must pass current AccessGrant lookup/scope, verifier proof, explicit `THREAD_REPLY`, revocation, expiry, current thread reply eligibility, expected thread version, and the atomic `AccessGrantAuthorityGuard` bound to the authoritative reply timestamp.
+
+          Browser-supplied actor, actor kind, message ID, audit ID, timestamp, or lifecycle values are not accepted as authority inputs.
+          """,
+              "docs/security/TEST_AND_SECURITY_STRATEGY.md": """
+
+          ## Release 0.11 browser reply regression boundary
+
+          Release 0.11 adds deterministic HTTP/browser checks for operation independence, disabled-by-default routing, same-origin reply POST, safe fixed PRG navigation, bounded plain-text validation, authoritative actor attribution, revocation/expiry/lifecycle denial, activity/attention semantics, audit minimization, and accessibility. Release 0.10 stale-thread, concurrent-revocation, and expiry-crossing tests remain intact and continue to prove the transaction boundary below HTTP.
+          """,
+              "docs/security/THREAT_MODEL.md": """
+
+          ## Release 0.11 synthetic browser reply boundary
+
+          The reply form increases only the disabled synthetic/local browser development surface. CSRF resistance continues to rely on the existing strict same-origin mutation check plus the host-only `HttpOnly`, `SameSite=Strict`, path-scoped capability cookie. No permissive CORS is added. Capability secrets, verifier material, and reply contents are excluded from URLs and redirects. The UI is not an authorization boundary; stale UI must still fail at the authoritative application/store transaction.
+
+          Production Internet exposure, abuse/rate controls, production authentication, credential bootstrap, notification delivery, and operational monitoring remain separate future gates.
+          """,
+          }
+
+          for name, section in sections.items():
+              path = Path(name)
+              marker = section.strip().splitlines()[0]
+              current = path.read_text()
+              if marker not in current:
+                  path.write_text(current.rstrip() + section + "\n")
+
+      - name: Format release tree
+        run: npx --no-install prettier --write .
+
+      - name: Remove temporary finalizer
+        run: rm .github/workflows/r011-finalize.yml
+
+      - name: Run complete validation
+        run: npm run validate
+
+      - name: Commit validated permanent candidate
+        run: |
+          git config user.name "Eddie-LowcountryDigitalWorks"
+          git config user.email "eddie@lowcountrydigitalworks.com"
+          git add -A
+          git commit -m "Finalize Release 0.11 external reply development slice"
+          git push origin HEAD:release/0.11-external-reply-development-slice
