@@ -26,59 +26,27 @@ jobs:
           cache-dependency-path: package-lock.json
       - name: Install dependencies
         run: npm ci
-      - name: Apply narrow lint corrections
+      - name: Apply final verifier-match lint correction
         shell: python
         run: |
           from pathlib import Path
 
-          store = Path("src/adapters/in-memory-workflow-store.ts")
-          text = store.read_text()
-          text = text.replace(
-              '''      if (\n        current === undefined ||\n        current.version !== mutation.expectedThreadVersion\n      ) {''',
-              '''      if (current?.version !== mutation.expectedThreadVersion) {''',
-          )
-          text = text.replace(
-              '''      if (\n        policy === undefined ||\n        policy.policyRef !== guard.attachmentPolicyRef\n      ) {''',
-              '''      if (policy?.policyRef !== guard.attachmentPolicyRef) {''',
-          )
-          text = text.replace(
-              '''    if (policy === undefined || policy.policyRef !== grant.policyRef) {''',
-              '''    if (policy?.policyRef !== grant.policyRef) {''',
-          )
-          store.write_text(text)
-
           service = Path("src/application/access-grant-service.ts")
           text = service.read_text()
-          text = text.replace(
-              '''    let secretMatches = false;\n    try {\n      secretMatches = await this.secrets.matches(input.secret, grant.verifierDigest);\n    } catch {\n      secretMatches = false;\n    }''',
-              '''    const secretMatches = await this.secrets\n      .matches(input.secret, grant.verifierDigest)\n      .catch(() => false);''',
-          )
-          service.write_text(text)
-
-          test = Path("tests/integration/attachment-count-concurrency.test.ts")
-          text = test.read_text()
-          text = text.replace(
-              'import { ApplicationError } from "../../src/application/errors.js";\n',
-              '',
-          )
-          text = text.replace(
-              'import { DomainError } from "../../src/domain/errors.js";\n',
-              'import type { DomainError } from "../../src/domain/errors.js";\n',
-          )
-          text = text.replace(
-              '''    const reason = (rejected[0] as PromiseRejectedResult).reason;\n    expect(reason).toBeInstanceOf(ApplicationError);\n    expect((reason as ApplicationError).code).toBe(\n      "ATTACHMENT_POLICY_REJECTED",\n    );\n''',
-              '',
-          )
-          test.write_text(text)
+          old = '''    let secretMatches = false;\n    try {\n      secretMatches = await this.secrets.matches(\n        input.secret,\n        grant.verifierDigest,\n      );\n    } catch {\n      secretMatches = false;\n    }'''
+          new = '''    const secretMatches = await this.secrets\n      .matches(input.secret, grant.verifierDigest)\n      .catch(() => false);'''
+          if old not in text:
+              raise SystemExit("Expected verifier-match block not found")
+          service.write_text(text.replace(old, new))
       - name: Format and validate focused correction
         run: |
-          npx --no-install prettier --write src/adapters/in-memory-workflow-store.ts src/application/access-grant-service.ts tests/integration/attachment-count-concurrency.test.ts
+          npx --no-install prettier --write src/application/access-grant-service.ts
           npm run lint
           npm run typecheck
       - name: Commit focused correction
         run: |
           git config user.name "Eddie-LowcountryDigitalWorks"
           git config user.email "eddie@lowcountrydigitalworks.com"
-          git add src/adapters/in-memory-workflow-store.ts src/application/access-grant-service.ts tests/integration/attachment-count-concurrency.test.ts
-          git commit -m "Fix Release 0.7 lint and strict typing"
+          git add src/application/access-grant-service.ts
+          git commit -m "Fix AccessGrant verifier lint expression"
           git push origin HEAD:release/0.7-access-grant-core
