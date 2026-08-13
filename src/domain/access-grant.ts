@@ -9,9 +9,7 @@ import type {
 import type { Thread, ThreadLifecycleState } from "./thread.js";
 
 export type AccessGrantOperation =
-  | "THREAD_READ"
-  | "ATTACHMENT_READ"
-  | "THREAD_REPLY";
+  "THREAD_READ" | "ATTACHMENT_READ" | "THREAD_REPLY";
 
 export interface AccessGrantPolicy {
   readonly policyRef: AccessGrantPolicyRef;

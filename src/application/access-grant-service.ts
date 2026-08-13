@@ -369,11 +369,7 @@ export class AccessGrantService {
       createdAt: at,
       body: createPlainTextMessageBody(input.messageBody),
     };
-    const nextThread = recordExternalThreadActivity(
-      thread,
-      thread.version,
-      at,
-    );
+    const nextThread = recordExternalThreadActivity(thread, thread.version, at);
 
     try {
       await this.store.commit({

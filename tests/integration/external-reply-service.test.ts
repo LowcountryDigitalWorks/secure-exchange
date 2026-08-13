@@ -81,9 +81,7 @@ function fixture(
   options: {
     readonly threadState?: ThreadLifecycleState;
     readonly allowedOperations?: readonly (
-      | "THREAD_READ"
-      | "ATTACHMENT_READ"
-      | "THREAD_REPLY"
+      "THREAD_READ" | "ATTACHMENT_READ" | "THREAD_REPLY"
     )[];
   } = {},
 ): Fixture {
@@ -128,9 +126,7 @@ function fixture(
 async function issue(
   service: AccessGrantService,
   requestedOperations: readonly (
-    | "THREAD_READ"
-    | "ATTACHMENT_READ"
-    | "THREAD_REPLY"
+    "THREAD_READ" | "ATTACHMENT_READ" | "THREAD_REPLY"
   )[] = ["THREAD_REPLY"],
 ) {
   return service.issueAccessGrant({
@@ -466,7 +462,9 @@ describe("AccessGrant external reply core", () => {
       const { store, service } = fixture({ threadState: state });
       const grant = await issue(service);
       await service.replyExternalConversation(replyInput(grant));
-      expect((await store.getThread(DEPLOYMENT_A, THREAD_A))?.state).toBe(state);
+      expect((await store.getThread(DEPLOYMENT_A, THREAD_A))?.state).toBe(
+        state,
+      );
     }
   });
 
@@ -492,11 +490,7 @@ describe("AccessGrant external reply core", () => {
   it("denies previously issued reply authority after expiration or disposition of the thread", async () => {
     const expired = fixture();
     const expiredGrant = await issue(expired.service);
-    await moveThread(
-      expired.store,
-      "EXPIRED",
-      "2026-08-13T04:01:00.000Z",
-    );
+    await moveThread(expired.store, "EXPIRED", "2026-08-13T04:01:00.000Z");
     await expectApplicationCode(
       expired.service.replyExternalConversation(replyInput(expiredGrant)),
       "EXTERNAL_ACCESS_DENIED",
@@ -504,16 +498,8 @@ describe("AccessGrant external reply core", () => {
 
     const disposed = fixture();
     const disposedGrant = await issue(disposed.service);
-    await moveThread(
-      disposed.store,
-      "COMPLETED",
-      "2026-08-13T04:01:00.000Z",
-    );
-    await moveThread(
-      disposed.store,
-      "DISPOSED",
-      "2026-08-13T04:02:00.000Z",
-    );
+    await moveThread(disposed.store, "COMPLETED", "2026-08-13T04:01:00.000Z");
+    await moveThread(disposed.store, "DISPOSED", "2026-08-13T04:02:00.000Z");
     await expectApplicationCode(
       disposed.service.replyExternalConversation(replyInput(disposedGrant)),
       "EXTERNAL_ACCESS_DENIED",
@@ -569,7 +555,9 @@ describe("AccessGrant external reply core", () => {
     });
 
     const audit = store.listAuditEvents(DEPLOYMENT_A, THREAD_A);
-    const appended = audit.filter((event) => event.eventType === "MESSAGE_APPENDED");
+    const appended = audit.filter(
+      (event) => event.eventType === "MESSAGE_APPENDED",
+    );
     expect(appended).toHaveLength(1);
     expect(appended[0]).toMatchObject({
       actorRef: EXTERNAL_A,
@@ -583,8 +571,12 @@ describe("AccessGrant external reply core", () => {
     const serializedAudit = JSON.stringify(audit);
     expect(serializedAudit).not.toContain("Line one");
     expect(serializedAudit).not.toContain(grant.secret);
-    expect(serializedAudit).not.toContain(storedGrant?.verifierDigest ?? "never");
-    expect(audit.some((event) => event.eventType === "THREAD_OPENED")).toBe(false);
+    expect(serializedAudit).not.toContain(
+      storedGrant?.verifierDigest ?? "never",
+    );
+    expect(audit.some((event) => event.eventType === "THREAD_OPENED")).toBe(
+      false,
+    );
     expect(
       audit.some((event) => event.eventType === "ATTACHMENT_DOWNLOADED"),
     ).toBe(false);

@@ -30,7 +30,9 @@ describe("external reply lifecycle", () => {
       "AWAITING_STAFF",
     ] as const) {
       expect(isExternalReplyAllowed(state)).toBe(true);
-      expect(() => requireExternalReplyAllowed(makeThread({ state }))).not.toThrow();
+      expect(() =>
+        requireExternalReplyAllowed(makeThread({ state })),
+      ).not.toThrow();
     }
 
     for (const state of ["COMPLETED", "EXPIRED", "DISPOSED"] as const) {
@@ -65,12 +67,7 @@ describe("external reply lifecycle", () => {
       attentionAt: "2026-08-13T01:05:00.000Z",
     });
     expectDomainCode(
-      () =>
-        recordExternalThreadActivity(
-          thread,
-          6,
-          "2026-08-13T01:05:00.000Z",
-        ),
+      () => recordExternalThreadActivity(thread, 6, "2026-08-13T01:05:00.000Z"),
       "STALE_VERSION",
     );
   });
