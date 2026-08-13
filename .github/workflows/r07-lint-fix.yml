@@ -70,7 +70,7 @@ jobs:
           )
           text = text.replace(
               'import { DomainError } from "../../src/domain/errors.js";\n',
-              'import type { DomainError } from "../../src/domain/errors.js";\n',
+              '',
               1,
           )
           block = '''    const reason = (rejected[0] as PromiseRejectedResult).reason;\n    expect(reason).toBeInstanceOf(ApplicationError);\n    expect((reason as ApplicationError).code).toBe(\n      "ATTACHMENT_POLICY_REJECTED",\n    );\n'''
