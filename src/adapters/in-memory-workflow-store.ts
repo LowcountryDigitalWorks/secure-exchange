@@ -507,8 +507,7 @@ export class InMemoryWorkflowStore implements WorkflowStore {
       );
       const validAt = Date.parse(guard.validAt);
       if (
-        current === undefined ||
-        current.deploymentId !== guard.deploymentId ||
+        current?.deploymentId !== guard.deploymentId ||
         current.threadId !== guard.threadId ||
         !Number.isSafeInteger(guard.expectedVersion) ||
         guard.expectedVersion <= 0 ||
