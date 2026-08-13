@@ -151,3 +151,11 @@ Release 0.7 adds executable access patterns to issue one thread-scoped AccessGra
 New attachment publication also requires an authoritative message-scoped guard carrying the current attachment-policy reference. The transaction validates the current policy and post-mutation per-message count before publication.
 
 A grant ID, queue/index projection, or cached state is never authorization truth. The in-memory maps are development adapters only and do not select DynamoDB keys or indexes. Future provider implementations must preserve verifier checks, current-state revalidation, optimistic mutation semantics, and the authoritative attachment-count guard.
+
+## Release 0.8 external attachment access pattern
+
+External attachment retrieval requires an authoritative AccessGrant lookup and verifier check for the same deployment and thread with explicit `ATTACHMENT_READ`. The grant must be unrevoked, unexpired according to server time, and the current authoritative thread must remain externally eligible.
+
+After external authority is established, the retrieval path converges with staff retrieval: load the authoritative message, load the attachment, verify deployment/thread/message ownership, require state exactly `CLEAN` and not deleted, resolve protected content, verify returned byte length against authoritative metadata, then atomically append `ATTACHMENT_DOWNLOADED` evidence. Attachment ID, message ID, thread ID, grant ID, queue data, or a previously valid grant is never sufficient by itself.
+
+External-facing lookup and content failures are collapsed to a conservative access-denied result so the application does not unnecessarily disclose which grant, thread, message, attachment, or content object exists.

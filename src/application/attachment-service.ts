@@ -2,7 +2,6 @@ import {
   DomainError,
   applyAttachmentScanResult,
   normalizeDeclaredAttachmentMetadata,
-  requireAttachmentRetrievable,
   type ActorAuthorization,
   type ActorContext,
   type ActorRef,
@@ -18,6 +17,10 @@ import {
   type ThreadId,
   type WorkflowPermission,
 } from "../domain/index.js";
+import {
+  retrieveAuthorizedAttachment,
+  type AuthorizedAttachmentRetrievalResult,
+} from "./attachment-retrieval.js";
 import { ApplicationError } from "./errors.js";
 import type { OpaqueIdGenerator } from "./id-generator.js";
 import type { ProtectedContentStore } from "./protected-content.js";
@@ -53,13 +56,7 @@ export interface RetrieveAttachmentInput {
   readonly at: string;
 }
 
-export interface AttachmentRetrievalResult {
-  readonly attachmentId: AttachmentId;
-  readonly safeDownloadFilename: string;
-  readonly normalizedMediaType: string;
-  readonly byteLength: number;
-  readonly content: Uint8Array;
-}
+export type AttachmentRetrievalResult = AuthorizedAttachmentRetrievalResult;
 
 interface AuthorizedThread {
   readonly thread: Thread;
@@ -264,7 +261,7 @@ export class AttachmentService {
   async retrieveStaffAttachment(
     input: RetrieveAttachmentInput,
   ): Promise<AttachmentRetrievalResult> {
-    const { authorization } = await this.loadAuthorizedThread(
+    const { thread, authorization } = await this.loadAuthorizedThread(
       input,
       "ATTACHMENT_READ",
     );
@@ -275,77 +272,25 @@ export class AttachmentService {
       );
     }
 
-    const message = await this.store.getMessage(
-      input.deploymentId,
-      input.threadId,
-      input.messageId,
-    );
-    if (
-      message?.deploymentId !== input.deploymentId ||
-      message?.threadId !== input.threadId
-    ) {
-      throw new ApplicationError(
-        "RESOURCE_NOT_FOUND",
-        "Authoritative message was not found in the requested thread.",
-      );
-    }
-
-    const attachment = await this.loadAttachmentInScope(
-      input.deploymentId,
-      input.threadId,
-      message.messageId,
-      input.attachmentId,
-    );
-    try {
-      requireAttachmentRetrievable(attachment);
-    } catch {
-      throw new ApplicationError(
-        "ATTACHMENT_NOT_RETRIEVABLE",
-        "Attachment is not eligible for normal retrieval.",
-      );
-    }
-
-    let content: Uint8Array | undefined;
-    try {
-      content = await this.contentStore.get(attachment.contentRef);
-    } catch {
-      throw new ApplicationError(
-        "CONTENT_NOT_AVAILABLE",
-        "Protected attachment content could not be resolved.",
-      );
-    }
-    if (content?.byteLength !== attachment.sizeBytes) {
-      throw new ApplicationError(
-        "CONTENT_NOT_AVAILABLE",
-        "Protected attachment content is unavailable or inconsistent.",
-      );
-    }
-
-    await this.store.commit({
-      deploymentId: input.deploymentId,
-      threadId: input.threadId,
-      auditEvents: [
-        {
-          eventId: this.idGenerator.generate("audit"),
-          deploymentId: input.deploymentId,
-          threadId: input.threadId,
-          eventType: "ATTACHMENT_DOWNLOADED",
+    return retrieveAuthorizedAttachment(
+      {
+        store: this.store,
+        contentStore: this.contentStore,
+        idGenerator: this.idGenerator,
+      },
+      {
+        deploymentId: input.deploymentId,
+        threadId: input.threadId,
+        messageId: input.messageId,
+        attachmentId: input.attachmentId,
+        at: input.at,
+        expectedThreadVersion: thread.version,
+        authority: {
           actorRef: authorization.actorRef,
           actorKind: authorization.actorKind,
-          at: input.at,
-          attachmentId: attachment.attachmentId,
-          outcome: "SUCCEEDED",
         },
-      ],
-    });
-
-    return {
-      attachmentId: attachment.attachmentId,
-      safeDownloadFilename: attachment.safeDownloadFilename,
-      normalizedMediaType: attachment.normalizedMediaType,
-      byteLength: content.byteLength,
-      content: new Uint8Array(content),
-    };
+      },
+    );
   }
 
   private async loadAuthoritativeMessage(

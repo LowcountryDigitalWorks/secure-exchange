@@ -54,6 +54,26 @@ describe("AccessGrant domain model", () => {
     expect(validateAccessGrant(item)).toBe(item);
   });
 
+  it("validates explicit attachment-read and mixed-operation authorities", () => {
+    const attachmentPolicy: AccessGrantPolicy = {
+      ...POLICY,
+      allowedOperations: ["ATTACHMENT_READ"],
+    };
+    expect(validateAccessGrantPolicy(attachmentPolicy)).toBe(attachmentPolicy);
+    const attachmentGrant = grant({ permittedOperations: ["ATTACHMENT_READ"] });
+    expect(validateAccessGrant(attachmentGrant)).toBe(attachmentGrant);
+
+    const mixedPolicy: AccessGrantPolicy = {
+      ...POLICY,
+      allowedOperations: ["THREAD_READ", "ATTACHMENT_READ"],
+    };
+    expect(validateAccessGrantPolicy(mixedPolicy)).toBe(mixedPolicy);
+    const mixedGrant = grant({
+      permittedOperations: ["THREAD_READ", "ATTACHMENT_READ"],
+    });
+    expect(validateAccessGrant(mixedGrant)).toBe(mixedGrant);
+  });
+
   it("rejects duplicate or invalid operation policy", () => {
     expectDomainCode(
       () =>

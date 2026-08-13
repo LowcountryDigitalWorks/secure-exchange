@@ -213,3 +213,9 @@ npm test -- tests/unit/access-grant.test.ts
 npm test -- tests/integration/access-grant-service.test.ts
 npm test -- tests/integration/attachment-count-concurrency.test.ts
 ```
+
+## Release 0.8 development boundary
+
+External attachment retrieval is application-layer only. Do not add an HTTP route, grant secret in a URL/path/query, capability cookie, email delivery, external reply, cloud persistence adapter, or production identity integration as part of this release.
+
+New retrieval implementations must reuse `retrieveAuthorizedAttachment` after their authority source is established rather than reimplementing attachment ownership, `CLEAN` state, protected-content, byte-length, or download-evidence checks. Provider-specific delivery and storage adapters must remain outside domain semantics.

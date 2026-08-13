@@ -183,3 +183,11 @@ The external projection regression verifies that queue ID, routing category, sta
 Release 0.7 also adds a deterministic two-writer barrier test for `maxAttachmentsPerMessage`. Both ingestion attempts pass the earlier application pre-check and stage content, but only one can publish when the authoritative limit is one; the losing staged content is compensated. Additional tests reject a stale attachment-policy reference and reject direct attachment publication that omits the authoritative count guard.
 
 Every Release 0.2-0.6 regression remains in `npm run validate`. No new browser retrieval test exists because Release 0.7 intentionally adds no public external retrieval route.
+
+## Release 0.8 regression requirements
+
+Executable coverage must prove `THREAD_READ` and `ATTACHMENT_READ` independence, policy rejection when attachment-read is disallowed, wrong-secret/revoked/expired/deployment/thread denial, message and attachment ownership isolation, denial of `PENDING_UPLOAD`, `QUARANTINED`, `REJECTED`, and `DELETED`, exactly-`CLEAN` success, missing/read-failed/inconsistent protected content denial, and no download evidence for any failed retrieval.
+
+Successful external retrieval must emit minimized `ATTACHMENT_DOWNLOADED` evidence only after integrity validation, with no bearer secret, verifier, content reference, or bytes in audit. Tests also preserve staff retrieval, Release 0.7 AccessGrant behavior, the concurrent attachment-count invariant, and the evidence separation `Opened != Downloaded != Transferred/Filed != Completed`.
+
+Release 0.8 adds no browser surface; existing Playwright/axe coverage remains regression coverage for the development shell rather than evidence of a public external endpoint.

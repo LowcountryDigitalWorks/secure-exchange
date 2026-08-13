@@ -263,3 +263,11 @@ The Release 0.7 operation vocabulary contains only `THREAD_READ`, because extern
 The browser/email-facing bearer secret and the stored grant record are deliberately different artifacts. The raw high-entropy secret is generated server-side and returned only at issuance. Only a versioned SHA-256 verifier of that random secret is persisted. The grant ID is neither the bearer secret nor a substitute for it. The opaque external-participant reference is actor attribution derived from authoritative thread messages; it is not client-supplied identity proof.
 
 A grant remains separate from thread lifecycle. Current external access is allowed for `NEW`, `IN_PROGRESS`, `AWAITING_EXTERNAL`, `AWAITING_STAFF`, and `COMPLETED`, subject to all other grant checks. `EXPIRED` and `DISPOSED` fail closed. Grant use, expiry, or revocation does not itself transition or complete a thread.
+
+## Release 0.8 AccessGrant attachment authority
+
+`AccessGrantOperation` now has two explicit values: `THREAD_READ` and `ATTACHMENT_READ`. They are independent scoped authorities; there is no wildcard or unrestricted operation. Existing thread-read authority never implies attachment-read authority.
+
+Staff and external attachment retrieval use different authority sources but converge on one application safety invariant after authorization. Staff authority comes from current authenticated staff authorization plus queue scope and staff `ATTACHMENT_READ` permission. External authority comes from a currently valid, thread-scoped AccessGrant whose explicit operation is `ATTACHMENT_READ`.
+
+The shared retrieval invariant authoritatively verifies message scope, attachment deployment/thread/message ownership, exactly `CLEAN` state with no deletion marker, protected-content availability, and byte-length equality with authoritative attachment metadata before `ATTACHMENT_DOWNLOADED` may be committed.
