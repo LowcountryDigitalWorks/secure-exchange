@@ -66,8 +66,8 @@ class SequenceClock implements Clock {
 }
 
 class RevocationRaceStore extends InMemoryWorkflowStore {
-  private armedGrantId?: string;
-  private armedRevokedAt?: string;
+  private armedGrantId: string | undefined;
+  private armedRevokedAt: string | undefined;
 
   armRevocation(grantId: string, revokedAt: string): void {
     this.armedGrantId = grantId;
@@ -85,7 +85,7 @@ class RevocationRaceStore extends InMemoryWorkflowStore {
       this.armedGrantId = undefined;
       this.armedRevokedAt = undefined;
       const current = await this.getAccessGrant(mutation.deploymentId, grantId);
-      if (current === undefined || current.threadId !== mutation.threadId) {
+      if (current?.threadId !== mutation.threadId) {
         throw new Error("Synthetic authoritative AccessGrant is missing.");
       }
       const revoked = revokeAccessGrantRecord(
@@ -220,11 +220,11 @@ describe("AccessGrant external reply authority guard", () => {
       beforeMessages,
     );
     expect(store.listAuditEvents(DEPLOYMENT_A, THREAD_A)).toEqual(beforeAudit);
-    expect(
-      await store.getAccessGrant(DEPLOYMENT_A, grant.grantId),
-    ).toMatchObject({
-      version: 1,
-      revokedAt: undefined,
-    });
+    const currentGrant = await store.getAccessGrant(
+      DEPLOYMENT_A,
+      grant.grantId,
+    );
+    expect(currentGrant).toMatchObject({ version: 1 });
+    expect(currentGrant?.revokedAt).toBeUndefined();
   });
 });
