@@ -1,8 +1,13 @@
 import { DomainError } from "../domain/errors.js";
 import {
+  validateAccessGrant,
+  validateAccessGrantPolicy,
   validateAttachment,
   validateAttachmentFilePolicy,
   validateQueue,
+  type AccessGrant,
+  type AccessGrantId,
+  type AccessGrantPolicy,
   type ActorAuthorization,
   type Attachment,
   type AttachmentFilePolicy,
@@ -28,6 +33,8 @@ export interface InMemoryWorkflowSeed {
   readonly messages?: readonly Message[];
   readonly attachments?: readonly Attachment[];
   readonly attachmentPolicies?: readonly AttachmentFilePolicy[];
+  readonly accessGrants?: readonly AccessGrant[];
+  readonly accessGrantPolicies?: readonly AccessGrantPolicy[];
   readonly completionPolicies?: readonly CompletionPolicy[];
   readonly actorAuthorizations?: readonly ActorAuthorization[];
   readonly auditEvents?: readonly AuditEvent[];
@@ -45,6 +52,8 @@ export class InMemoryWorkflowStore implements WorkflowStore {
   private messages: Message[];
   private attachments: Map<string, Attachment>;
   private attachmentPolicies: Map<string, AttachmentFilePolicy>;
+  private accessGrants: Map<string, AccessGrant>;
+  private accessGrantPolicies: Map<string, AccessGrantPolicy>;
   private completionPolicies: Map<string, CompletionPolicy>;
   private actorAuthorizations: Map<string, ActorAuthorization>;
   private auditEvents: AuditEvent[];
@@ -81,6 +90,18 @@ export class InMemoryWorkflowStore implements WorkflowStore {
     this.attachmentPolicies = new Map(
       (seed.attachmentPolicies ?? []).map((policy) => {
         const validated = validateAttachmentFilePolicy(policy);
+        return [validated.deploymentId, validated];
+      }),
+    );
+    this.accessGrants = new Map(
+      (seed.accessGrants ?? []).map((grant) => {
+        const validated = validateAccessGrant(grant);
+        return [resourceKey(validated.deploymentId, validated.grantId), validated];
+      }),
+    );
+    this.accessGrantPolicies = new Map(
+      (seed.accessGrantPolicies ?? []).map((policy) => {
+        const validated = validateAccessGrantPolicy(policy);
         return [validated.deploymentId, validated];
       }),
     );
@@ -195,6 +216,21 @@ export class InMemoryWorkflowStore implements WorkflowStore {
     return Promise.resolve(this.attachmentPolicies.get(deploymentId));
   }
 
+  getAccessGrant(
+    deploymentId: DeploymentId,
+    accessGrantId: AccessGrantId,
+  ): Promise<AccessGrant | undefined> {
+    return Promise.resolve(
+      this.accessGrants.get(resourceKey(deploymentId, accessGrantId)),
+    );
+  }
+
+  getCurrentAccessGrantPolicy(
+    deploymentId: DeploymentId,
+  ): Promise<AccessGrantPolicy | undefined> {
+    return Promise.resolve(this.accessGrantPolicies.get(deploymentId));
+  }
+
   getCurrentCompletionPolicy(
     deploymentId: DeploymentId,
   ): Promise<CompletionPolicy | undefined> {
@@ -258,6 +294,7 @@ export class InMemoryWorkflowStore implements WorkflowStore {
     const nextThreads = new Map(this.threads);
     const nextMessages = [...this.messages];
     const nextAttachments = new Map(this.attachments);
+    const nextAccessGrants = new Map(this.accessGrants);
     const nextAuditEvents = [...this.auditEvents];
     const nextAttestations = [...this.transferAttestations];
     const nextControls = [...this.transferAttestationControls];
@@ -270,25 +307,11 @@ export class InMemoryWorkflowStore implements WorkflowStore {
       );
     }
 
-    if (mutation.newThread !== undefined) {
-      const key = resourceKey(mutation.deploymentId, mutation.threadId);
-      if (nextThreads.has(key)) {
-        throw new Error("Thread identifier already exists.");
-      }
-      if (mutation.newThread.version !== 1) {
-        throw new Error("A newly created thread must start at version 1.");
-      }
-      nextThreads.set(key, mutation.newThread);
-    }
-
-    if (mutation.nextThread !== undefined) {
-      const key = resourceKey(mutation.deploymentId, mutation.threadId);
-      const current = nextThreads.get(key);
-      if (current === undefined) {
-        throw new Error("Authoritative thread is missing during commit.");
-      }
+    const threadKey = resourceKey(mutation.deploymentId, mutation.threadId);
+    if (mutation.expectedThreadVersion !== undefined) {
+      const current = nextThreads.get(threadKey);
       if (
-        mutation.expectedThreadVersion === undefined ||
+        current === undefined ||
         current.version !== mutation.expectedThreadVersion
       ) {
         throw new DomainError(
@@ -296,15 +319,33 @@ export class InMemoryWorkflowStore implements WorkflowStore {
           "Thread version changed before the transaction committed.",
         );
       }
+    }
+
+    if (mutation.newThread !== undefined) {
+      if (nextThreads.has(threadKey)) {
+        throw new Error("Thread identifier already exists.");
+      }
+      if (mutation.newThread.version !== 1) {
+        throw new Error("A newly created thread must start at version 1.");
+      }
+      nextThreads.set(threadKey, mutation.newThread);
+    }
+
+    if (mutation.nextThread !== undefined) {
+      const current = nextThreads.get(threadKey);
+      if (current === undefined) {
+        throw new Error("Authoritative thread is missing during commit.");
+      }
+      if (mutation.expectedThreadVersion === undefined) {
+        throw new Error("Thread update requires an expected version.");
+      }
       if (mutation.nextThread.version !== current.version + 1) {
         throw new Error("Next thread version must increment exactly once.");
       }
-      nextThreads.set(key, mutation.nextThread);
+      nextThreads.set(threadKey, mutation.nextThread);
     }
 
-    if (
-      !nextThreads.has(resourceKey(mutation.deploymentId, mutation.threadId))
-    ) {
+    if (!nextThreads.has(threadKey)) {
       throw new Error("Mutation requires an authoritative thread.");
     }
 
@@ -352,6 +393,12 @@ export class InMemoryWorkflowStore implements WorkflowStore {
       nextAttachments.set(key, validateAttachment(attachment));
     }
 
+    this.validateAttachmentCountGuards(
+      mutation,
+      nextAttachments,
+      nextMessages,
+    );
+
     for (const update of mutation.attachmentUpdates ?? []) {
       const attachment = validateAttachment(update.attachment);
       const key = resourceKey(attachment.deploymentId, attachment.attachmentId);
@@ -369,6 +416,53 @@ export class InMemoryWorkflowStore implements WorkflowStore {
         throw new Error("Next attachment version must increment exactly once.");
       }
       nextAttachments.set(key, attachment);
+    }
+
+    for (const grant of mutation.newAccessGrants ?? []) {
+      const validated = validateAccessGrant(grant);
+      const key = resourceKey(validated.deploymentId, validated.grantId);
+      if (nextAccessGrants.has(key)) {
+        throw new Error("AccessGrant identifier already exists.");
+      }
+      if (validated.version !== 1) {
+        throw new Error("A newly issued AccessGrant must start at version 1.");
+      }
+      this.validateNewAccessGrantPolicy(validated);
+      nextAccessGrants.set(key, validated);
+    }
+
+    for (const update of mutation.accessGrantUpdates ?? []) {
+      const grant = validateAccessGrant(update.accessGrant);
+      const key = resourceKey(grant.deploymentId, grant.grantId);
+      const current = nextAccessGrants.get(key);
+      if (current === undefined) {
+        throw new Error("Authoritative AccessGrant is missing during commit.");
+      }
+      if (current.version !== update.expectedVersion) {
+        throw new DomainError(
+          "STALE_VERSION",
+          "AccessGrant version changed before the transaction committed.",
+        );
+      }
+      if (grant.version !== current.version + 1) {
+        throw new Error("Next AccessGrant version must increment exactly once.");
+      }
+      if (
+        grant.deploymentId !== current.deploymentId ||
+        grant.threadId !== current.threadId ||
+        grant.externalParticipantRef !== current.externalParticipantRef ||
+        grant.policyRef !== current.policyRef ||
+        grant.verifierDigest !== current.verifierDigest ||
+        grant.issuedAt !== current.issuedAt ||
+        grant.expiresAt !== current.expiresAt ||
+        JSON.stringify(grant.permittedOperations) !==
+          JSON.stringify(current.permittedOperations)
+      ) {
+        throw new Error(
+          "AccessGrant revocation update changed immutable authority metadata.",
+        );
+      }
+      nextAccessGrants.set(key, grant);
     }
 
     for (const event of mutation.auditEvents ?? []) {
@@ -392,9 +486,99 @@ export class InMemoryWorkflowStore implements WorkflowStore {
     this.threads = nextThreads;
     this.messages = nextMessages;
     this.attachments = nextAttachments;
+    this.accessGrants = nextAccessGrants;
     this.auditEvents = nextAuditEvents;
     this.transferAttestations = nextAttestations;
     this.transferAttestationControls = nextControls;
+  }
+
+  private validateAttachmentCountGuards(
+    mutation: WorkflowMutation,
+    attachments: ReadonlyMap<string, Attachment>,
+    messages: readonly Message[],
+  ): void {
+    const newAttachments = mutation.newAttachments ?? [];
+    const guards = mutation.attachmentCountGuards ?? [];
+    if (newAttachments.length === 0 && guards.length === 0) {
+      return;
+    }
+
+    const guardMessages = new Set<MessageId>();
+    for (const guard of guards) {
+      if (guardMessages.has(guard.messageId)) {
+        throw new Error("Attachment count guard is duplicated for a message.");
+      }
+      guardMessages.add(guard.messageId);
+    }
+
+    for (const attachment of newAttachments) {
+      const guard = guards.find(
+        (candidate) => candidate.messageId === attachment.messageId,
+      );
+      if (guard === undefined) {
+        throw new Error(
+          "New attachment publication requires an authoritative count guard.",
+        );
+      }
+      const messageExists = messages.some(
+        (message) =>
+          message.deploymentId === mutation.deploymentId &&
+          message.threadId === mutation.threadId &&
+          message.messageId === attachment.messageId,
+      );
+      if (!messageExists) {
+        throw new Error(
+          "Attachment count guard requires an authoritative message.",
+        );
+      }
+      const policy = this.attachmentPolicies.get(mutation.deploymentId);
+      if (
+        policy === undefined ||
+        policy.policyRef !== guard.attachmentPolicyRef
+      ) {
+        throw new DomainError(
+          "STALE_ATTACHMENT_POLICY",
+          "Attachment policy changed before publication committed.",
+        );
+      }
+      const count = [...attachments.values()].filter(
+        (item) =>
+          item.deploymentId === mutation.deploymentId &&
+          item.threadId === mutation.threadId &&
+          item.messageId === attachment.messageId,
+      ).length;
+      if (count > policy.maxAttachmentsPerMessage) {
+        throw new DomainError(
+          "ATTACHMENT_COUNT_LIMIT_EXCEEDED",
+          "Authoritative attachment count exceeds the configured policy.",
+        );
+      }
+    }
+  }
+
+  private validateNewAccessGrantPolicy(grant: AccessGrant): void {
+    const policy = this.accessGrantPolicies.get(grant.deploymentId);
+    if (policy === undefined || policy.policyRef !== grant.policyRef) {
+      throw new DomainError(
+        "INVALID_ACCESS_GRANT_POLICY",
+        "AccessGrant policy changed before issuance committed.",
+      );
+    }
+    validateAccessGrantPolicy(policy);
+    const lifetimeSeconds =
+      (Date.parse(grant.expiresAt) - Date.parse(grant.issuedAt)) / 1_000;
+    if (
+      lifetimeSeconds <= 0 ||
+      lifetimeSeconds > policy.maxLifetimeSeconds ||
+      grant.permittedOperations.some(
+        (operation) => !policy.allowedOperations.includes(operation),
+      )
+    ) {
+      throw new DomainError(
+        "INVALID_ACCESS_GRANT_POLICY",
+        "AccessGrant authority is outside the authoritative policy.",
+      );
+    }
   }
 
   private validateMutationScope(mutation: WorkflowMutation): void {
@@ -432,6 +616,24 @@ export class InMemoryWorkflowStore implements WorkflowStore {
         update.attachment.threadId !== mutation.threadId
       ) {
         throw new Error("Attachment update escaped its authoritative scope.");
+      }
+    }
+
+    for (const item of mutation.newAccessGrants ?? []) {
+      if (
+        item.deploymentId !== mutation.deploymentId ||
+        item.threadId !== mutation.threadId
+      ) {
+        throw new Error("AccessGrant mutation escaped its authoritative scope.");
+      }
+    }
+
+    for (const update of mutation.accessGrantUpdates ?? []) {
+      if (
+        update.accessGrant.deploymentId !== mutation.deploymentId ||
+        update.accessGrant.threadId !== mutation.threadId
+      ) {
+        throw new Error("AccessGrant update escaped its authoritative scope.");
       }
     }
 
