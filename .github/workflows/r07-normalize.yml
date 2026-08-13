@@ -1,0 +1,40 @@
+name: Release 0.7 Normalize
+
+on:
+  push:
+    branches:
+      - release/0.7-access-grant-core
+    paths:
+      - ".github/workflows/r07-normalize.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  normalize:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release branch
+        uses: actions/checkout@v6
+        with:
+          ref: release/0.7-access-grant-core
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Apply documentation and release metadata
+        run: |
+          node scripts/r07-finalize.mjs
+          npm version 0.7.0 --no-git-tag-version
+          npx --no-install prettier --write README.md docs src tests package.json package-lock.json
+      - name: Commit normalized release tree
+        run: |
+          git config user.name "Eddie-LowcountryDigitalWorks"
+          git config user.email "eddie@lowcountrydigitalworks.com"
+          git add README.md docs src tests package.json package-lock.json
+          git commit -m "Finalize Release 0.7 documentation and metadata"
+          git push origin HEAD:release/0.7-access-grant-core
