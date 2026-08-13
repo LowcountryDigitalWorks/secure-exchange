@@ -153,3 +153,13 @@ Release 0.7 also closes the Release 0.6 attachment-count race: attachment public
 7. The application returns only safe download filename, normalized media type, byte length, and bytes required by a future delivery adapter.
 
 Staff retrieval follows the same steps after its separate current staff/queue authorization gate. There is no second weaker attachment safety pipeline.
+
+## Release 0.9 browser external retrieval development flow
+
+1. A server-rendered development form accepts opaque thread/grant references and the raw AccessGrant bearer secret only by same-origin POST. Deployment context remains server-held.
+2. The delivery adapter proves that the presented grant still authorizes at least one explicit external operation, then stores only the bounded thread/grant selectors plus raw bearer in a host-only, HttpOnly, SameSite=Strict capability cookie scoped to `/demo/external/access` for at most 600 seconds. HTTPS responses add `Secure`; no `Domain` attribute is set.
+3. The cookie is transport only. Every protected read/download revalidates the authoritative AccessGrant. `THREAD_READ` and `ATTACHMENT_READ` remain independent.
+4. Conversation GET delegates to the existing bounded external conversation projection and may append `EXTERNAL_THREAD_RETRIEVED` evidence without lifecycle mutation.
+5. Attachment candidate GET delegates to a provider-neutral projection that exposes only safe filename, normalized media type, bounded size, and opaque message/attachment selectors for currently `CLEAN` attachments.
+6. Attachment download is same-origin POST and delegates directly to the Release 0.8 external retrieval service. The response is attachment-only with defensive `Content-Disposition`, normalized media type, exact length, `nosniff`, `no-store, private`, `no-referrer`, and same-origin resource policy.
+7. End-access POST expires the browser capability cookie only; it does not revoke the authoritative AccessGrant.

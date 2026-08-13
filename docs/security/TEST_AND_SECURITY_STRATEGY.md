@@ -191,3 +191,9 @@ Executable coverage must prove `THREAD_READ` and `ATTACHMENT_READ` independence,
 Successful external retrieval must emit minimized `ATTACHMENT_DOWNLOADED` evidence only after integrity validation, with no bearer secret, verifier, content reference, or bytes in audit. Tests also preserve staff retrieval, Release 0.7 AccessGrant behavior, the concurrent attachment-count invariant, and the evidence separation `Opened != Downloaded != Transferred/Filed != Completed`.
 
 Release 0.8 adds no browser surface; existing Playwright/axe coverage remains regression coverage for the development shell rather than evidence of a public external endpoint.
+
+## Release 0.9 browser-delivery regression requirements
+
+Automated coverage verifies the external routes are disabled by default; credential establishment is same-origin POST; secrets do not enter Location headers, generated URLs, or rendered post-establishment pages; capability cookies are HttpOnly, Strict, narrowly path-scoped, host-only, short-lived, and Secure on HTTPS; explicit operation independence is preserved; conversation text is escaped; clean candidate metadata is bounded; download uses safe headers and the Release 0.8 application service; cross-origin POSTs fail; revoked/expired grants fail after cookie establishment; end-access clears only browser state; and failed unsafe/content retrieval produces no download evidence.
+
+All existing attachment-state, protected-content integrity, TransferAttestation/completion separation, AccessGrant, workflow, browser, accessibility, audit, dependency, and secret-scanning regressions remain part of `npm run validate`.

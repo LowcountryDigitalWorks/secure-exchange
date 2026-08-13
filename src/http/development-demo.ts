@@ -1,13 +1,29 @@
+import { AccessGrantService } from "../application/access-grant-service.js";
+import { AttachmentService } from "../application/attachment-service.js";
+import type { Clock } from "../application/clock.js";
 import { ConversationService } from "../application/conversation-service.js";
+import { ExternalAttachmentRetrievalService } from "../application/external-attachment-retrieval-service.js";
 import type { OpaqueIdGenerator } from "../application/id-generator.js";
 import { WorkflowService } from "../application/workflow-service.js";
+import { InMemoryProtectedContentStore } from "../adapters/in-memory-protected-content-store.js";
 import { InMemoryWorkflowStore } from "../adapters/in-memory-workflow-store.js";
+import { WebCryptoAccessGrantSecretManager } from "../adapters/web-crypto-access-grant-secret.js";
 import { WebCryptoOpaqueIdGenerator } from "../adapters/web-crypto-id-generator.js";
-import type { ActorContext, Queue } from "../domain/index.js";
+import type {
+  AccessGrantPolicy,
+  ActorContext,
+  AttachmentFilePolicy,
+  Queue,
+} from "../domain/index.js";
 
 export const SYNTHETIC_DEPLOYMENT_ID = "synthetic-development-deployment";
 export const SYNTHETIC_QUEUE_ID = "synthetic-development-queue";
 export const SYNTHETIC_STAFF_ACTOR_REF = "synthetic-development-staff";
+export const SYNTHETIC_SYSTEM_ACTOR_REF = "synthetic-development-system";
+export const SYNTHETIC_ACCESS_GRANT_POLICY_REF =
+  "synthetic-development-access-policy-v1";
+export const SYNTHETIC_ATTACHMENT_POLICY_REF =
+  "synthetic-development-attachment-policy-v1";
 
 export const SYNTHETIC_ROUTING_CHOICES = [
   { value: "GENERAL", label: "General" },
@@ -16,8 +32,12 @@ export const SYNTHETIC_ROUTING_CHOICES = [
 
 export interface DevelopmentDemoRuntime {
   readonly store: InMemoryWorkflowStore;
+  readonly contentStore: InMemoryProtectedContentStore;
   readonly conversationService: ConversationService;
   readonly workflowService: WorkflowService;
+  readonly attachmentService: AttachmentService;
+  readonly accessGrantService: AccessGrantService;
+  readonly externalAttachmentRetrievalService: ExternalAttachmentRetrievalService;
   readonly idGenerator: OpaqueIdGenerator;
   readonly now: () => string;
   readonly deploymentId: string;
@@ -54,8 +74,25 @@ export function createLocalDevelopmentDemoRuntime(
     deploymentId: SYNTHETIC_DEPLOYMENT_ID,
     actorKind: "STAFF",
   };
+  const attachmentPolicy: AttachmentFilePolicy = {
+    policyRef: SYNTHETIC_ATTACHMENT_POLICY_REF,
+    deploymentId: SYNTHETIC_DEPLOYMENT_ID,
+    maxAttachmentSizeBytes: 2 * 1024 * 1024,
+    maxAttachmentsPerMessage: 4,
+    allowedMediaCategories: ["DOCUMENT", "TEXT"],
+    allowedMediaTypes: ["application/pdf", "text/plain"],
+    allowedExtensions: ["pdf", "txt"],
+  };
+  const accessGrantPolicy: AccessGrantPolicy = {
+    policyRef: SYNTHETIC_ACCESS_GRANT_POLICY_REF,
+    deploymentId: SYNTHETIC_DEPLOYMENT_ID,
+    maxLifetimeSeconds: 3_600,
+    allowedOperations: ["THREAD_READ", "ATTACHMENT_READ"],
+  };
   const store = new InMemoryWorkflowStore({
     queues: [queue],
+    attachmentPolicies: [attachmentPolicy],
+    accessGrantPolicies: [accessGrantPolicy],
     actorAuthorizations: [
       {
         ...staffActor,
@@ -66,17 +103,45 @@ export function createLocalDevelopmentDemoRuntime(
           "THREAD_OPEN",
           "THREAD_REPLY",
           "THREAD_TRANSITION",
+          "ATTACHMENT_READ",
+          "ACCESS_GRANT_ISSUE",
+          "ACCESS_GRANT_REVOKE",
         ],
       },
     ],
   });
+  const contentStore = new InMemoryProtectedContentStore();
+  const idGenerator = options.idGenerator ?? new WebCryptoOpaqueIdGenerator();
+  const now = options.now ?? (() => new Date().toISOString());
+  const clock: Clock = { now };
+  const accessGrantService = new AccessGrantService(
+    store,
+    idGenerator,
+    new WebCryptoAccessGrantSecretManager(),
+    clock,
+  );
 
   return {
     store,
+    contentStore,
     conversationService: new ConversationService(store),
     workflowService: new WorkflowService(store),
-    idGenerator: options.idGenerator ?? new WebCryptoOpaqueIdGenerator(),
-    now: options.now ?? (() => new Date().toISOString()),
+    attachmentService: new AttachmentService(
+      store,
+      contentStore,
+      idGenerator,
+      SYNTHETIC_SYSTEM_ACTOR_REF,
+    ),
+    accessGrantService,
+    externalAttachmentRetrievalService: new ExternalAttachmentRetrievalService(
+      store,
+      contentStore,
+      idGenerator,
+      accessGrantService,
+      clock,
+    ),
+    idGenerator,
+    now,
     deploymentId: SYNTHETIC_DEPLOYMENT_ID,
     queueId: SYNTHETIC_QUEUE_ID,
     queueLabel: queue.displayLabel,

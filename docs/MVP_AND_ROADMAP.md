@@ -195,3 +195,9 @@ Release 0.8 adds provider-neutral external attachment retrieval behind explicit 
 The browser-delivery trust boundary remains deferred. Release 0.8 adds no public grant URL, email delivery, capability cookie, public attachment endpoint, or external reply surface. A later release must separately review delivery of the bearer credential and HTTP response controls.
 
 External attachment download remains evidence only: `Opened != Downloaded != Transferred/Filed != Completed`. Download does not create TransferAttestation and does not complete or otherwise transition a thread.
+
+## Release 0.9 — external retrieval development slice
+
+Release 0.9 adds the first disabled-by-default browser delivery adapter over the provider-neutral Release 0.7/0.8 external retrieval services. The synthetic path is credential POST -> short-lived HttpOnly same-origin capability cookie -> independently authorized conversation and attachment views -> POST-only attachment download.
+
+This is not a production public portal or finalized credential-delivery architecture. `DEMO_EXTERNAL_RETRIEVAL_ENABLED=enabled` is required in addition to the existing synthetic demo gate, no credential issuance route is exposed, and production Internet exposure still requires deliberate abuse/rate controls, credential bootstrap design, production authentication/deployment review, and operational controls.

@@ -1,7 +1,9 @@
+import type { ExternalConversationProjection } from "../application/access-grant-service.js";
 import type {
   ConversationReadModel,
   QueueCandidate,
 } from "../application/conversation-service.js";
+import type { ExternalAttachmentCandidate } from "../application/external-attachment-retrieval-service.js";
 import type { EngineeringStatus } from "../application/status.js";
 
 export const shellStyles = `
@@ -75,6 +77,8 @@ button {
   font: inherit;
 }
 
+input[type="text"],
+input[type="password"],
 select,
 textarea {
   width: 100%;
@@ -386,6 +390,137 @@ export function renderDemoError(
       <h1 id="error-title">${escapeHtml(title)}</h1>
       <p>${escapeHtml(message)}</p>
       <a href="${escapeHtml(backHref)}">Return</a>
+    </section>`,
+  );
+}
+
+function externalAccessNav(): string {
+  return `<nav aria-label="Synthetic external secure access">
+    <a href="/demo/external/access/session">Access home</a>
+    <a href="/demo/external/access/conversation">Conversation</a>
+    <a href="/demo/external/access/attachments">Attachments</a>
+  </nav>`;
+}
+
+export function renderExternalAccessForm(): string {
+  return documentPage(
+    "Secure Access — Synthetic Development Demo",
+    `${developmentNotice()}
+    <section class="card" aria-labelledby="access-title">
+      <h1 id="access-title">Synthetic secure access</h1>
+      <p>This disabled-by-default development surface accepts an already-issued AccessGrant. The bearer secret is submitted only by same-origin POST and is not placed in a URL.</p>
+      <form method="post" action="/demo/external/access" class="stack" autocomplete="off">
+        <div class="stack">
+          <label for="threadId">Thread reference</label>
+          <input id="threadId" name="threadId" type="text" maxlength="256" required>
+        </div>
+        <div class="stack">
+          <label for="grantId">Grant reference</label>
+          <input id="grantId" name="grantId" type="text" maxlength="256" required>
+        </div>
+        <div class="stack">
+          <label for="accessSecret">Access secret</label>
+          <input id="accessSecret" name="accessSecret" type="password" maxlength="512" required>
+        </div>
+        <button type="submit">Continue secure access</button>
+      </form>
+    </section>`,
+  );
+}
+
+export function renderExternalAccessSession(): string {
+  return documentPage(
+    "Secure Access — Synthetic Development Demo",
+    `${developmentNotice()}
+    ${externalAccessNav()}
+    <section class="card" aria-labelledby="session-title">
+      <h1 id="session-title">Synthetic secure access</h1>
+      <p>The browser capability is short-lived transport only. Each protected action revalidates the authoritative AccessGrant and its specific operation.</p>
+      <div class="actions">
+        <a class="button-link" href="/demo/external/access/conversation">Read conversation</a>
+        <a class="button-link" href="/demo/external/access/attachments">View eligible attachments</a>
+      </div>
+      <form method="post" action="/demo/external/access/end" class="actions">
+        <button type="submit">End secure access</button>
+      </form>
+    </section>`,
+  );
+}
+
+export function renderExternalConversationPage(
+  conversation: ExternalConversationProjection,
+): string {
+  const messages = conversation.messages
+    .map((message) => {
+      const direction =
+        message.direction === "EXTERNAL_TO_STAFF"
+          ? "You → Staff"
+          : "Staff → You";
+      return `<li>
+        <article class="message">
+          <p class="direction">${direction}</p>
+          <p><time datetime="${escapeHtml(message.createdAt)}">${escapeHtml(message.createdAt)}</time></p>
+          <p class="message-body">${escapeHtml(message.body.text)}</p>
+        </article>
+      </li>`;
+    })
+    .join("");
+
+  return documentPage(
+    "Conversation — Synthetic Secure Access",
+    `${developmentNotice()}
+    ${externalAccessNav()}
+    <section class="card" aria-labelledby="external-conversation-title">
+      <h1 id="external-conversation-title">Conversation</h1>
+      <p>This projection intentionally excludes internal message, actor, queue, routing, workflow, audit, and grant metadata.</p>
+      <ol class="message-list">${messages}</ol>
+    </section>`,
+  );
+}
+
+export function renderExternalAttachmentCandidates(
+  candidates: readonly ExternalAttachmentCandidate[],
+): string {
+  const content =
+    candidates.length === 0
+      ? "<p>No eligible attachments are currently available.</p>"
+      : `<ul class="queue-list">${candidates
+          .map(
+            (candidate) => `<li class="queue-item">
+              <h2>${escapeHtml(candidate.safeDownloadFilename)}</h2>
+              <div class="meta">
+                <div><strong>Media type:</strong> ${escapeHtml(candidate.normalizedMediaType)}</div>
+                <div><strong>Size:</strong> ${candidate.byteLength} bytes</div>
+              </div>
+              <form method="post" action="/demo/external/access/download">
+                <input type="hidden" name="messageId" value="${escapeHtml(candidate.messageId)}">
+                <input type="hidden" name="attachmentId" value="${escapeHtml(candidate.attachmentId)}">
+                <button type="submit">Download attachment</button>
+              </form>
+            </li>`,
+          )
+          .join("")}</ul>`;
+
+  return documentPage(
+    "Attachments — Synthetic Secure Access",
+    `${developmentNotice()}
+    ${externalAccessNav()}
+    <section class="card" aria-labelledby="external-attachments-title">
+      <h1 id="external-attachments-title">Eligible attachments</h1>
+      <p>Candidate metadata is not download authority. Every download revalidates AccessGrant scope and the authoritative attachment safety path.</p>
+      ${content}
+    </section>`,
+  );
+}
+
+export function renderExternalAccessUnavailable(): string {
+  return documentPage(
+    "Secure Access Unavailable — Synthetic Development Demo",
+    `${developmentNotice()}
+    <section class="card" aria-labelledby="unavailable-title">
+      <h1 id="unavailable-title">Secure access is unavailable</h1>
+      <p>The presented synthetic secure-access authority cannot be used.</p>
+      <a href="/demo/external/access">Return to secure access</a>
     </section>`,
   );
 }

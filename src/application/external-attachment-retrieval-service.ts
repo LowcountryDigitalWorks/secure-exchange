@@ -22,6 +22,21 @@ export interface RetrieveExternalAttachmentInput {
   readonly secret: string;
 }
 
+export interface ListExternalAttachmentCandidatesInput {
+  readonly deploymentId: DeploymentId;
+  readonly threadId: ThreadId;
+  readonly grantId: AccessGrantId;
+  readonly secret: string;
+}
+
+export interface ExternalAttachmentCandidate {
+  readonly messageId: MessageId;
+  readonly attachmentId: AttachmentId;
+  readonly safeDownloadFilename: string;
+  readonly normalizedMediaType: string;
+  readonly byteLength: number;
+}
+
 export interface ExternalAttachmentRetrievalResult {
   readonly safeDownloadFilename: string;
   readonly normalizedMediaType: string;
@@ -37,6 +52,62 @@ export class ExternalAttachmentRetrievalService {
     private readonly accessGrants: AccessGrantService,
     private readonly clock: Clock,
   ) {}
+
+  async listExternalAttachmentCandidates(
+    input: ListExternalAttachmentCandidatesInput,
+  ): Promise<readonly ExternalAttachmentCandidate[]> {
+    await this.accessGrants.validatePresentedAccessGrant({
+      deploymentId: input.deploymentId,
+      threadId: input.threadId,
+      grantId: input.grantId,
+      secret: input.secret,
+      operation: "ATTACHMENT_READ",
+    });
+
+    try {
+      const messages = await this.store.listMessages(
+        input.deploymentId,
+        input.threadId,
+      );
+      const candidates: ExternalAttachmentCandidate[] = [];
+
+      for (const message of messages) {
+        if (
+          message.deploymentId !== input.deploymentId ||
+          message.threadId !== input.threadId
+        ) {
+          continue;
+        }
+
+        const attachments = await this.store.listAttachmentsForMessage(
+          input.deploymentId,
+          input.threadId,
+          message.messageId,
+        );
+        for (const attachment of attachments) {
+          if (
+            attachment.deploymentId === input.deploymentId &&
+            attachment.threadId === input.threadId &&
+            attachment.messageId === message.messageId &&
+            attachment.state === "CLEAN" &&
+            attachment.deletedAt === undefined
+          ) {
+            candidates.push({
+              messageId: message.messageId,
+              attachmentId: attachment.attachmentId,
+              safeDownloadFilename: attachment.safeDownloadFilename,
+              normalizedMediaType: attachment.normalizedMediaType,
+              byteLength: attachment.sizeBytes,
+            });
+          }
+        }
+      }
+
+      return candidates;
+    } catch {
+      throw this.externalAccessDenied();
+    }
+  }
 
   async retrieveExternalAttachment(
     input: RetrieveExternalAttachmentInput,

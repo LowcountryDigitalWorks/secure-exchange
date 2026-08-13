@@ -159,3 +159,9 @@ External attachment retrieval requires an authoritative AccessGrant lookup and v
 After external authority is established, the retrieval path converges with staff retrieval: load the authoritative message, load the attachment, verify deployment/thread/message ownership, require state exactly `CLEAN` and not deleted, resolve protected content, verify returned byte length against authoritative metadata, then atomically append `ATTACHMENT_DOWNLOADED` evidence. Attachment ID, message ID, thread ID, grant ID, queue data, or a previously valid grant is never sufficient by itself.
 
 External-facing lookup and content failures are collapsed to a conservative access-denied result so the application does not unnecessarily disclose which grant, thread, message, attachment, or content object exists.
+
+## Release 0.9 browser capability access pattern
+
+The Release 0.9 capability cookie is a development delivery mechanism, not an authorization record or permanent session. It is host-only, HttpOnly, SameSite=Strict, path-scoped to `/demo/external/access`, and bounded to 600 seconds; it is marked Secure whenever the request is HTTPS. It contains no persisted verifier and is never copied into localStorage, sessionStorage, IndexedDB, HTML hidden fields, generated links, audit, analytics, or logs.
+
+Selectors carried in the cookie or attachment forms remain untrusted. Conversation delivery always requires current `THREAD_READ`. Candidate listing and download always require current `ATTACHMENT_READ`. A mixed grant may exercise both; neither operation implies the other. Revocation, authoritative expiry, or ineligible thread state wins over any still-present browser cookie.
