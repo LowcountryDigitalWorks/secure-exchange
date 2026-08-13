@@ -54,22 +54,28 @@ describe("AccessGrant domain model", () => {
     expect(validateAccessGrant(item)).toBe(item);
   });
 
-  it("validates explicit attachment-read and mixed-operation authorities", () => {
-    const attachmentPolicy: AccessGrantPolicy = {
-      ...POLICY,
-      allowedOperations: ["ATTACHMENT_READ"],
-    };
-    expect(validateAccessGrantPolicy(attachmentPolicy)).toBe(attachmentPolicy);
-    const attachmentGrant = grant({ permittedOperations: ["ATTACHMENT_READ"] });
-    expect(validateAccessGrant(attachmentGrant)).toBe(attachmentGrant);
+  it("validates explicit read, attachment, reply, and mixed-operation authorities", () => {
+    for (const operation of [
+      "THREAD_READ",
+      "ATTACHMENT_READ",
+      "THREAD_REPLY",
+    ] as const) {
+      const singlePolicy: AccessGrantPolicy = {
+        ...POLICY,
+        allowedOperations: [operation],
+      };
+      expect(validateAccessGrantPolicy(singlePolicy)).toBe(singlePolicy);
+      const singleGrant = grant({ permittedOperations: [operation] });
+      expect(validateAccessGrant(singleGrant)).toBe(singleGrant);
+    }
 
     const mixedPolicy: AccessGrantPolicy = {
       ...POLICY,
-      allowedOperations: ["THREAD_READ", "ATTACHMENT_READ"],
+      allowedOperations: ["THREAD_READ", "ATTACHMENT_READ", "THREAD_REPLY"],
     };
     expect(validateAccessGrantPolicy(mixedPolicy)).toBe(mixedPolicy);
     const mixedGrant = grant({
-      permittedOperations: ["THREAD_READ", "ATTACHMENT_READ"],
+      permittedOperations: ["THREAD_READ", "ATTACHMENT_READ", "THREAD_REPLY"],
     });
     expect(validateAccessGrant(mixedGrant)).toBe(mixedGrant);
   });
@@ -85,7 +91,7 @@ describe("AccessGrant domain model", () => {
     );
   });
 
-  it("keeps external access separate from thread lifecycle transitions", () => {
+  it("keeps external read eligibility separate from reply lifecycle semantics", () => {
     for (const state of [
       "NEW",
       "IN_PROGRESS",
