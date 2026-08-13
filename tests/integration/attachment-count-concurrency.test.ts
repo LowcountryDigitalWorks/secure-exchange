@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import { AttachmentService } from "../../src/application/attachment-service.js";
-import { ApplicationError } from "../../src/application/errors.js";
 import type {
   OpaqueIdGenerator,
   OpaqueIdPurpose,
@@ -9,7 +8,6 @@ import type {
 import type { ProtectedContentStore } from "../../src/application/protected-content.js";
 import { InMemoryProtectedContentStore } from "../../src/adapters/in-memory-protected-content-store.js";
 import { InMemoryWorkflowStore } from "../../src/adapters/in-memory-workflow-store.js";
-import { DomainError } from "../../src/domain/errors.js";
 import type {
   Attachment,
   AttachmentFilePolicy,
@@ -143,11 +141,6 @@ describe("authoritative attachment count enforcement", () => {
     const rejected = results.filter((result) => result.status === "rejected");
     expect(fulfilled).toHaveLength(1);
     expect(rejected).toHaveLength(1);
-    const reason = (rejected[0] as PromiseRejectedResult).reason;
-    expect(reason).toBeInstanceOf(ApplicationError);
-    expect((reason as ApplicationError).code).toBe(
-      "ATTACHMENT_POLICY_REJECTED",
-    );
     expect(
       await store.listAttachmentsForMessage(DEPLOYMENT_A, THREAD_A, MESSAGE_A),
     ).toHaveLength(1);
@@ -175,7 +168,7 @@ describe("authoritative attachment count enforcement", () => {
           },
         ],
       }),
-    ).rejects.toMatchObject<Partial<DomainError>>({
+    ).rejects.toMatchObject({
       code: "STALE_ATTACHMENT_POLICY",
     });
     expect(

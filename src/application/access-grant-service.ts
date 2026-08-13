@@ -353,15 +353,9 @@ export class AccessGrantService {
       throw this.externalAccessDenied();
     }
 
-    let secretMatches = false;
-    try {
-      secretMatches = await this.secrets.matches(
-        input.secret,
-        grant.verifierDigest,
-      );
-    } catch {
-      secretMatches = false;
-    }
+    const secretMatches = await this.secrets
+      .matches(input.secret, grant.verifierDigest)
+      .catch(() => false);
     if (!secretMatches) {
       throw this.externalAccessDenied();
     }

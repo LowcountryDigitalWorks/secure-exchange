@@ -52,7 +52,7 @@ class MutableClock implements Clock {
 function fixture(
   options: {
     readonly clock?: MutableClock;
-    readonly actorPermissions?: readonly ReturnType<
+    readonly actorPermissions?: ReturnType<
       typeof makeActorAuthorization
     >["permissions"];
     readonly threadState?: ReturnType<typeof makeThread>["state"];

@@ -313,10 +313,7 @@ export class InMemoryWorkflowStore implements WorkflowStore {
     const threadKey = resourceKey(mutation.deploymentId, mutation.threadId);
     if (mutation.expectedThreadVersion !== undefined) {
       const current = nextThreads.get(threadKey);
-      if (
-        current === undefined ||
-        current.version !== mutation.expectedThreadVersion
-      ) {
+      if (current?.version !== mutation.expectedThreadVersion) {
         throw new DomainError(
           "STALE_VERSION",
           "Thread version changed before the transaction committed.",
@@ -533,10 +530,7 @@ export class InMemoryWorkflowStore implements WorkflowStore {
         );
       }
       const policy = this.attachmentPolicies.get(mutation.deploymentId);
-      if (
-        policy === undefined ||
-        policy.policyRef !== guard.attachmentPolicyRef
-      ) {
+      if (policy?.policyRef !== guard.attachmentPolicyRef) {
         throw new DomainError(
           "STALE_ATTACHMENT_POLICY",
           "Attachment policy changed before publication committed.",
@@ -559,7 +553,7 @@ export class InMemoryWorkflowStore implements WorkflowStore {
 
   private validateNewAccessGrantPolicy(grant: AccessGrant): void {
     const policy = this.accessGrantPolicies.get(grant.deploymentId);
-    if (policy === undefined || policy.policyRef !== grant.policyRef) {
+    if (policy?.policyRef !== grant.policyRef) {
       throw new DomainError(
         "INVALID_ACCESS_GRANT_POLICY",
         "AccessGrant policy changed before issuance committed.",
