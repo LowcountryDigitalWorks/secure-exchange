@@ -87,7 +87,7 @@ export function createLocalDevelopmentDemoRuntime(
     policyRef: SYNTHETIC_ACCESS_GRANT_POLICY_REF,
     deploymentId: SYNTHETIC_DEPLOYMENT_ID,
     maxLifetimeSeconds: 3_600,
-    allowedOperations: ["THREAD_READ", "ATTACHMENT_READ"],
+    allowedOperations: ["THREAD_READ", "ATTACHMENT_READ", "THREAD_REPLY"],
   };
   const store = new InMemoryWorkflowStore({
     queues: [queue],
