@@ -169,6 +169,7 @@ export class AccessGrantService {
       deploymentId: input.deploymentId,
       threadId: input.threadId,
       externalParticipantRef,
+      policyRef: policy.policyRef,
       verifierDigest: secretMaterial.verifierDigest,
       permittedOperations: requestedOperations,
       issuedAt,
