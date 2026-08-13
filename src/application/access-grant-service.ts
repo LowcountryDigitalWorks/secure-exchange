@@ -61,6 +61,15 @@ export interface PresentedAccessGrant {
   readonly operation: AccessGrantOperation;
 }
 
+export interface ValidatedExternalAuthority {
+  readonly grantId: AccessGrantId;
+  readonly deploymentId: DeploymentId;
+  readonly threadId: ThreadId;
+  readonly externalParticipantRef: ExternalParticipantRef;
+  readonly operation: AccessGrantOperation;
+  readonly threadVersion: number;
+}
+
 export interface RetrieveExternalConversationInput {
   readonly deploymentId: DeploymentId;
   readonly threadId: ThreadId;
@@ -87,7 +96,7 @@ interface AuthorizedThread {
   readonly authorization: ActorAuthorization;
 }
 
-interface ValidatedGrant {
+interface ValidatedGrantRecord {
   readonly grant: AccessGrant;
   readonly thread: Thread;
 }
@@ -266,7 +275,7 @@ export class AccessGrantService {
   async retrieveExternalConversation(
     input: RetrieveExternalConversationInput,
   ): Promise<ExternalConversationProjection> {
-    const validated = await this.validatePresentedAccessGrant({
+    const authority = await this.validatePresentedAccessGrant({
       ...input,
       operation: "THREAD_READ",
     });
@@ -289,17 +298,17 @@ export class AccessGrantService {
     await this.store.commit({
       deploymentId: input.deploymentId,
       threadId: input.threadId,
-      expectedThreadVersion: validated.thread.version,
+      expectedThreadVersion: authority.threadVersion,
       auditEvents: [
         {
           eventId: this.idGenerator.generate("audit"),
           deploymentId: input.deploymentId,
           threadId: input.threadId,
           eventType: "EXTERNAL_THREAD_RETRIEVED",
-          actorRef: validated.grant.externalParticipantRef,
+          actorRef: authority.externalParticipantRef,
           actorKind: "EXTERNAL",
           at: this.currentTime(),
-          accessGrantId: validated.grant.grantId,
+          accessGrantId: authority.grantId,
           outcome: "SUCCEEDED",
         },
       ],
@@ -310,7 +319,21 @@ export class AccessGrantService {
 
   async validatePresentedAccessGrant(
     input: PresentedAccessGrant,
-  ): Promise<ValidatedGrant> {
+  ): Promise<ValidatedExternalAuthority> {
+    const { grant, thread } = await this.validatePresentedGrantRecord(input);
+    return {
+      grantId: grant.grantId,
+      deploymentId: grant.deploymentId,
+      threadId: grant.threadId,
+      externalParticipantRef: grant.externalParticipantRef,
+      operation: input.operation,
+      threadVersion: thread.version,
+    };
+  }
+
+  private async validatePresentedGrantRecord(
+    input: PresentedAccessGrant,
+  ): Promise<ValidatedGrantRecord> {
     const grant = await this.store.getAccessGrant(
       input.deploymentId,
       input.grantId,
