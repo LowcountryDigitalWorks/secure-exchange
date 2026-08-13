@@ -173,3 +173,10 @@ AccessGrant issuance may include `THREAD_REPLY` only when the current AccessGran
 Every reply use revalidates the presented bearer against the persisted verifier, deployment/thread scope, explicit `THREAD_REPLY`, revocation, authoritative server-time expiry, current broad external-access eligibility, and the stricter external-reply lifecycle rule. The caller never supplies the external actor; attribution comes only from the authoritative grant.
 
 Reply commits one immutable message, the expected-version thread activity/attention update, and minimized `MESSAGE_APPENDED` evidence in the same `WorkflowStore` mutation. A stale concurrent thread mutation fails the reply without partial message or audit publication. `THREAD_READ`, `ATTACHMENT_READ`, and `THREAD_REPLY` remain independent candidate/use paths; no identifier, prior validity, browser control, or index row grants authority.
+
+## Release 0.11 browser reply access pattern
+
+The synthetic external browser capability remains a short-lived transport container rather than authorization truth. The session UI may expose reply only when `THREAD_REPLY` is currently usable, but UI visibility never authorizes the mutation. `POST /demo/external/access/reply` delegates to `AccessGrantService.replyExternalConversation()`, which revalidates bearer/verifier proof, deployment/thread scope, explicit `THREAD_REPLY`, revocation, expiry, current lifecycle, expected thread version, and the Release 0.10 `AccessGrantAuthorityGuard` at commit.
+
+Reply-only authority does not grant conversation read, and read-only authority does not grant reply. The adapter does not widen an AccessGrant.
+

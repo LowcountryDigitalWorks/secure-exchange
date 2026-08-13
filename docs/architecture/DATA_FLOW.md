@@ -174,3 +174,10 @@ Staff retrieval follows the same steps after its separate current staff/queue au
 6. One expected-version `WorkflowStore` mutation atomically publishes the immutable `EXTERNAL_TO_STAFF` message, updated thread, and minimized `MESSAGE_APPENDED` evidence. A stale or failed commit publishes none of the reply artifacts.
 
 No reply creates `THREAD_OPENED`, `ATTACHMENT_DOWNLOADED`, TransferAttestation, completion evidence, or an automatic lifecycle transition. Browser reply delivery is not part of this release.
+
+## Release 0.11 external browser reply flow
+
+Synthetic credential POST -> scoped HttpOnly capability cookie -> server-rendered reply form -> same-origin reply POST -> Release 0.10 AccessGrant reply service -> atomic message/activity/attention/audit commit -> fixed local 303 confirmation.
+
+The capability secret and reply body never enter path, query, fragment, or redirect data. The reply application transaction preserves both expected-thread-version concurrency and the AccessGrant authority/version/expiry guard. A failed authority or lifecycle check publishes no reply message, activity/attention change, or reply audit evidence.
+
