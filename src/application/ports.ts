@@ -1,6 +1,7 @@
 import type {
   AccessGrant,
   AccessGrantId,
+  AccessGrantOperation,
   AccessGrantPolicy,
   ActorAuthorization,
   Attachment,
@@ -31,6 +32,15 @@ export interface AccessGrantUpdate {
   readonly accessGrant: AccessGrant;
 }
 
+export interface AccessGrantAuthorityGuard {
+  readonly deploymentId: DeploymentId;
+  readonly threadId: ThreadId;
+  readonly grantId: AccessGrantId;
+  readonly expectedVersion: number;
+  readonly requiredOperation: AccessGrantOperation;
+  readonly validAt: string;
+}
+
 export interface AttachmentCountGuard {
   readonly messageId: MessageId;
   readonly attachmentPolicyRef: AttachmentPolicyRef;
@@ -48,6 +58,7 @@ export interface WorkflowMutation {
   readonly attachmentCountGuards?: readonly AttachmentCountGuard[];
   readonly newAccessGrants?: readonly AccessGrant[];
   readonly accessGrantUpdates?: readonly AccessGrantUpdate[];
+  readonly accessGrantAuthorityGuards?: readonly AccessGrantAuthorityGuard[];
   readonly auditEvents?: readonly AuditEvent[];
   readonly transferAttestations?: readonly TransferAttestation[];
   readonly transferAttestationControls?: readonly TransferAttestationControl[];
