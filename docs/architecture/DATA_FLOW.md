@@ -163,3 +163,14 @@ Staff retrieval follows the same steps after its separate current staff/queue au
 5. Attachment candidate GET delegates to a provider-neutral projection that exposes only safe filename, normalized media type, bounded size, and opaque message/attachment selectors for currently `CLEAN` attachments.
 6. Attachment download is same-origin POST and delegates directly to the Release 0.8 external retrieval service. The response is attachment-only with defensive `Content-Disposition`, normalized media type, exact length, `nosniff`, `no-store, private`, `no-referrer`, and same-origin resource policy.
 7. End-access POST expires the browser capability cookie only; it does not revoke the authoritative AccessGrant.
+
+## Release 0.10 external reply application flow
+
+1. The caller presents deployment/thread/grant selectors, the raw AccessGrant bearer secret, and a bounded plain-text reply body to the application service.
+2. Existing AccessGrant validation proves the verifier, deployment/thread scope, explicit `THREAD_REPLY`, unrevoked state, authoritative server-time expiry, and current broad external-access eligibility.
+3. The application separately enforces external-reply lifecycle eligibility: `NEW`, `IN_PROGRESS`, `AWAITING_EXTERNAL`, and `AWAITING_STAFF` only. `COMPLETED`, `EXPIRED`, and `DISPOSED` fail closed.
+4. The application derives the external actor from the grant's authoritative `externalParticipantRef`, validates the existing plain-text body rules, and generates message/audit identifiers plus timestamp server-side.
+5. The thread activity update advances `updatedAt`, `lastActivityAt`, and `attentionAt` to the new external activity time without changing lifecycle state or creating unread/read-receipt semantics.
+6. One expected-version `WorkflowStore` mutation atomically publishes the immutable `EXTERNAL_TO_STAFF` message, updated thread, and minimized `MESSAGE_APPENDED` evidence. A stale or failed commit publishes none of the reply artifacts.
+
+No reply creates `THREAD_OPENED`, `ATTACHMENT_DOWNLOADED`, TransferAttestation, completion evidence, or an automatic lifecycle transition. Browser reply delivery is not part of this release.

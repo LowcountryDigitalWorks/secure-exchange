@@ -50,6 +50,13 @@ export const STAFF_REPLY_ALLOWED_STATES: readonly ThreadLifecycleState[] = [
   "AWAITING_STAFF",
 ];
 
+export const EXTERNAL_REPLY_ALLOWED_STATES: readonly ThreadLifecycleState[] = [
+  "NEW",
+  "IN_PROGRESS",
+  "AWAITING_EXTERNAL",
+  "AWAITING_STAFF",
+];
+
 export function isThreadTransitionAllowed(
   from: ThreadLifecycleState,
   to: ThreadLifecycleState,
@@ -66,6 +73,19 @@ export function requireStaffReplyAllowed(thread: Thread): void {
     throw new DomainError(
       "REPLY_NOT_ALLOWED",
       `Staff reply is not allowed while thread is ${thread.state}.`,
+    );
+  }
+}
+
+export function isExternalReplyAllowed(state: ThreadLifecycleState): boolean {
+  return EXTERNAL_REPLY_ALLOWED_STATES.includes(state);
+}
+
+export function requireExternalReplyAllowed(thread: Thread): void {
+  if (!isExternalReplyAllowed(thread.state)) {
+    throw new DomainError(
+      "REPLY_NOT_ALLOWED",
+      `External reply is not allowed while thread is ${thread.state}.`,
     );
   }
 }
@@ -113,6 +133,22 @@ export function recordThreadActivity(
     ...thread,
     updatedAt: at,
     lastActivityAt: at,
+    version: thread.version + 1,
+  };
+}
+
+export function recordExternalThreadActivity(
+  thread: Thread,
+  expectedVersion: number,
+  at: string,
+): Thread {
+  requireExpectedVersion(thread, expectedVersion);
+
+  return {
+    ...thread,
+    updatedAt: at,
+    lastActivityAt: at,
+    attentionAt: at,
     version: thread.version + 1,
   };
 }

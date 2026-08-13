@@ -201,3 +201,11 @@ External attachment download remains evidence only: `Opened != Downloaded != Tra
 Release 0.9 adds the first disabled-by-default browser delivery adapter over the provider-neutral Release 0.7/0.8 external retrieval services. The synthetic path is credential POST -> short-lived HttpOnly same-origin capability cookie -> independently authorized conversation and attachment views -> POST-only attachment download.
 
 This is not a production public portal or finalized credential-delivery architecture. `DEMO_EXTERNAL_RETRIEVAL_ENABLED=enabled` is required in addition to the existing synthetic demo gate, no credential issuance route is exposed, and production Internet exposure still requires deliberate abuse/rate controls, credential bootstrap design, production authentication/deployment review, and operational controls.
+
+## Release 0.10 — External Reply Core Prototype
+
+Release 0.10 adds provider-neutral AccessGrant-authorized external reply as an application/domain capability only. `THREAD_REPLY` is an explicit third AccessGrant operation alongside `THREAD_READ` and `ATTACHMENT_READ`; each authority remains independent and the current AccessGrant policy must explicitly permit every requested operation.
+
+External reply is allowed only while the authoritative thread is `NEW`, `IN_PROGRESS`, `AWAITING_EXTERNAL`, or `AWAITING_STAFF`. It fails closed while `COMPLETED`, `EXPIRED`, or `DISPOSED`. This is intentionally narrower than external read eligibility: a valid `THREAD_READ` grant may still read a `COMPLETED` conversation, but `THREAD_REPLY` cannot reply to it.
+
+A successful external reply creates one immutable `EXTERNAL_TO_STAFF` plain-text message attributed to the AccessGrant's authoritative external participant. It advances thread activity and staff-attention timestamps without creating per-user unread/read-receipt state and without automatically changing lifecycle state. Browser reply delivery remains deferred to Release 0.11.

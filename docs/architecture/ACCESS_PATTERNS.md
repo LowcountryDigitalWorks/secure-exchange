@@ -165,3 +165,11 @@ External-facing lookup and content failures are collapsed to a conservative acce
 The Release 0.9 capability cookie is a development delivery mechanism, not an authorization record or permanent session. It is host-only, HttpOnly, SameSite=Strict, path-scoped to `/demo/external/access`, and bounded to 600 seconds; it is marked Secure whenever the request is HTTPS. It contains no persisted verifier and is never copied into localStorage, sessionStorage, IndexedDB, HTML hidden fields, generated links, audit, analytics, or logs.
 
 Selectors carried in the cookie or attachment forms remain untrusted. Conversation delivery always requires current `THREAD_READ`. Candidate listing and download always require current `ATTACHMENT_READ`. A mixed grant may exercise both; neither operation implies the other. Revocation, authoritative expiry, or ineligible thread state wins over any still-present browser cookie.
+
+## Release 0.10 external reply access pattern
+
+AccessGrant issuance may include `THREAD_REPLY` only when the current AccessGrant policy explicitly permits it and the authoritative thread is currently reply-eligible. If a requested grant includes reply authority while the thread is `COMPLETED`, `EXPIRED`, or `DISPOSED`, issuance fails rather than silently removing the operation.
+
+Every reply use revalidates the presented bearer against the persisted verifier, deployment/thread scope, explicit `THREAD_REPLY`, revocation, authoritative server-time expiry, current broad external-access eligibility, and the stricter external-reply lifecycle rule. The caller never supplies the external actor; attribution comes only from the authoritative grant.
+
+Reply commits one immutable message, the expected-version thread activity/attention update, and minimized `MESSAGE_APPENDED` evidence in the same `WorkflowStore` mutation. A stale concurrent thread mutation fails the reply without partial message or audit publication. `THREAD_READ`, `ATTACHMENT_READ`, and `THREAD_REPLY` remain independent candidate/use paths; no identifier, prior validity, browser control, or index row grants authority.

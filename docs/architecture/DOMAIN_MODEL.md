@@ -271,3 +271,13 @@ A grant remains separate from thread lifecycle. Current external access is allow
 Staff and external attachment retrieval use different authority sources but converge on one application safety invariant after authorization. Staff authority comes from current authenticated staff authorization plus queue scope and staff `ATTACHMENT_READ` permission. External authority comes from a currently valid, thread-scoped AccessGrant whose explicit operation is `ATTACHMENT_READ`.
 
 The shared retrieval invariant authoritatively verifies message scope, attachment deployment/thread/message ownership, exactly `CLEAN` state with no deletion marker, protected-content availability, and byte-length equality with authoritative attachment metadata before `ATTACHMENT_DOWNLOADED` may be committed.
+
+## Release 0.10 external reply semantics
+
+`AccessGrantOperation` now has exactly three explicit values: `THREAD_READ`, `ATTACHMENT_READ`, and `THREAD_REPLY`. There is no wildcard or aggregate access operation, and existing grants do not silently acquire reply authority.
+
+External reply eligibility is an explicit lifecycle rule separate from external read eligibility. `NEW`, `IN_PROGRESS`, `AWAITING_EXTERNAL`, and `AWAITING_STAFF` are replyable. `COMPLETED`, `EXPIRED`, and `DISPOSED` are not. `COMPLETED` remains readable when a valid grant separately carries `THREAD_READ`.
+
+A successful external reply creates one immutable `EXTERNAL_TO_STAFF` message whose actor reference is the AccessGrant's authoritative opaque `externalParticipantRef`. The caller cannot select actor identity, actor kind, deployment identity, message ID, audit ID, or authoritative timestamp. The existing bounded `PLAIN_TEXT` message representation remains authoritative for the body.
+
+External reply does not transition lifecycle. It updates `updatedAt` and `lastActivityAt` for authoritative activity and advances `attentionAt` to reflect new external activity requiring staff attention. `attentionAt` is not a per-user unread marker or read receipt and does not assert that every staff user has not read the message.

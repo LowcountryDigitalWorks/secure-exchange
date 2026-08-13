@@ -227,3 +227,11 @@ The existing local workflow demo remains controlled by `SECURE_EXCHANGE_SYNTHETI
 The credential form is `GET /demo/external/access` with same-origin `POST /demo/external/access`. Protected development routes are `/demo/external/access/session`, `/conversation`, `/attachments`, POST `/download`, and POST `/end`. There is no HTTP AccessGrant issuance route, email bootstrap, external reply, browser upload, production authentication/session, or production persistence adapter.
 
 Tests may create grants and clean synthetic attachments directly through the application services and then exercise the browser routes. The capability cookie is delivery-only; do not replace per-use AccessGrant validation with cookie presence. Production/public delivery still requires explicit abuse/rate controls and operational review.
+
+## Release 0.10 external reply development boundary
+
+`AccessGrantService.replyExternalConversation()` is an application-only operation. Its untrusted input is limited to deployment/thread/grant selectors, the presented raw bearer secret, and bounded plain-text reply body. The service derives external actor attribution from the validated grant and generates message/audit IDs plus time through existing application boundaries.
+
+External replies are allowed only in `NEW`, `IN_PROGRESS`, `AWAITING_EXTERNAL`, and `AWAITING_STAFF`. They do not change lifecycle state. They advance `lastActivityAt` and `attentionAt` to represent new external activity requiring staff attention; `attentionAt` is not per-user unread/read-receipt state.
+
+Do not add an HTTP `/reply` route, reply form/button, client JavaScript, browser upload, email delivery, production authentication/session, or cloud adapter as part of Release 0.10. Release 0.11 must separately review browser reply delivery and same-origin/capability-cookie behavior. No dependency is added in this release.

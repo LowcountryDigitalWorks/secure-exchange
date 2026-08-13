@@ -1,5 +1,8 @@
 import {
+  createPlainTextMessageBody,
   isExternalAccessThreadEligible,
+  isExternalReplyAllowed,
+  recordExternalThreadActivity,
   revokeAccessGrant,
   validateAccessGrant,
   validateAccessGrantPolicy,
@@ -11,6 +14,7 @@ import {
   type AuditEvent,
   type DeploymentId,
   type ExternalParticipantRef,
+  type Message,
   type Thread,
   type ThreadId,
   type WorkflowPermission,
@@ -91,6 +95,19 @@ export interface ExternalConversationProjection {
   readonly messages: readonly ExternalConversationMessage[];
 }
 
+export interface ReplyExternalConversationInput {
+  readonly deploymentId: DeploymentId;
+  readonly threadId: ThreadId;
+  readonly grantId: AccessGrantId;
+  readonly secret: string;
+  readonly messageBody: string;
+}
+
+export interface ExternalReplyReceipt {
+  readonly threadId: ThreadId;
+  readonly createdAt: string;
+}
+
 interface AuthorizedThread {
   readonly thread: Thread;
   readonly authorization: ActorAuthorization;
@@ -157,6 +174,15 @@ export class AccessGrantService {
       throw new ApplicationError(
         "ACCESS_GRANT_POLICY_REJECTED",
         "Requested AccessGrant authority is outside the current policy.",
+      );
+    }
+    if (
+      requestedOperations.includes("THREAD_REPLY") &&
+      !isExternalReplyAllowed(thread.state)
+    ) {
+      throw new ApplicationError(
+        "ACCESS_GRANT_POLICY_REJECTED",
+        "Requested reply authority is unavailable for the current thread state.",
       );
     }
 
@@ -317,6 +343,82 @@ export class AccessGrantService {
     });
 
     return projection;
+  }
+
+  async replyExternalConversation(
+    input: ReplyExternalConversationInput,
+  ): Promise<ExternalReplyReceipt> {
+    const { grant, thread } = await this.validatePresentedGrantRecord({
+      deploymentId: input.deploymentId,
+      threadId: input.threadId,
+      grantId: input.grantId,
+      secret: input.secret,
+      operation: "THREAD_REPLY",
+    });
+    if (!isExternalReplyAllowed(thread.state)) {
+      throw this.externalAccessDenied();
+    }
+
+    const at = this.currentTime();
+    const message: Message = {
+      messageId: this.idGenerator.generate("message"),
+      deploymentId: input.deploymentId,
+      threadId: input.threadId,
+      direction: "EXTERNAL_TO_STAFF",
+      actorRef: grant.externalParticipantRef,
+      createdAt: at,
+      body: createPlainTextMessageBody(input.messageBody),
+    };
+    const nextThread = recordExternalThreadActivity(thread, thread.version, at);
+
+    try {
+      await this.store.commit({
+        deploymentId: input.deploymentId,
+        threadId: input.threadId,
+        expectedThreadVersion: thread.version,
+        accessGrantAuthorityGuards: [
+          {
+            deploymentId: input.deploymentId,
+            threadId: input.threadId,
+            grantId: grant.grantId,
+            expectedVersion: grant.version,
+            requiredOperation: "THREAD_REPLY",
+            validAt: at,
+          },
+        ],
+        nextThread,
+        messages: [message],
+        auditEvents: [
+          {
+            eventId: this.idGenerator.generate("audit"),
+            deploymentId: input.deploymentId,
+            threadId: input.threadId,
+            eventType: "MESSAGE_APPENDED",
+            actorRef: grant.externalParticipantRef,
+            actorKind: "EXTERNAL",
+            at,
+            messageId: message.messageId,
+            accessGrantId: grant.grantId,
+            outcome: "SUCCEEDED",
+          },
+        ],
+      });
+    } catch (error: unknown) {
+      if (
+        error instanceof Error &&
+        "code" in error &&
+        (error.code === "STALE_VERSION" ||
+          error.code === "ACCESS_GRANT_AUTHORITY_CHANGED")
+      ) {
+        throw this.externalAccessDenied();
+      }
+      throw error;
+    }
+
+    return {
+      threadId: input.threadId,
+      createdAt: at,
+    };
   }
 
   async validatePresentedAccessGrant(

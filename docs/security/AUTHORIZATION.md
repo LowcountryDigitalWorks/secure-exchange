@@ -149,3 +149,11 @@ After grant authorization, authoritative message and attachment ownership and th
 Credential presentation does not create a second session authority. The browser capability merely carries the already-issued bearer credential for subsequent same-origin requests. Every protected browser operation reuses the existing application layer to revalidate verifier proof, deployment/thread scope, explicit operation, revocation, server-time expiry, and current thread eligibility.
 
 `THREAD_READ` authorizes only the bounded external conversation projection. `ATTACHMENT_READ` authorizes only candidate metadata and the authoritative Release 0.8 download path. The HTTP adapter does not broaden grants, infer authority from identifiers, or reproduce attachment safety rules.
+
+## Release 0.10 external reply authorization
+
+AccessGrant external authority now uses three independent operations: `THREAD_READ`, `ATTACHMENT_READ`, and `THREAD_REPLY`. The current policy must explicitly permit `THREAD_REPLY` before issuance can include it. A grant carrying only read or attachment authority cannot reply, and a reply-only grant gains neither read nor attachment authority.
+
+Reply issuance additionally requires the current authoritative thread to be reply-eligible. At use time, the application revalidates the bearer verifier, deployment/thread scope, explicit reply operation, revocation, authoritative expiry, broad external-access eligibility, and the stricter reply lifecycle rule. `COMPLETED` remains readable with valid `THREAD_READ` authority but cannot accept external replies.
+
+External actor attribution comes only from the validated grant's opaque `externalParticipantRef`. Caller-provided body text, email/display name, IP address, browser fields, or extra request properties cannot select or override actor identity, actor kind, deployment, message ID, audit actor, or timestamp. Unsafe external failures remain collapsed to conservative `EXTERNAL_ACCESS_DENIED` behavior.

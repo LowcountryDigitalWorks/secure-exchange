@@ -14,7 +14,8 @@ export type DomainErrorCode =
   | "STALE_ATTACHMENT_POLICY"
   | "INVALID_ACCESS_GRANT"
   | "INVALID_ACCESS_GRANT_POLICY"
-  | "ACCESS_GRANT_THREAD_NOT_ELIGIBLE";
+  | "ACCESS_GRANT_THREAD_NOT_ELIGIBLE"
+  | "ACCESS_GRANT_AUTHORITY_CHANGED";
 
 export class DomainError extends Error {
   constructor(

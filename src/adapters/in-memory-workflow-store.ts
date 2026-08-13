@@ -303,6 +303,7 @@ export class InMemoryWorkflowStore implements WorkflowStore {
     const nextControls = [...this.transferAttestationControls];
 
     this.validateMutationScope(mutation);
+    this.validateAccessGrantAuthorityGuards(mutation, nextAccessGrants);
 
     if (mutation.newThread !== undefined && mutation.nextThread !== undefined) {
       throw new Error(
@@ -490,6 +491,41 @@ export class InMemoryWorkflowStore implements WorkflowStore {
     this.transferAttestationControls = nextControls;
   }
 
+  private validateAccessGrantAuthorityGuards(
+    mutation: WorkflowMutation,
+    accessGrants: ReadonlyMap<string, AccessGrant>,
+  ): void {
+    const guardedGrantIds = new Set<AccessGrantId>();
+    for (const guard of mutation.accessGrantAuthorityGuards ?? []) {
+      if (guardedGrantIds.has(guard.grantId)) {
+        throw new Error("AccessGrant authority guard is duplicated.");
+      }
+      guardedGrantIds.add(guard.grantId);
+
+      const current = accessGrants.get(
+        resourceKey(guard.deploymentId, guard.grantId),
+      );
+      const validAt = Date.parse(guard.validAt);
+      if (
+        current?.deploymentId !== guard.deploymentId ||
+        current.threadId !== guard.threadId ||
+        !Number.isSafeInteger(guard.expectedVersion) ||
+        guard.expectedVersion <= 0 ||
+        current.version !== guard.expectedVersion ||
+        current.revokedAt !== undefined ||
+        !current.permittedOperations.includes(guard.requiredOperation) ||
+        !Number.isFinite(validAt) ||
+        validAt < Date.parse(current.issuedAt) ||
+        validAt >= Date.parse(current.expiresAt)
+      ) {
+        throw new DomainError(
+          "ACCESS_GRANT_AUTHORITY_CHANGED",
+          "AccessGrant authority is no longer valid for the transaction.",
+        );
+      }
+    }
+  }
+
   private validateAttachmentCountGuards(
     mutation: WorkflowMutation,
     attachments: ReadonlyMap<string, Attachment>,
@@ -631,6 +667,17 @@ export class InMemoryWorkflowStore implements WorkflowStore {
         update.accessGrant.threadId !== mutation.threadId
       ) {
         throw new Error("AccessGrant update escaped its authoritative scope.");
+      }
+    }
+
+    for (const guard of mutation.accessGrantAuthorityGuards ?? []) {
+      if (
+        guard.deploymentId !== mutation.deploymentId ||
+        guard.threadId !== mutation.threadId
+      ) {
+        throw new Error(
+          "AccessGrant authority guard escaped its authoritative scope.",
+        );
       }
     }
 

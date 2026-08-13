@@ -326,3 +326,11 @@ No browser or email delivery mechanism exists in this release, so URL leakage, c
 The synthetic delivery adapter explicitly addresses bearer leakage through URLs/history/referrers, cross-site form submission, overly broad cookies, stale browser state after revocation/expiry, response-header injection, inline-content execution, frame embedding, cache persistence, and accidental operation broadening.
 
 Mitigations include POST-only credential presentation, no bearer in redirects or generated links, host-only HttpOnly Strict cookies scoped to the external-development namespace, Secure on HTTPS, same-origin POST validation, per-use AccessGrant revalidation, server-side HTML escaping, restrictive CSP/frame protections, no-store/no-referrer headers, defensive attachment disposition, and no request-body/Cookie/secret logging. The release intentionally does not claim anonymous Internet safety: production abuse/rate controls, email/bootstrap delivery, production identity/deployment, and operational monitoring remain unresolved gates.
+
+## Release 0.10 external reply threats
+
+Release 0.10 explicitly addresses operation-confusion/privilege broadening, stale grant use after lifecycle change, external actor spoofing, sensitive reply-body leakage, and partial publication during concurrent mutation.
+
+Controls include a distinct `THREAD_REPLY` operation with policy opt-in, use-time bearer/scope/revocation/expiry revalidation, a separate domain reply-state rule that excludes `COMPLETED`, grant-derived external actor attribution, bounded plain-text validation, server-generated identifiers/time, minimized audit with no body/secret/verifier, and expected-version atomic message/thread/audit commit.
+
+`attentionAt` records staff-facing attention to new external activity only; it is not a global unread/read-receipt assertion. Release 0.10 adds no browser reply route, upload capability, email bootstrap, public deployment, production identity/session, or cloud infrastructure; those delivery/abuse controls remain later trust-boundary work.
