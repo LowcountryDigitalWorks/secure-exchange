@@ -4,6 +4,7 @@ export type OpaqueIdPurpose =
   | "message"
   | "attachment"
   | "content"
+  | "access-grant"
   | "audit";
 
 export interface OpaqueIdGenerator {
