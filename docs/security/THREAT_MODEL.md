@@ -566,3 +566,12 @@ Release 0.12 resolves the product-level bootstrap/session trust contract but doe
 - customer retention/log-access requirements.
 
 See [External Delivery and Credential Bootstrap Boundary](../architecture/EXTERNAL_DELIVERY_BOUNDARY.md) and [ADR-0005](../adr/0005-external-bootstrap-session-boundary.md).
+
+
+## Release 0.13 bootstrap/session core implementation threats
+
+The lower-entropy one-time proof uses HMAC-SHA-256 with injected key material separate from ordinary state, so state disclosure alone does not provide the key needed for offline verifier guesses. Raw proof, `BootstrapFormGuard`, raw session bearer, session verifier, and proof-verifier key are excluded from workflow audit.
+
+Replay/concurrency is bounded by authoritative challenge generation plus optimistic version: an accepted proof attempt advances generation/version or consumes the challenge, and copy-on-write exchange publishes consumed challenge + new session together or neither. Reissue invalidation and replacement challenge publication are atomic within delivery state.
+
+A browser session remains delivery state, not product authority. Current AccessGrant revocation/expiry, lifecycle/resource rules, operation independence, reply `AccessGrantAuthorityGuard`, and attachment safety continue to win. Public HTTP/CSRF, abuse-rate, notification, recovery, and production deployment evidence remain deferred.

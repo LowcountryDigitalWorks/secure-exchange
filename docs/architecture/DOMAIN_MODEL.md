@@ -286,3 +286,12 @@ External reply does not transition lifecycle. It updates `updatedAt` and `lastAc
 
 Release 0.11 adds no new domain authority or lifecycle state. It only exposes the existing Release 0.10 `THREAD_REPLY` capability through the synthetic/local browser adapter. `THREAD_REPLY` remains independent from `THREAD_READ` and `ATTACHMENT_READ`; successful reply still creates one immutable `EXTERNAL_TO_STAFF` message, advances external activity/attention metadata, and makes no automatic lifecycle transition.
 
+
+
+## Release 0.13 bootstrap and browser-session delivery state
+
+`BootstrapChallenge` is deployment/thread/AccessGrant-bound delivery state containing an opaque locator, keyed proof-verifier metadata, verification mode, authoritative issued/expiry times, failed-attempt/max-attempt state, consumption/invalidation state, generation, and optimistic version. Raw proof is returned only at issuance and never stored; each authoritative attempt either advances generation/version or consumes the challenge.
+
+`BrowserSession` stores an opaque session ID, deployment/thread/AccessGrant binding, SHA-256 verifier of a fresh 256-bit bearer, establishment/last-authorized-activity/absolute-expiry times, invalidation state/reason, and optimistic version. It carries no AccessGrant operation set.
+
+`ExternalSessionStore` is a provider-neutral sibling persistence port following the existing copy-on-write/expected-version transaction discipline for challenge attempts, consume + session establishment, single-session replacement, session updates, and reissue invalidation.

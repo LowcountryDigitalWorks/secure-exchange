@@ -322,3 +322,10 @@ Production adapter/recovery tests must prove that restore/failover does not resu
 Passing the existing repository gate and documenting these future invariants is evidence only that the design remains internally consistent with the current codebase. It is **not** evidence of production deployment, production authentication/session behavior, anonymous-Internet abuse resistance, provider configuration, malware scanning, backup recovery, HIPAA compliance, certification, or regulated readiness.
 
 See [External Delivery and Credential Bootstrap Boundary](../architecture/EXTERNAL_DELIVERY_BOUNDARY.md) and [ADR-0005](../adr/0005-external-bootstrap-session-boundary.md).
+
+
+## Release 0.13 executable bootstrap/session regression boundary
+
+Deterministic coverage now exercises high-entropy locators; raw-proof non-persistence; keyed verifier behavior; form-guard challenge/generation/origin/nonce/expiry binding; guard issuance without challenge mutation; exact challenge expiry; failed-attempt/generation advancement; stale guards; five-attempt lock; rollback; replay/concurrent-consume races; fresh session bearer/verifier separation; wrong bearer; exact idle/absolute expiry; non-sliding absolute expiry; logout/reissue; and absence of credential material from workflow evidence.
+
+Session-backed authorization coverage proves independent `THREAD_READ`, `ATTACHMENT_READ`, and `THREAD_REPLY`; unforgeable application-owned bindings; current grant revocation/expiry/lifecycle winning over session state; raw-bearer compatibility; reply guard preservation; and attachment-safety reuse. Release 0.13 adds no HTTP/bootstrap browser surface, so existing Playwright/axe coverage remains regression coverage rather than invented production-delivery evidence.

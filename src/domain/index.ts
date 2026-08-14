@@ -2,6 +2,7 @@ export * from "./access-grant.js";
 export * from "./attachment.js";
 export * from "./errors.js";
 export * from "./evidence.js";
+export * from "./external-session.js";
 export * from "./message.js";
 export * from "./policy.js";
 export * from "./queue.js";
