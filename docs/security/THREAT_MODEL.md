@@ -341,3 +341,217 @@ The reply form increases only the disabled synthetic/local browser development s
 
 Production Internet exposure, abuse/rate controls, production authentication, credential bootstrap, notification delivery, and operational monitoring remain separate future gates.
 
+## Release 0.12 production delivery threat analysis
+
+Release 0.12 resolves the production credential-bootstrap/session design boundary while creating no production surface. The following threats remain in scope for any later implementation.
+
+### Forwarding, screenshots, wrong-recipient delivery, and shared mailboxes
+
+Threats:
+
+- a recipient forwards the invitation or a screenshot;
+- the notification is sent to the wrong mailbox;
+- multiple people legitimately or accidentally share a mailbox;
+- a shared mailbox member uses a locator/code intended for another individual.
+
+Controls:
+
+- notification contains no protected content;
+- URL contains a non-secret opaque locator only;
+- bootstrap proof is one-time, short-lived, attempt-limited, and separately entered;
+- reissue invalidates prior challenges and sessions;
+- one active session per AccessGrant limits parallel replay;
+- externally visible errors do not disclose challenge/grant existence;
+- customer policy may require `INDEPENDENT_CHALLENGE` for stronger recipient verification.
+
+Residual risk: `MAILBOX_ONLY` cannot establish a unique human identity when the mailbox itself is shared or the full message is forwarded. It must not be described as MFA or proof against mailbox compromise.
+
+### Compromised mailbox
+
+Threat: an attacker controlling the intended mailbox can read notification content and may initiate access.
+
+Controls:
+
+- ordinary email still carries no sensitive message/attachment content;
+- a usable secret is not in the URL;
+- `INDEPENDENT_CHALLENGE` keeps the proof outside the mailbox when deployment policy requires this threat to be mitigated;
+- AccessGrant/session expiry and explicit revocation bound exposure;
+- compromise response revokes and reissues the AccessGrant rather than merely clearing a cookie.
+
+Residual risk: same-email locator + code remains mailbox-only assurance. Two UI steps from one compromised mailbox are not two factors.
+
+### Browser history, referrer, URL logging, link expansion, and reputation systems
+
+Threats:
+
+- URLs may be retained by browser history, mail gateways, proxies, reverse proxies, reputation systems, support screenshots, or observability products;
+- automated security scanners may prefetch or expand links before the human recipient opens them.
+
+Controls:
+
+- active bootstrap proof, raw AccessGrant bearer, browser session bearer, verifier, and CSRF token never enter URL path/query/fragment/redirect;
+- GET of the locator page cannot consume or establish authority;
+- successful proof POST redirects to a fixed local URL without locator/proof material;
+- bootstrap/session/content responses use `Referrer-Policy: no-referrer` and `Cache-Control: no-store, private`;
+- bootstrap/session pages need no third-party analytics/tracking resources;
+- provider/request logging must never record proof/body/cookie secrets and should minimize locator retention where operationally practical.
+
+### Automated scanner active submission
+
+Threat: a sufficiently invasive email-security system or compromised mailbox automation may extract both a same-email locator and code and actively submit them.
+
+Control/limit: `MAILBOX_ONLY` does not claim to stop this. Deployments requiring protection from this class of mailbox compromise use an independent challenge or separately approved stronger external identity mechanism.
+
+### Bootstrap guessing/enumeration
+
+Threats:
+
+- brute-force proof guessing;
+- challenge/AccessGrant enumeration;
+- distributed invalid submissions intended to exhaust logs or lock legitimate users.
+
+Controls:
+
+- opaque locator with at least 128 random bits;
+- proof with at least 50 bits effective entropy;
+- keyed/non-reversible verifier held separately from state store;
+- maximum five failed proof attempts per challenge;
+- per-source and per-deployment request throttles plus progressive delay/temporary lock as appropriate;
+- generic external errors;
+- bounded/rate-limited security telemetry;
+- reissue path with its own quotas.
+
+### State-store disclosure and offline guessing
+
+Threats:
+
+- attacker steals state records containing bootstrap/session verifier material;
+- lower-entropy human-entered proof is attacked offline.
+
+Controls:
+
+- raw proof and raw session bearer are never persisted;
+- bootstrap proof uses keyed verifier with customer-owned key/secret stored separately from state state;
+- uniformly random 256-bit browser-session bearer uses a one-way verifier and is impractical to brute force from the verifier alone;
+- no cross-customer shared verifier master secret in the isolated-deployment reference model.
+
+### Session theft and fixation
+
+Threats:
+
+- cookie theft or shared-device reuse;
+- attacker fixes a pre-auth session and causes the victim to upgrade it;
+- stale session remains after logout/reissue/revocation.
+
+Controls:
+
+- fresh random session ID/bearer only after successful bootstrap; no pre-auth token is upgraded;
+- `__Host-` host-only, `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/` cookie;
+- 20-minute absolute / 10-minute idle reference lifetime with no silent absolute renewal;
+- one active session per AccessGrant;
+- server-side revocation before cookie clearing;
+- AccessGrant revalidation on every protected request;
+- reissue invalidates sessions; grant revocation/expiry wins over local browser state;
+- no bearer in localStorage/sessionStorage/IndexedDB or URL.
+
+Residual risk: an attacker who steals an active browser cookie may use it until session/AccessGrant invalidation; TLS, endpoint/browser hardening, short lifetime, revocation, and minimized session scope bound rather than eliminate this risk.
+
+### CSRF and cross-origin request abuse
+
+Threat: browser cookie attachment is induced by a hostile origin.
+
+Controls:
+
+- GET/HEAD never mutate;
+- exact Origin validation;
+- Fetch Metadata requires `same-origin` for mutations when present;
+- session-bound CSRF/synchronizer proof;
+- `SameSite=Lax` defense in depth;
+- CORS closed by default;
+- restrictive CSP with `form-action 'self'`, `frame-ancestors 'none'`, `base-uri 'none'`, and frame-header defense in depth.
+
+SameSite alone is not accepted as the CSRF boundary.
+
+### Anonymous Internet request flooding and abuse
+
+Threats:
+
+- request flooding;
+- repeated bootstrap attempts;
+- reissue/mail amplification;
+- external reply spam;
+- attachment retrieval abuse;
+- oversized payload attempts and resource exhaustion.
+
+Controls:
+
+- application request/body/message/file limits;
+- per-challenge failure count;
+- per-source/bootstrap/session/grant/deployment throttles;
+- reissue/notification quotas;
+- authorize before expensive object/scanner work where possible;
+- generic failures and bounded log volume;
+- optional replaceable edge protections such as Cloudflare-native rate/bot controls.
+
+Release 0.12 provisions or purchases no edge protection and the documented starting thresholds require operational validation before a production deployment.
+
+### Notification leakage/tracking
+
+Threats:
+
+- notification provider sees sensitive content;
+- tracking pixels/click parameters create unnecessary external telemetry;
+- provider logs capture active credentials.
+
+Controls:
+
+- provider-neutral minimal notification intent;
+- no PHI/message body/attachment content/sensitive filename;
+- no AccessGrant/session/verifier/CSRF secrets;
+- invitation URL contains locator only;
+- click/open tracking remains off unless separately justified;
+- independent-challenge proof is not copied into notification email.
+
+### Backup/restore revocation rollback
+
+Threat: restored state predates a grant/session revocation or challenge consumption and silently resurrects authority.
+
+Controls:
+
+- restore design explicitly invalidates outstanding bootstrap/session delivery state when monotonic continuity cannot be proven;
+- current authoritative server time always enforces expiry;
+- AccessGrant revocation must remain monotonic across recovery;
+- deployment access/security epoch or equivalent kill switch invalidates pre-restore grant/session authority where the state technology cannot otherwise prove monotonic revocation;
+- restore testing covers state/object/audit consistency and revocation behavior.
+
+### Customer/LDW operational ownership
+
+Threats:
+
+- shared administrative credentials;
+- LDW-owned cross-customer runtime secrets;
+- ambiguous responsibility for keys, notification sender, backups, or incident response.
+
+Controls:
+
+- customer-owned isolated production infrastructure;
+- customer-owned runtime data, keys/secrets/verifier material, notification account/credentials, logs, backups, and policy decisions;
+- LDW named role-based access only;
+- handoff/recovery documentation and revocation paths;
+- no cross-customer shared master secret required by the reference design.
+
+## Release 0.12 residual decisions and later gates
+
+Release 0.12 resolves the product-level bootstrap/session trust contract but does not claim production or regulated readiness. Later gates still must resolve and validate, for each production deployment:
+
+- the actual independent verification channel/process when required;
+- production provider adapters and IaC;
+- abuse thresholds and edge controls under realistic traffic;
+- notification provider security/contractual posture;
+- backup/recovery implementation and restore evidence;
+- operational monitoring/incident response responsibilities;
+- customer identity/MFA policy for staff;
+- contractual/BAA/subprocessor coverage where applicable;
+- customer retention/log-access requirements.
+
+See [External Delivery and Credential Bootstrap Boundary](../architecture/EXTERNAL_DELIVERY_BOUNDARY.md) and [ADR-0005](../adr/0005-external-bootstrap-session-boundary.md).
