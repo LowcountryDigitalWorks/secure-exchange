@@ -67,6 +67,24 @@ A future deployment policy may support two explicitly named assurance modes:
 
 A customer/deployment that requires protection against compromised-mailbox access must use `INDEPENDENT_CHALLENGE` or a separately approved stronger external identity mechanism. Mailbox-only bootstrap must not be represented as satisfying that threat.
 
+### Pre-session BootstrapFormGuard
+
+The proof POST consumes/updates bootstrap state and establishes a fresh browser session, so it is a state-changing request **before** any browser session exists. Session-bound CSRF proof cannot be a prerequisite to creating that same session.
+
+The reference pre-session request-integrity control is a provider-neutral **`BootstrapFormGuard`**. The bootstrap GET renders a short-lived server-authenticated opaque form token that is bound to the intended bootstrap challenge and current browser flow without mutating authoritative challenge/application state.
+
+The guard binds, at minimum, to:
+
+- the intended `bootstrapId`/challenge selector;
+- the current authoritative challenge version or equivalent replay generation;
+- the exact expected Secure Exchange origin;
+- a fresh unpredictable per-render nonce;
+- an expiry of at most **10 minutes** and never beyond the underlying bootstrap challenge expiry.
+
+The guard is authenticated with deployment-held application key material behind the provider-neutral key/secrets boundary. It appears only in the same-origin bootstrap form POST body. It is not placed in URLs, redirects, notifications, logs, audit, analytics, or provider-visible telemetry.
+
+`BootstrapFormGuard` is request-integrity material only. It is **not** an AccessGrant, the one-time bootstrap authorization proof, a browser session, or application authorization. It cannot read a thread, enumerate or download attachments, send a reply, or turn the non-secret `bootstrapId` into authority.
+
 ## Bootstrap HTTP flow
 
 The recommended server-rendered flow requires no active secret in the initial link:
@@ -81,12 +99,13 @@ sequenceDiagram
 
     N->>B: Link containing non-secret bootstrapId
     B->>D: GET bootstrap page
-    D-->>B: no-store page requesting one-time proof
-    B->>D: POST bootstrapId + proof + CSRF/origin signals
-    D->>S: validate challenge, keyed verifier, attempts, expiry
+    D-->>B: no-store proof form + BootstrapFormGuard; GET consumes nothing
+    B->>D: POST bootstrapId + proof + BootstrapFormGuard + origin signals
+    D->>D: validate exact Origin, Fetch Metadata, guard authentication/binding/expiry
+    D->>S: validate challenge version, keyed verifier, attempts, expiry
     D->>A: revalidate current AccessGrant scope/state
     A-->>D: current allowed external authority or denial
-    D->>S: atomic consume challenge + create session verifier
+    D->>S: conditional challenge update or atomic consume + create session verifier
     D-->>B: Set-Cookie __Host-sx_external + 303 clean session URL
     B->>D: GET clean session URL with cookie
     D->>S: validate session verifier/lifetime/revocation
@@ -95,12 +114,16 @@ sequenceDiagram
 
 Important behaviors:
 
-- GET never consumes a challenge or establishes authority;
+- GET never consumes, locks, advances, or authorizes a challenge and never establishes a browser session;
+- rendering a stateless `BootstrapFormGuard` on GET does not change authoritative challenge/application state;
 - email scanners/link previewers may safely prefetch the locator URL without burning the challenge;
-- successful POST redirects to a fixed local URL that contains neither locator nor proof;
+- the bootstrap mutation is POST/non-GET only and requires exact expected Origin, same-origin Fetch Metadata when present, and a valid challenge/version-bound `BootstrapFormGuard` before proof verification;
+- every bootstrap proof attempt that reaches authoritative challenge processing conditionally advances or consumes the challenge version/generation, which invalidates the submitted guard; concurrent/replayed submissions using that stale guard fail closed;
+- if a failed proof leaves the challenge retry-eligible, the next form receives a fresh guard for the new authoritative challenge version;
+- successful POST redirects to a fixed local URL that contains neither locator nor proof nor guard;
 - responses carrying bootstrap/session forms use `Cache-Control: no-store, private` and `Referrer-Policy: no-referrer`;
 - no third-party script, font, analytics, pixel, or embedded resource is required on bootstrap/session pages;
-- any provider request/access logging must avoid storing proof values and should minimize/normalize locator values where operationally practical.
+- any provider request/access logging must avoid storing proof or guard values and should minimize/normalize locator values where operationally practical.
 
 ## Browser session/capability contract
 
@@ -115,7 +138,7 @@ The reference production cookie is:
 - `SameSite=Lax`;
 - `Path=/` as required by the `__Host-` prefix.
 
-`SameSite=Lax` permits normal top-level navigation from a notification email while blocking cookie attachment to ordinary cross-site subrequests and POST forms. It is not treated as the CSRF control; mutations have independent protections below.
+`SameSite=Lax` permits normal top-level navigation from a notification email while blocking cookie attachment to ordinary cross-site subrequests and POST forms. It is not treated as the CSRF control; established-session mutations have independent protections below.
 
 The cookie contains a random session locator plus a **256-bit random session bearer**. The raw bearer exists only in the browser cookie and transient application memory. It is never persisted.
 
@@ -183,22 +206,38 @@ For each operation the application must still validate, as applicable:
 10. expected thread/resource version where required;
 11. `AccessGrantAuthorityGuard` for reply mutation.
 
-A session row, session cookie, bootstrap record, URL locator, candidate attachment row, prior successful request, or UI control is never sufficient authorization.
+A session row, session cookie, bootstrap record, URL locator, `BootstrapFormGuard`, candidate attachment row, prior successful request, or UI control is never sufficient authorization.
 
 ## CSRF and same-origin mutation protection
 
-Production mutation protection is independent from bootstrap navigation and `SameSite`.
+Production browser mutation protection has two phases because bootstrap establishes the browser session that later mutations use.
 
-Every state-changing browser request must require all of the following:
+### Phase 1 — pre-session/bootstrap mutation
 
-- POST (or another explicitly approved non-GET mutation method); GET/HEAD never mutates;
+The bootstrap proof POST requires all of the following before challenge proof verification or session establishment:
+
+- POST or another explicitly approved non-GET bootstrap mutation method; GET/HEAD never consume/lock/advance the challenge, establish a session, or authorize application access;
 - exact expected `Origin` validation;
-- Fetch Metadata validation when present, requiring `Sec-Fetch-Site: same-origin` for mutation;
+- Fetch Metadata validation when present, requiring `Sec-Fetch-Site: same-origin`;
+- valid, unexpired server-authenticated `BootstrapFormGuard`;
+- exact guard binding to the intended bootstrap challenge and its current authoritative version/generation.
+
+The guard has no product authority. Each POST attempt that reaches authoritative challenge processing conditionally advances or consumes the challenge generation, invalidating that guard for replay. Unknown, stale, wrong-origin, cross-site, malformed, expired, or replayed request-integrity state fails with bounded generic external behavior.
+
+### Phase 2 — established-session mutation
+
+After successful bootstrap creates the real external browser session, every state-changing browser request requires all of the following:
+
+- POST or another explicitly approved non-GET mutation method; GET/HEAD never perform product mutations;
+- exact expected `Origin` validation;
+- Fetch Metadata validation when present, requiring `Sec-Fetch-Site: same-origin`;
 - a session-bound CSRF token/synchronizer proof generated by the application and verified server-side;
 - a valid current external session;
 - current authoritative AccessGrant operation checks.
 
-Requests missing required mutation signals fail closed. CORS is disabled by default for the external browser surface; do not add wildcard or credentialed cross-origin access.
+The established-session CSRF proof does not replace current AccessGrant/application authorization, and the pre-session `BootstrapFormGuard` is never accepted as a session or product permission.
+
+Requests missing required mutation signals fail closed. CORS is disabled by default for the external browser surface; do not add wildcard or credentialed cross-origin access. `SameSite` remains defense in depth rather than the sole CSRF control.
 
 Browser responses should preserve:
 
@@ -266,7 +305,7 @@ Ordinary notification content must never include:
 - attachment content or sensitive filename;
 - raw AccessGrant bearer;
 - browser session bearer or persisted verifier;
-- session/CSRF secret;
+- bootstrap-form or session CSRF material;
 - provider credential/private key;
 - unrestricted audit detail.
 
@@ -285,7 +324,7 @@ Production application/infrastructure telemetry must not record:
 - browser session bearer;
 - persisted verifier values;
 - cookies or Authorization-style bearer material;
-- CSRF token;
+- `BootstrapFormGuard` or session-bound CSRF proof;
 - reply/message body;
 - attachment bytes or document contents;
 - unrestricted external contact/address information;
@@ -320,14 +359,14 @@ Release 0.12 selects no new provider. A future implementation must satisfy these
 Must support:
 
 - authoritative AccessGrant lookup/version/revocation/expiry;
-- bootstrap challenge lookup, keyed-verifier reference, attempt count, expiry, lock, one-time consume, and reissue invalidation;
+- bootstrap challenge lookup, keyed-verifier reference, attempt count, expiry, lock, one-time consume, reissue invalidation, and version/generation checks needed to invalidate replayed form guards;
 - session lookup/verifier/lifetime/revocation;
 - atomic bootstrap consume + session creation;
 - session invalidation tied to AccessGrant revoke/reissue/deployment security epoch;
 - optimistic/conditional operations needed by current workflow and `AccessGrantAuthorityGuard` semantics;
 - minimized audit/security-event persistence where required.
 
-Indexes/caches remain candidate views only and do not authorize access.
+The reference `BootstrapFormGuard` is stateless and does not require a separate pre-session authority/session record. Indexes/caches remain candidate views only and do not authorize access.
 
 ### Protected object storage
 
@@ -339,7 +378,7 @@ Must authenticate/validate scan-result provenance, fail closed on unknown/failur
 
 ### Key/secrets management
 
-Must keep production notification credentials, keyed bootstrap-verifier material, encryption keys, and other infrastructure secrets in customer-owned secret/key-management facilities with named least-privilege access. No cross-customer shared master secret is permitted in the reference deployment model.
+Must keep production notification credentials, keyed bootstrap-verifier material, `BootstrapFormGuard` authentication key material, encryption keys, and other infrastructure secrets in customer-owned secret/key-management facilities with named least-privilege access. No cross-customer shared master secret is permitted in the reference deployment model.
 
 ### Notification delivery
 
