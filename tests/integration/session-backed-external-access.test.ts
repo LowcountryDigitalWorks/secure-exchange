@@ -79,15 +79,15 @@ describe("Release 0.13 session-backed AccessGrant authorization", () => {
     const fixture = makeExternalSessionFixture();
     const { grant, binding } = await bindingFor(fixture, ["THREAD_READ"]);
 
-    const sessionProjection = await fixture.sessionAccess.retrieveExternalConversation(
-      binding,
-    );
-    const rawProjection = await fixture.accessGrants.retrieveExternalConversation({
-      deploymentId: DEPLOYMENT_A,
-      threadId: THREAD_A,
-      grantId: grant.grantId,
-      secret: grant.secret,
-    });
+    const sessionProjection =
+      await fixture.sessionAccess.retrieveExternalConversation(binding);
+    const rawProjection =
+      await fixture.accessGrants.retrieveExternalConversation({
+        deploymentId: DEPLOYMENT_A,
+        threadId: THREAD_A,
+        grantId: grant.grantId,
+        secret: grant.secret,
+      });
 
     expect(sessionProjection.messages).toHaveLength(2);
     expect(rawProjection.messages).toHaveLength(2);
@@ -96,7 +96,9 @@ describe("Release 0.13 session-backed AccessGrant authorization", () => {
 
   it("denies current operation authority after AccessGrant revocation even though browser session state remains present", async () => {
     const fixture = makeExternalSessionFixture();
-    const { grant, binding, session } = await bindingFor(fixture, ["THREAD_READ"]);
+    const { grant, binding, session } = await bindingFor(fixture, [
+      "THREAD_READ",
+    ]);
     await fixture.accessGrants.revokeAccessGrant({
       actor: actorContext(),
       deploymentId: DEPLOYMENT_A,
@@ -164,7 +166,10 @@ describe("Release 0.13 session-backed AccessGrant authorization", () => {
       DEPLOYMENT_A,
       THREAD_A,
     );
-    const thread = await fixture.workflowStore.getThread(DEPLOYMENT_A, THREAD_A);
+    const thread = await fixture.workflowStore.getThread(
+      DEPLOYMENT_A,
+      THREAD_A,
+    );
     const audit = fixture.workflowStore.listAuditEvents(DEPLOYMENT_A, THREAD_A);
     const reply = messages.at(-1);
 
@@ -197,7 +202,9 @@ describe("Release 0.13 session-backed AccessGrant authorization", () => {
 
   it("denies wrong deployment or thread when presenting browser session credentials", async () => {
     const fixture = makeExternalSessionFixture();
-    const { session } = await establishExternalSession(fixture, ["THREAD_READ"]);
+    const { session } = await establishExternalSession(fixture, [
+      "THREAD_READ",
+    ]);
 
     await expectDenied(
       fixture.sessions.presentBrowserSession({

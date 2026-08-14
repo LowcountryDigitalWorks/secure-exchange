@@ -8,13 +8,10 @@ import type {
 } from "./types.js";
 
 export type BootstrapVerificationMode =
-  | "MAILBOX_ONLY"
-  | "INDEPENDENT_CHALLENGE";
+  "MAILBOX_ONLY" | "INDEPENDENT_CHALLENGE";
 
 export type BootstrapInvalidationReason =
-  | "LOCKED"
-  | "REISSUED"
-  | "ACCESS_GRANT_INVALID";
+  "LOCKED" | "REISSUED" | "ACCESS_GRANT_INVALID";
 
 export interface BootstrapChallenge {
   readonly bootstrapId: BootstrapId;
@@ -37,9 +34,7 @@ export interface BootstrapChallenge {
 }
 
 export type BrowserSessionInvalidationReason =
-  | "LOGOUT"
-  | "REPLACED"
-  | "REISSUED";
+  "LOGOUT" | "REPLACED" | "REISSUED";
 
 export interface BrowserSession {
   readonly sessionId: BrowserSessionId;
@@ -71,13 +66,12 @@ function assertReference(value: string, label: string): void {
     value.length > MAX_REFERENCE_LENGTH ||
     [...value].some((character) => {
       const codePoint = character.codePointAt(0);
-      return codePoint !== undefined && (codePoint < 0x20 || codePoint === 0x7f);
+      return (
+        codePoint !== undefined && (codePoint < 0x20 || codePoint === 0x7f)
+      );
     })
   ) {
-    throw new DomainError(
-      "INVALID_EXTERNAL_SESSION",
-      `${label} is invalid.`,
-    );
+    throw new DomainError("INVALID_EXTERNAL_SESSION", `${label} is invalid.`);
   }
 }
 
@@ -149,7 +143,9 @@ export function validateBootstrapChallenge(
   return challenge;
 }
 
-export function validateBrowserSession(session: BrowserSession): BrowserSession {
+export function validateBrowserSession(
+  session: BrowserSession,
+): BrowserSession {
   assertReference(session.sessionId, "Browser session identifier");
   assertReference(session.deploymentId, "Deployment identifier");
   assertReference(session.threadId, "Thread identifier");
@@ -285,7 +281,10 @@ export function invalidateBootstrapChallenge(
 ): BootstrapChallenge {
   validateBootstrapChallenge(challenge);
   requireBootstrapVersion(challenge, expectedVersion, expectedGeneration);
-  if (challenge.consumedAt !== undefined || challenge.invalidatedAt !== undefined) {
+  if (
+    challenge.consumedAt !== undefined ||
+    challenge.invalidatedAt !== undefined
+  ) {
     return challenge;
   }
   return validateBootstrapChallenge({
@@ -321,7 +320,10 @@ export function recordBrowserSessionActivity(
   at: string,
 ): BrowserSession {
   validateBrowserSession(session);
-  if (session.version !== expectedVersion || !isBrowserSessionActiveAt(session, at)) {
+  if (
+    session.version !== expectedVersion ||
+    !isBrowserSessionActiveAt(session, at)
+  ) {
     throw new DomainError(
       "BROWSER_SESSION_AUTHORITY_CHANGED",
       "Browser session authority changed before activity update.",

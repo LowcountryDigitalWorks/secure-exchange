@@ -30,7 +30,9 @@ function resourceKey(deploymentId: string, resourceId: string): string {
 }
 
 function isOutstandingChallenge(challenge: BootstrapChallenge): boolean {
-  return challenge.consumedAt === undefined && challenge.invalidatedAt === undefined;
+  return (
+    challenge.consumedAt === undefined && challenge.invalidatedAt === undefined
+  );
 }
 
 function isActiveSession(session: BrowserSession): boolean {
@@ -118,13 +120,21 @@ export class InMemoryExternalSessionStore implements ExternalSessionStore {
 
       switch (mutation.kind) {
         case "CREATE_CHALLENGE":
-          this.createChallenge(nextChallenges, nextSessions, mutation.challenge);
+          this.createChallenge(
+            nextChallenges,
+            nextSessions,
+            mutation.challenge,
+          );
           break;
         case "UPDATE_CHALLENGE":
           this.updateChallenge(nextChallenges, mutation.update);
           break;
         case "EXCHANGE_CHALLENGE":
-          this.exchangeChallenge(nextChallenges, nextSessions, mutation.exchange);
+          this.exchangeChallenge(
+            nextChallenges,
+            nextSessions,
+            mutation.exchange,
+          );
           break;
         case "UPDATE_SESSION":
           this.updateSession(nextSessions, mutation.update);
@@ -198,9 +208,8 @@ export class InMemoryExternalSessionStore implements ExternalSessionStore {
     const key = resourceKey(next.deploymentId, next.bootstrapId);
     const current = challenges.get(key);
     if (
-      current === undefined ||
-      current.version !== update.expectedVersion ||
-      current.generation !== update.expectedGeneration
+      current?.version !== update.expectedVersion ||
+      current?.generation !== update.expectedGeneration
     ) {
       throw new DomainError(
         "BOOTSTRAP_AUTHORITY_CHANGED",
@@ -226,13 +235,16 @@ export class InMemoryExternalSessionStore implements ExternalSessionStore {
     exchange: BootstrapSessionExchange,
   ): void {
     const consumed = validateBootstrapChallenge(exchange.consumedChallenge);
-    const challengeKey = resourceKey(consumed.deploymentId, consumed.bootstrapId);
+    const challengeKey = resourceKey(
+      consumed.deploymentId,
+      consumed.bootstrapId,
+    );
     const current = challenges.get(challengeKey);
     if (
-      current === undefined ||
-      current.version !== exchange.expectedChallengeVersion ||
-      current.generation !== exchange.expectedChallengeGeneration ||
-      !isOutstandingChallenge(current)
+      current?.version !== exchange.expectedChallengeVersion ||
+      current?.generation !== exchange.expectedChallengeGeneration ||
+      current?.consumedAt !== undefined ||
+      current?.invalidatedAt !== undefined
     ) {
       throw new DomainError(
         "BOOTSTRAP_AUTHORITY_CHANGED",
@@ -302,7 +314,7 @@ export class InMemoryExternalSessionStore implements ExternalSessionStore {
     const next = validateBrowserSession(update.session);
     const key = resourceKey(next.deploymentId, next.sessionId);
     const current = sessions.get(key);
-    if (current === undefined || current.version !== update.expectedVersion) {
+    if (current?.version !== update.expectedVersion) {
       throw new DomainError(
         "BROWSER_SESSION_AUTHORITY_CHANGED",
         "Browser session changed before the transaction committed.",

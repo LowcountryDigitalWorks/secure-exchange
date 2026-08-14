@@ -230,8 +230,17 @@ The design distinguishes `MAILBOX_ONLY` verification from `INDEPENDENT_CHALLENGE
 
 The browser session is transport only: host-only `__Host-` cookie, `Secure`, `HttpOnly`, `SameSite=Lax`, bounded absolute/idle lifetimes, one active session per AccessGrant, server-side verifier only, server-side logout/invalidation, no silent absolute renewal, and AccessGrant revalidation on every protected operation.
 
-Production mutation design requires Origin + Fetch Metadata + session-bound CSRF proof and keeps CORS closed by default. The release also specifies public-Internet throttling/lockout boundaries, minimized provider-neutral notification contracts, logging exclusions/security events, backup/restore invalidation, provider-adapter responsibilities, and customer-owned production secret/resource ownership.
+Production mutation protection is explicitly two-phase: pre-session bootstrap uses exact Origin + same-origin Fetch Metadata when present + `BootstrapFormGuard`; established-session mutations use exact Origin + same-origin Fetch Metadata when present + a session-bound CSRF/synchronizer proof. CORS remains closed by default. The release also specifies public-Internet throttling/lockout boundaries, minimized provider-neutral notification contracts, logging exclusions/security events, backup/restore invalidation, provider-adapter responsibilities, and customer-owned production secret/resource ownership.
 
 Release 0.12 creates no production endpoint, email/verification provider, state/object/scanner adapter, AWS/Cloudflare resource, customer data/PHI path, paid service, or compliance/production-readiness claim. New recurring cost: **$0**.
 
 See [External Delivery and Credential Bootstrap Boundary](architecture/EXTERNAL_DELIVERY_BOUNDARY.md) and [ADR-0005](adr/0005-external-bootstrap-session-boundary.md).
+
+
+## Release 0.13 — Provider-Neutral Bootstrap & Browser Session Core Prototype
+
+Release 0.13 implements the Release 0.12 delivery-state core without a public browser surface: provider-neutral `BootstrapChallenge` and `BrowserSession` models, keyed bootstrap-proof verification, stateless challenge/generation-bound `BootstrapFormGuard`, atomic challenge consume + session creation, one-active-session-per-AccessGrant replacement, logout/reissue invalidation, and authoritative idle/absolute expiry.
+
+A validated session creates only application-owned delivery state. Session-backed `THREAD_READ`, `ATTACHMENT_READ`, and `THREAD_REPLY` still reload current AccessGrant/thread authority, retain independent operations, preserve the Release 0.10 `AccessGrantAuthorityGuard` for reply, and reuse the Release 0.6/0.8 exactly-`CLEAN` attachment path. The existing raw AccessGrant synthetic development path remains unchanged.
+
+No public bootstrap route/UI/cookie, notification provider, cloud resource, customer data/PHI, analytics, or paid dependency is added. Expected recurring cost remains **$0**.

@@ -41,9 +41,7 @@ export interface IssuedBootstrapFormGuard {
 }
 
 export interface BootstrapFormGuardManager {
-  issue(
-    input: BootstrapFormGuardIssueInput,
-  ): Promise<IssuedBootstrapFormGuard>;
+  issue(input: BootstrapFormGuardIssueInput): Promise<IssuedBootstrapFormGuard>;
   matches(
     guard: string,
     input: BootstrapFormGuardValidationInput,

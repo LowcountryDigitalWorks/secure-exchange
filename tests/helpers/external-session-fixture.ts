@@ -32,7 +32,7 @@ import {
 } from "./workflow-fixture.js";
 
 export class MutableExternalSessionClock implements Clock {
-  constructor(private value: string = "2026-08-14T12:00:00.000Z") {}
+  constructor(private value = "2026-08-14T12:00:00.000Z") {}
 
   now(): string {
     return this.value;
@@ -49,7 +49,7 @@ export class ExternalSessionSequenceIdGenerator implements OpaqueIdGenerator {
   generate(purpose: OpaqueIdPurpose): string {
     const next = (this.counters.get(purpose) ?? 0) + 1;
     this.counters.set(purpose, next);
-    return `${purpose}-${next}`;
+    return `generated-${purpose}-${next}`;
   }
 }
 

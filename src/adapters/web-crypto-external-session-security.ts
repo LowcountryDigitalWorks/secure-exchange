@@ -144,9 +144,7 @@ export class WebCryptoBootstrapProofManager implements BootstrapProofManager {
   }
 }
 
-export class WebCryptoBrowserSessionSecretManager
-  implements BrowserSessionSecretManager
-{
+export class WebCryptoBrowserSessionSecretManager implements BrowserSessionSecretManager {
   async issue(): Promise<IssuedBrowserSessionSecret> {
     const bearer = `sxs1_${randomBase64Url(32)}`;
     return {
@@ -207,9 +205,7 @@ function parseGuardClaims(encoded: string): GuardClaims {
   };
 }
 
-export class WebCryptoBootstrapFormGuardManager
-  implements BootstrapFormGuardManager
-{
+export class WebCryptoBootstrapFormGuardManager implements BootstrapFormGuardManager {
   private readonly keyMaterial: Uint8Array;
 
   constructor(keyMaterial: Uint8Array) {

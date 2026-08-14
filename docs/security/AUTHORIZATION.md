@@ -226,3 +226,12 @@ Origin, Fetch Metadata, either CSRF/request-integrity proof, `SameSite`, CSP/for
 Backup/restore must not roll authorization backward. A recovered state in which monotonic grant/session revocation cannot be proven requires an authoritative access/security epoch or equivalent invalidation mechanism before external access resumes. Recovery convenience cannot make a previously revoked credential usable again.
 
 See [External Delivery and Credential Bootstrap Boundary](../architecture/EXTERNAL_DELIVERY_BOUNDARY.md) and [ADR-0005](../adr/0005-external-bootstrap-session-boundary.md).
+
+
+## Release 0.13 provider-neutral bootstrap/session core authorization
+
+`bootstrapId`, `BootstrapFormGuard`, bootstrap proof, `BrowserSession`, and AccessGrant remain distinct. The guard authenticates only challenge/generation/origin/nonce/expiry request integrity; issuing or possessing it grants no AccessGrant operation.
+
+Successful bootstrap returns a fresh session credential and persists only its verifier. Presentation returns an application-owned `ValidatedBrowserSessionBinding`; session-backed access then rechecks the current session/version, AccessGrant deployment/thread, explicit operation, revocation, server-time expiry, and current lifecycle/resource state.
+
+The existing raw AccessGrant bearer path remains available to the disabled Release 0.9–0.11 synthetic adapter. Session-backed reply retains expected thread version plus `AccessGrantAuthorityGuard`; session-backed attachment retrieval reuses `retrieveAuthorizedAttachment()` and its exactly-`CLEAN`, ownership, integrity, and post-success evidence rules. Logout invalidates only the session; reissue invalidates outstanding challenges and active sessions without silently revoking or widening the AccessGrant.

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { expect, it } from "vitest";
 
 import { ApplicationError } from "../../src/application/errors.js";
 import { isBrowserSessionActiveAt } from "../../src/domain/index.js";
@@ -31,6 +31,14 @@ it("denies an expired AccessGrant while the independent browser session is still
     proof: challenge.proof,
   });
 
+  fixture.clock.set("2026-08-14T12:09:00.000Z");
+  await fixture.sessions.presentBrowserSession({
+    deploymentId: DEPLOYMENT_A,
+    threadId: THREAD_A,
+    sessionId: session.sessionId,
+    bearer: session.bearer,
+  });
+
   fixture.clock.set("2026-08-14T12:14:59.999Z");
   const binding = await fixture.sessions.presentBrowserSession({
     deploymentId: DEPLOYMENT_A,
@@ -43,9 +51,11 @@ it("denies an expired AccessGrant while the independent browser session is still
     DEPLOYMENT_A,
     session.sessionId,
   );
-  expect(storedSession).toBeDefined();
+  if (storedSession === undefined) {
+    throw new Error("Expected authoritative browser session.");
+  }
   expect(
-    isBrowserSessionActiveAt(storedSession!, "2026-08-14T12:15:00.000Z"),
+    isBrowserSessionActiveAt(storedSession, "2026-08-14T12:15:00.000Z"),
   ).toBe(true);
 
   try {

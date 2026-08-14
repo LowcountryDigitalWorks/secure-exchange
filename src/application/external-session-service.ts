@@ -20,7 +20,6 @@ import {
   type BootstrapChallenge,
   type BootstrapId,
   type BootstrapVerificationMode,
-  type BrowserSession,
   type BrowserSessionId,
   type DeploymentId,
   type Thread,
@@ -60,7 +59,9 @@ export class ValidatedBrowserSessionBinding {
     },
   ) {
     if (token !== bindingToken) {
-      throw new Error("Validated browser session bindings are application-owned.");
+      throw new Error(
+        "Validated browser session bindings are application-owned.",
+      );
     }
     this.deploymentId = input.deploymentId;
     this.threadId = input.threadId;
@@ -75,7 +76,9 @@ export class ValidatedBrowserSessionBinding {
 export function isValidatedBrowserSessionBinding(
   value: unknown,
 ): value is ValidatedBrowserSessionBinding {
-  return typeof value === "object" && value !== null && trustedBindings.has(value);
+  return (
+    typeof value === "object" && value !== null && trustedBindings.has(value)
+  );
 }
 
 export interface IssueBootstrapChallengeInput {
@@ -128,7 +131,7 @@ export interface PresentBrowserSessionInput {
   readonly bearer: string;
 }
 
-export interface LogoutBrowserSessionInput extends PresentBrowserSessionInput {}
+export type LogoutBrowserSessionInput = PresentBrowserSessionInput;
 
 interface CurrentGrantTarget {
   readonly grant: AccessGrant;
@@ -278,10 +281,8 @@ export class ExternalSessionService {
     }
 
     const sessionMaterial = await this.sessionSecrets.issue();
-    const absoluteExpiresAtMs = Math.min(
-      Date.parse(at) + BROWSER_SESSION_ABSOLUTE_LIFETIME_SECONDS * 1_000,
-      Date.parse(target.grant.expiresAt),
-    );
+    const absoluteExpiresAtMs =
+      Date.parse(at) + BROWSER_SESSION_ABSOLUTE_LIFETIME_SECONDS * 1_000;
     if (
       !Number.isFinite(absoluteExpiresAtMs) ||
       absoluteExpiresAtMs <= Date.parse(at)
@@ -310,6 +311,14 @@ export class ExternalSessionService {
 
     try {
       await this.confirmGrantTargetUnchanged(target, at);
+    } catch {
+      await this.invalidateChallengeForGrantFailure(challenge, at).catch(
+        () => undefined,
+      );
+      throw this.externalAccessDenied();
+    }
+
+    try {
       await this.sessionStore.commit({
         kind: "EXCHANGE_CHALLENGE",
         exchange: {
@@ -321,9 +330,6 @@ export class ExternalSessionService {
         },
       });
     } catch {
-      await this.invalidateChallengeForGrantFailure(challenge, at).catch(
-        () => undefined,
-      );
       throw this.externalAccessDenied();
     }
 
@@ -503,7 +509,10 @@ export class ExternalSessionService {
     challenge: BootstrapChallenge,
     at: string,
   ): Promise<void> {
-    if (challenge.consumedAt !== undefined || challenge.invalidatedAt !== undefined) {
+    if (
+      challenge.consumedAt !== undefined ||
+      challenge.invalidatedAt !== undefined
+    ) {
       return;
     }
     const next = invalidateBootstrapChallenge(

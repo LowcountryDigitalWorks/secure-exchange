@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { ApplicationError } from "../../src/application/errors.js";
-import { DEPLOYMENT_A, THREAD_A, actorContext } from "../helpers/workflow-fixture.js";
+import {
+  DEPLOYMENT_A,
+  THREAD_A,
+  actorContext,
+} from "../helpers/workflow-fixture.js";
 import {
   establishExternalSession,
   issueExternalGrant,
@@ -19,7 +23,9 @@ async function expectDenied(promise: Promise<unknown>): Promise<void> {
   }
 }
 
-async function issueChallenge(fixture: ReturnType<typeof makeExternalSessionFixture>) {
+async function issueChallenge(
+  fixture: ReturnType<typeof makeExternalSessionFixture>,
+) {
   const grant = await issueExternalGrant(fixture, ["THREAD_READ"]);
   const challenge = await fixture.sessions.issueBootstrapChallenge({
     deploymentId: DEPLOYMENT_A,
@@ -139,7 +145,11 @@ describe("Release 0.13 bootstrap and browser-session core", () => {
       DEPLOYMENT_A,
       challenge.bootstrapId,
     );
-    expect(after).toMatchObject({ failedAttempts: 1, generation: 2, version: 2 });
+    expect(after).toMatchObject({
+      failedAttempts: 1,
+      generation: 2,
+      version: 2,
+    });
 
     await expectDenied(
       fixture.sessions.exchangeBootstrapProof({
@@ -198,7 +208,8 @@ describe("Release 0.13 bootstrap and browser-session core", () => {
 
   it("atomically consumes a challenge and creates one fresh session without persisting bearer material", async () => {
     const fixture = makeExternalSessionFixture();
-    const { grant, challenge, session } = await establishExternalSession(fixture);
+    const { grant, challenge, session } =
+      await establishExternalSession(fixture);
     const storedChallenge = await fixture.sessionStore.getBootstrapChallenge(
       DEPLOYMENT_A,
       challenge.bootstrapId,
@@ -225,7 +236,7 @@ describe("Release 0.13 bootstrap and browser-session core", () => {
 
   it("rolls back challenge consumption and session creation together on transaction failure", async () => {
     const fixture = makeExternalSessionFixture();
-    const { challenge } = await issueChallenge(fixture);
+    const { grant, challenge } = await issueChallenge(fixture);
     const guard = await issueGuard(fixture, challenge.bootstrapId);
     fixture.sessionStore.failNextCommit();
 
@@ -247,7 +258,7 @@ describe("Release 0.13 bootstrap and browser-session core", () => {
     expect(
       await fixture.sessionStore.listBrowserSessionsForAccessGrant(
         DEPLOYMENT_A,
-        (await issueExternalGrant(makeExternalSessionFixture())).grantId,
+        grant.grantId,
       ),
     ).toEqual([]);
   });
@@ -273,7 +284,11 @@ describe("Release 0.13 bootstrap and browser-session core", () => {
       DEPLOYMENT_A,
       challenge.bootstrapId,
     );
-    expect(stored).toMatchObject({ failedAttempts: 1, generation: 2, version: 2 });
+    expect(stored).toMatchObject({
+      failedAttempts: 1,
+      generation: 2,
+      version: 2,
+    });
   });
 
   it("allows only one concurrent valid submission to consume a challenge and establish a session", async () => {
@@ -292,15 +307,20 @@ describe("Release 0.13 bootstrap and browser-session core", () => {
       fixture.sessions.exchangeBootstrapProof(input),
       fixture.sessions.exchangeBootstrapProof(input),
     ]);
-    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
-    expect(results.filter((result) => result.status === "rejected")).toHaveLength(1);
-    const sessions = await fixture.sessionStore.listBrowserSessionsForAccessGrant(
-      DEPLOYMENT_A,
-      grant.grantId,
-    );
-    expect(sessions.filter((session) => session.invalidatedAt === undefined)).toHaveLength(
-      1,
-    );
+    expect(
+      results.filter((result) => result.status === "fulfilled"),
+    ).toHaveLength(1);
+    expect(
+      results.filter((result) => result.status === "rejected"),
+    ).toHaveLength(1);
+    const sessions =
+      await fixture.sessionStore.listBrowserSessionsForAccessGrant(
+        DEPLOYMENT_A,
+        grant.grantId,
+      );
+    expect(
+      sessions.filter((session) => session.invalidatedAt === undefined),
+    ).toHaveLength(1);
   });
 
   it("fails at the exact idle boundary and ignores caller time because only the injected clock is authoritative", async () => {
@@ -392,12 +412,18 @@ describe("Release 0.13 bootstrap and browser-session core", () => {
       DEPLOYMENT_A,
       session.sessionId,
     );
-    const challenges = await fixture.sessionStore.listBootstrapChallengesForAccessGrant(
-      DEPLOYMENT_A,
-      grant.grantId,
-    );
+    const challenges =
+      await fixture.sessionStore.listBootstrapChallengesForAccessGrant(
+        DEPLOYMENT_A,
+        grant.grantId,
+      );
     expect(oldSession?.invalidationReason).toBe("REISSUED");
-    expect(challenges.filter((item) => item.invalidatedAt === undefined && item.consumedAt === undefined)).toHaveLength(1);
+    expect(
+      challenges.filter(
+        (item) =>
+          item.invalidatedAt === undefined && item.consumedAt === undefined,
+      ),
+    ).toHaveLength(1);
     expect(challenges.at(-1)?.bootstrapId).toBe(reissued.bootstrapId);
     await expectDenied(
       fixture.sessions.presentBrowserSession({

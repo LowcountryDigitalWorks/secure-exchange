@@ -34,9 +34,9 @@ describe("Release 0.13 external session cryptographic boundaries", () => {
     expect(issued.verifierDigest).toMatch(
       /^hmac-sha256:v1:[A-Za-z0-9_-]{43}$/u,
     );
-    await expect(manager.matches(issued.proof, issued.verifierDigest)).resolves.toBe(
-      true,
-    );
+    await expect(
+      manager.matches(issued.proof, issued.verifierDigest),
+    ).resolves.toBe(true);
     await expect(
       otherKey.matches(issued.proof, issued.verifierDigest),
     ).resolves.toBe(false);
@@ -52,13 +52,13 @@ describe("Release 0.13 external session cryptographic boundaries", () => {
     expect(issued.bearer).toMatch(/^sxs1_[A-Za-z0-9_-]{43}$/u);
     expect(issued.verifierDigest).toMatch(/^sha256:v1:[A-Za-z0-9_-]{43}$/u);
     expect(issued.verifierDigest).not.toBe(issued.bearer);
-    await expect(manager.matches(issued.bearer, issued.verifierDigest)).resolves.toBe(
-      true,
-    );
+    await expect(
+      manager.matches(issued.bearer, issued.verifierDigest),
+    ).resolves.toBe(true);
     const wrong = await manager.issue();
-    await expect(manager.matches(wrong.bearer, issued.verifierDigest)).resolves.toBe(
-      false,
-    );
+    await expect(
+      manager.matches(wrong.bearer, issued.verifierDigest),
+    ).resolves.toBe(false);
   });
 
   it("authenticates BootstrapFormGuard challenge, generation, origin, nonce and exact expiry", async () => {

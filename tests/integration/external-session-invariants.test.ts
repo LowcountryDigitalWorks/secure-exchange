@@ -42,7 +42,9 @@ describe("Release 0.13 external delivery invariants", () => {
 
   it("denies a wrong browser-session bearer without advancing session state", async () => {
     const fixture = makeExternalSessionFixture();
-    const { session } = await establishExternalSession(fixture, ["THREAD_READ"]);
+    const { session } = await establishExternalSession(fixture, [
+      "THREAD_READ",
+    ]);
     const before = await fixture.sessionStore.getBrowserSession(
       DEPLOYMENT_A,
       session.sessionId,
@@ -135,12 +137,12 @@ describe("Release 0.13 external delivery invariants", () => {
       proof: challenge.proof,
     });
 
-    expect(fixture.workflowStore.listAuditEvents(DEPLOYMENT_A, THREAD_A)).toEqual(
-      beforeAudit,
-    );
-    expect(await fixture.workflowStore.getThread(DEPLOYMENT_A, THREAD_A)).toEqual(
-      beforeThread,
-    );
+    expect(
+      fixture.workflowStore.listAuditEvents(DEPLOYMENT_A, THREAD_A),
+    ).toEqual(beforeAudit);
+    expect(
+      await fixture.workflowStore.getThread(DEPLOYMENT_A, THREAD_A),
+    ).toEqual(beforeThread);
   });
 
   it("does not let BootstrapFormGuard possession substitute for a browser session or AccessGrant operation", async () => {
