@@ -120,11 +120,7 @@ export class InMemoryExternalSessionStore implements ExternalSessionStore {
 
       switch (mutation.kind) {
         case "CREATE_CHALLENGE":
-          this.createChallenge(
-            nextChallenges,
-            nextSessions,
-            mutation.challenge,
-          );
+          this.createChallenge(nextChallenges, mutation.challenge);
           break;
         case "UPDATE_CHALLENGE":
           this.updateChallenge(nextChallenges, mutation.update);
@@ -156,7 +152,6 @@ export class InMemoryExternalSessionStore implements ExternalSessionStore {
 
   private createChallenge(
     challenges: Map<string, BootstrapChallenge>,
-    sessions: ReadonlyMap<string, BrowserSession>,
     challenge: BootstrapChallenge,
   ): void {
     const validated = validateBootstrapChallenge(challenge);
@@ -185,16 +180,10 @@ export class InMemoryExternalSessionStore implements ExternalSessionStore {
         item.accessGrantId === validated.accessGrantId &&
         isOutstandingChallenge(item),
     );
-    const activeSession = [...sessions.values()].some(
-      (item) =>
-        item.deploymentId === validated.deploymentId &&
-        item.accessGrantId === validated.accessGrantId &&
-        isActiveSession(item),
-    );
-    if (activeChallenge || activeSession) {
+    if (activeChallenge) {
       throw new DomainError(
         "BOOTSTRAP_AUTHORITY_CHANGED",
-        "Active external delivery state already exists for the AccessGrant.",
+        "An outstanding bootstrap challenge already exists for the AccessGrant.",
       );
     }
     challenges.set(key, validated);
