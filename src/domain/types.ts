@@ -13,6 +13,8 @@ export type AttachmentPolicyRef = string;
 export type CompletionPolicyRef = string;
 export type AccessGrantId = string;
 export type AccessGrantPolicyRef = string;
+export type BootstrapId = string;
+export type BrowserSessionId = string;
 
 export type ActorKind = "STAFF" | "ADMIN" | "SYSTEM";
 export type AuditActorKind = ActorKind | "EXTERNAL";

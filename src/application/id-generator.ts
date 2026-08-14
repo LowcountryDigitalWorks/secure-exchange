@@ -5,6 +5,8 @@ export type OpaqueIdPurpose =
   | "attachment"
   | "content"
   | "access-grant"
+  | "bootstrap"
+  | "browser-session"
   | "audit";
 
 export interface OpaqueIdGenerator {
