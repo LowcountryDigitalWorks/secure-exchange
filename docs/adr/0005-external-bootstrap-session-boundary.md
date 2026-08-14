@@ -45,6 +45,36 @@ Reference bounds:
 
 Provider choice for an independent challenge remains deferred behind a provider-neutral contract.
 
+### Pre-session bootstrap form request integrity
+
+The bootstrap proof POST is a state-changing request that occurs **before** an external browser session exists. It therefore cannot require a session-bound CSRF token as a prerequisite to creating that session.
+
+The reference pre-session control is a provider-neutral **`BootstrapFormGuard`**: a short-lived, server-authenticated opaque form token rendered only into the bootstrap form. The token is not persisted as a browser session and does not create product authority.
+
+The guard must bind, at minimum, to:
+
+- the intended `bootstrapId`/bootstrap challenge;
+- the current authoritative challenge version or equivalent replay generation;
+- the expected Secure Exchange origin;
+- a fresh unpredictable per-render nonce;
+- an expiry no later than **10 minutes** and never later than the underlying bootstrap challenge expiry.
+
+The guard is authenticated with deployment-held application key material behind the existing provider-neutral key/secrets boundary. It is submitted only in the POST body, not a URL, redirect, log, or notification.
+
+A bootstrap proof POST is eligible for challenge verification only when all of these request-integrity checks succeed:
+
+- POST or another explicitly approved non-GET bootstrap mutation method;
+- exact expected `Origin` validation;
+- `Sec-Fetch-Site: same-origin` when Fetch Metadata is present;
+- valid, unexpired `BootstrapFormGuard` authentication;
+- exact binding to the submitted challenge and its current authoritative version/generation.
+
+GET of the bootstrap page does not consume, lock, advance, or authorize the challenge and does not establish a browser session. It may render a fresh stateless guard for the current challenge version without changing authoritative challenge/application state.
+
+Each bootstrap proof attempt that reaches authoritative challenge processing must conditionally advance or consume the challenge version/generation. A failed proof attempt that increments the authoritative attempt counter therefore invalidates the submitted guard; a successful proof consumes the challenge while atomically creating the fresh browser session. Concurrent/replayed POSTs using the same guard fail the expected-version/generation check after the first accepted attempt. If another retry is still allowed, the server renders a fresh guard for the new challenge version. Terminal, stale, wrong, expired, consumed, locked, or malformed cases use the same bounded generic external failure behavior.
+
+`BootstrapFormGuard` possession is **not** an AccessGrant, bootstrap authorization proof, browser session, application authorization, or wildcard capability. It cannot retrieve a conversation, list or download an attachment, send a reply, establish authority by GET, or turn the non-secret `bootstrapId` locator into authority.
+
 ### Browser session
 
 A successful bootstrap creates a new random browser session; no pre-authentication token is upgraded in place.
@@ -79,18 +109,20 @@ Every protected operation must still authoritatively revalidate the applicable d
 
 `THREAD_READ`, `ATTACHMENT_READ`, and `THREAD_REPLY` remain independent with no wildcard authority.
 
-### CSRF and browser boundary
+### Established-session CSRF and browser boundary
 
 `SameSite` is defense in depth, not the mutation authorization mechanism.
 
-State-changing browser requests require:
+After the browser session has been established, every state-changing browser request requires:
 
 - non-GET mutation method;
-- exact Origin validation;
+- exact expected Origin validation;
 - same-origin Fetch Metadata when present;
 - session-bound CSRF/synchronizer proof;
-- valid browser session;
+- valid current browser session;
 - current AccessGrant/application authorization.
+
+The pre-session `BootstrapFormGuard` is not accepted in place of the established-session synchronizer proof, and the established-session synchronizer proof is not a bootstrap credential.
 
 CORS remains closed by default. Bootstrap/session/content responses use conservative no-store/no-referrer/frame/CSP controls.
 
@@ -107,6 +139,7 @@ Benefits:
 - preserves the existing no-active-secret-in-URL principle;
 - tolerates GET prefetch/link scanning without consuming credentials;
 - separates bootstrap, browser delivery, and AccessGrant authority;
+- separates pre-session request integrity from post-bootstrap session CSRF protection;
 - allows mailbox-only and independent-channel assurance without hard-coding a provider;
 - keeps database disclosure from directly yielding browser credentials;
 - gives explicit revocation/reissue/recovery semantics;
@@ -116,6 +149,7 @@ Costs/tradeoffs:
 
 - one extra user-entered bootstrap step;
 - independent verification requires customer process/provider support when enabled;
+- later implementation must authenticate and validate the bounded pre-session form guard as well as the browser-session CSRF proof;
 - session/bootstrap repositories and rate-limit state are required in a later implementation;
 - one-session-per-grant may require reissue when a participant changes devices.
 
