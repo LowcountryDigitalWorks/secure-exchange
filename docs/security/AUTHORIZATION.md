@@ -164,3 +164,55 @@ Browser possession of the synthetic capability cookie is never sufficient author
 
 Browser-supplied actor, actor kind, message ID, audit ID, timestamp, or lifecycle values are not accepted as authority inputs.
 
+## Release 0.12 production bootstrap/session authorization
+
+Release 0.12 preserves the existing AccessGrant authority model and makes the production delivery distinction explicit:
+
+**bootstrap challenge != browser session != AccessGrant authorization.**
+
+### Bootstrap locator and proof
+
+A bootstrap URL may carry an opaque `bootstrapId` locator only. Knowledge or possession of that locator never authorizes a thread, attachment, reply, session, or AccessGrant operation.
+
+The participant must present the associated one-time proof by protected POST. A future implementation validates the keyed/non-reversible verifier, attempt/lock state, expiry, consumption state, deployment binding, and current AccessGrant eligibility before any session can be established. A consumed, locked, expired, unknown, wrong, or reissued challenge fails with the same generic external behavior.
+
+Successful bootstrap atomically consumes the challenge and creates a fresh browser session. GET navigation never consumes authority, so mail-security scanners/prefetchers cannot establish access merely by following the locator link.
+
+`MAILBOX_ONLY` means both locator and proof may be observable from the same mailbox. It is not MFA and must not be represented as protection against a compromised mailbox. `INDEPENDENT_CHALLENGE` is required when the deployment policy calls for a separate verification trust anchor.
+
+### Browser delivery session
+
+The browser session proves only possession of a short-lived delivery bearer whose raw 256-bit material is never persisted. A session record or cookie is not an `AccessGrant` and carries no wildcard product permission.
+
+For every protected operation, the delivery layer resolves the session and the application then authoritatively revalidates:
+
+1. deployment;
+2. thread;
+3. AccessGrant identity and current verifier/proof boundary;
+4. requested explicit operation;
+5. grant revocation;
+6. authoritative grant expiry;
+7. current external-access or reply lifecycle eligibility;
+8. authoritative message/attachment ownership and safety state where applicable;
+9. expected thread/resource version where applicable;
+10. `AccessGrantAuthorityGuard` for reply mutation.
+
+`THREAD_READ`, `ATTACHMENT_READ`, and `THREAD_REPLY` remain independent. A valid session does not convert a missing operation into authority, and stale UI visibility never authorizes a mutation.
+
+### Lifetime, logout, reissue, and compromise
+
+Session absolute/idle expiry is an additional delivery precondition and cannot extend the underlying AccessGrant. The reference contract permits one active browser session per AccessGrant; establishing another invalidates the earlier session.
+
+End-access/logout revokes the server-side session before clearing the cookie. Logout alone does not revoke the AccessGrant. Conversely, AccessGrant revocation/expiry immediately wins over a still-present session because every protected operation revalidates current grant state.
+
+Reissue invalidates outstanding bootstrap challenges and active sessions for the grant. Suspected credential compromise requires AccessGrant revocation and newly issued grant/bootstrap authority, not just clearing browser state.
+
+### CSRF and same-origin are separate controls
+
+Origin, Fetch Metadata, CSRF synchronizer proof, `SameSite`, CSP/form-action, and closed CORS protect browser request delivery. They do not grant application authority. A production mutation is accepted only when both the browser mutation boundary and the current AccessGrant/application authorization checks succeed.
+
+### Recovery authority
+
+Backup/restore must not roll authorization backward. A recovered state in which monotonic grant/session revocation cannot be proven requires an authoritative access/security epoch or equivalent invalidation mechanism before external access resumes. Recovery convenience cannot make a previously revoked credential usable again.
+
+See [External Delivery and Credential Bootstrap Boundary](../architecture/EXTERNAL_DELIVERY_BOUNDARY.md) and [ADR-0005](../adr/0005-external-bootstrap-session-boundary.md).
