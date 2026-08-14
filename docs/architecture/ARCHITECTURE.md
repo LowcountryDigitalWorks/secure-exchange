@@ -96,3 +96,39 @@ See [Retention and Disposition](../security/RETENTION_AND_DISPOSITION.md).
 ## Portability
 
 Provider-specific behavior is isolated behind interfaces. Portability means the core can be adapted without rewriting domain semantics; it does not mean all providers expose identical operational guarantees.
+
+## Release 0.12 production external-delivery boundary
+
+Release 0.12 adds a constraining production-delivery architecture without changing the provider-neutral application authority model.
+
+A future real external access flow is separated into three delivery layers:
+
+1. a non-secret opaque bootstrap locator that may appear in an invitation URL;
+2. a short-lived one-time bootstrap proof entered by the participant and verified through a non-reversible keyed verifier;
+3. a new short-lived server-verified browser session whose raw bearer is never persisted.
+
+Those layers do not replace the authoritative `AccessGrant`. The browser session is transport state only. Every protected request must still revalidate the authoritative deployment, thread, AccessGrant, explicit operation (`THREAD_READ`, `ATTACHMENT_READ`, or `THREAD_REPLY`), revocation, expiry, lifecycle/resource state, expected version where applicable, and the `AccessGrantAuthorityGuard` for reply mutation.
+
+A usable bootstrap secret, raw AccessGrant bearer, browser session bearer, verifier, or CSRF secret is not permitted in URL path, query, fragment, redirect, generated hyperlink, or ordinary logging. The locator-only GET does not consume access, which permits benign mail-security prefetch/link inspection without establishing a session.
+
+```mermaid
+flowchart LR
+    N[Notification provider] -->|non-secret bootstrap locator| B[External browser]
+    B -->|GET locator page| H[HTTP delivery adapter]
+    B -->|POST one-time proof| H
+    H -->|challenge/session transaction| S[Authoritative state adapter]
+    H -->|per-operation revalidation| A[Provider-neutral AccessGrant application]
+    A --> S
+    A --> O[Protected object / workflow ports]
+    O --> M[Malware / object adapters]
+```
+
+Production mutation protection is independent of login/bootstrap navigation and `SameSite`: non-GET method, exact Origin, same-origin Fetch Metadata where present, session-bound CSRF proof, current session, and current application authorization are required.
+
+Release 0.12 defines `MAILBOX_ONLY` and `INDEPENDENT_CHALLENGE` assurance modes. Same-email link plus code is explicitly not MFA. Where protection against mailbox compromise is a requirement, an independent challenge or separately approved stronger external identity mechanism is required.
+
+The preferred production deployment remains customer-owned and isolated. Runtime state, object storage, key/secrets, notification credentials, logs/backups, and customer-specific verification policy belong in customer-owned infrastructure. LDW administers through named role-based access rather than shared credentials. No cross-customer shared master secret is introduced.
+
+Release 0.12 chooses no new production provider and creates no production infrastructure. Existing AWS choices remain reference adapters behind provider-neutral ports, not domain semantics.
+
+See [External Delivery and Credential Bootstrap Boundary](EXTERNAL_DELIVERY_BOUNDARY.md) and [ADR-0005](../adr/0005-external-bootstrap-session-boundary.md).
