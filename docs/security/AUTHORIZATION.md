@@ -168,13 +168,19 @@ Browser-supplied actor, actor kind, message ID, audit ID, timestamp, or lifecycl
 
 Release 0.12 preserves the existing AccessGrant authority model and makes the production delivery distinction explicit:
 
-**bootstrap challenge != browser session != AccessGrant authorization.**
+**bootstrap challenge != pre-session request-integrity proof != browser session != AccessGrant authorization.**
 
-### Bootstrap locator and proof
+### Bootstrap locator, form guard, and proof
 
 A bootstrap URL may carry an opaque `bootstrapId` locator only. Knowledge or possession of that locator never authorizes a thread, attachment, reply, session, or AccessGrant operation.
 
-The participant must present the associated one-time proof by protected POST. A future implementation validates the keyed/non-reversible verifier, attempt/lock state, expiry, consumption state, deployment binding, and current AccessGrant eligibility before any session can be established. A consumed, locked, expired, unknown, wrong, or reissued challenge fails with the same generic external behavior.
+GET of the bootstrap page is non-authorizing and does not consume, lock, advance, or otherwise mutate the authoritative bootstrap challenge. It may render a short-lived server-authenticated `BootstrapFormGuard` bound to the intended challenge, current authoritative challenge version/generation, exact expected origin, fresh per-render nonce, and a bounded expiry. The guard exists only to protect the pre-session bootstrap POST from generic cross-site form submission and replay.
+
+The participant must present both the valid `BootstrapFormGuard` and the associated one-time bootstrap proof by protected POST. Before the one-time proof can be evaluated, a future implementation requires POST/non-GET, exact expected Origin, same-origin Fetch Metadata when present, and a valid unexpired guard bound to that challenge and its current version/generation.
+
+The `BootstrapFormGuard` is not an AccessGrant, is not the one-time bootstrap authorization proof, is not a browser session, and carries no application permission. Possessing it does not turn `bootstrapId` into authority and cannot read, reply, enumerate, or download anything.
+
+A future implementation then validates the bootstrap proof's keyed/non-reversible verifier, attempt/lock state, expiry, consumption state, deployment binding, and current AccessGrant eligibility before any session can be established. Each proof attempt that reaches authoritative challenge processing conditionally advances or consumes the challenge generation, invalidating the submitted guard against replay. A consumed, locked, expired, unknown, wrong, reissued, stale-guard, or wrong-origin request fails with the same bounded generic external behavior.
 
 Successful bootstrap atomically consumes the challenge and creates a fresh browser session. GET navigation never consumes authority, so mail-security scanners/prefetchers cannot establish access merely by following the locator link.
 
@@ -207,9 +213,13 @@ End-access/logout revokes the server-side session before clearing the cookie. Lo
 
 Reissue invalidates outstanding bootstrap challenges and active sessions for the grant. Suspected credential compromise requires AccessGrant revocation and newly issued grant/bootstrap authority, not just clearing browser state.
 
-### CSRF and same-origin are separate controls
+### Two browser mutation-protection phases
 
-Origin, Fetch Metadata, CSRF synchronizer proof, `SameSite`, CSP/form-action, and closed CORS protect browser request delivery. They do not grant application authority. A production mutation is accepted only when both the browser mutation boundary and the current AccessGrant/application authorization checks succeed.
+Before a browser session exists, the bootstrap mutation uses POST/non-GET, exact Origin, same-origin Fetch Metadata when present, and the challenge/version-bound `BootstrapFormGuard`. There is no session-bound CSRF prerequisite because there is no established session yet.
+
+After successful bootstrap creates the real external browser session, every state-changing browser request uses the established-session contract: non-GET method, exact Origin, same-origin Fetch Metadata when present, session-bound CSRF/synchronizer proof, valid current session, and current AccessGrant/application authorization.
+
+Origin, Fetch Metadata, either CSRF/request-integrity proof, `SameSite`, CSP/form-action, and closed CORS protect browser request delivery. They do not grant application authority. A production mutation is accepted only when the applicable browser mutation boundary and the current AccessGrant/application authorization checks succeed.
 
 ### Recovery authority
 
