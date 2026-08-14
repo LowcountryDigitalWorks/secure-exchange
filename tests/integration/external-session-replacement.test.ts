@@ -58,9 +58,9 @@ it("atomically replaces the prior active session when a new valid session is est
     invalidatedAt: "2026-08-14T12:01:00.000Z",
   });
   expect(newSession?.invalidatedAt).toBeUndefined();
-  expect(sessions.filter((session) => session.invalidatedAt === undefined)).toHaveLength(
-    1,
-  );
+  expect(
+    sessions.filter((session) => session.invalidatedAt === undefined),
+  ).toHaveLength(1);
 
   await expectDenied(
     fixture.sessions.presentBrowserSession({
