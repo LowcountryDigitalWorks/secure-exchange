@@ -77,9 +77,10 @@ function copyKey(keyMaterial: Uint8Array): Uint8Array {
 }
 
 async function importHmacKey(keyMaterial: Uint8Array): Promise<CryptoKey> {
+  const ownedKeyMaterial = Uint8Array.from(keyMaterial);
   return globalThis.crypto.subtle.importKey(
     "raw",
-    keyMaterial,
+    ownedKeyMaterial.buffer,
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"],
