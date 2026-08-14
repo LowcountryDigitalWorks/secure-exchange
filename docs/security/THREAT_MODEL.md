@@ -389,12 +389,12 @@ Threats:
 
 Controls:
 
-- active bootstrap proof, raw AccessGrant bearer, browser session bearer, verifier, and CSRF token never enter URL path/query/fragment/redirect;
-- GET of the locator page cannot consume or establish authority;
-- successful proof POST redirects to a fixed local URL without locator/proof material;
+- active bootstrap proof, raw AccessGrant bearer, browser session bearer, verifier, `BootstrapFormGuard`, and session CSRF token never enter URL path/query/fragment/redirect;
+- GET of the locator page cannot consume, lock, advance, or establish authority;
+- successful proof POST redirects to a fixed local URL without locator/proof/guard material;
 - bootstrap/session/content responses use `Referrer-Policy: no-referrer` and `Cache-Control: no-store, private`;
 - bootstrap/session pages need no third-party analytics/tracking resources;
-- provider/request logging must never record proof/body/cookie secrets and should minimize locator retention where operationally practical.
+- provider/request logging must never record proof/guard/body/cookie secrets and should minimize locator retention where operationally practical.
 
 ### Automated scanner active submission
 
@@ -414,7 +414,7 @@ Controls:
 
 - opaque locator with at least 128 random bits;
 - proof with at least 50 bits effective entropy;
-- keyed/non-reversible verifier held separately from state store;
+- keyed/non-reversible verifier held separately from the state store;
 - maximum five failed proof attempts per challenge;
 - per-source and per-deployment request throttles plus progressive delay/temporary lock as appropriate;
 - generic external errors;
@@ -431,7 +431,7 @@ Threats:
 Controls:
 
 - raw proof and raw session bearer are never persisted;
-- bootstrap proof uses keyed verifier with customer-owned key/secret stored separately from state state;
+- bootstrap proof uses keyed verifier with customer-owned key/secret stored separately from the state store;
 - uniformly random 256-bit browser-session bearer uses a one-way verifier and is impractical to brute force from the verifier alone;
 - no cross-customer shared verifier master secret in the isolated-deployment reference model.
 
@@ -445,7 +445,7 @@ Threats:
 
 Controls:
 
-- fresh random session ID/bearer only after successful bootstrap; no pre-auth token is upgraded;
+- fresh random session ID/bearer only after successful bootstrap; no pre-auth token or `BootstrapFormGuard` is upgraded;
 - `__Host-` host-only, `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/` cookie;
 - 20-minute absolute / 10-minute idle reference lifetime with no silent absolute renewal;
 - one active session per AccessGrant;
@@ -458,19 +458,30 @@ Residual risk: an attacker who steals an active browser cookie may use it until 
 
 ### CSRF and cross-origin request abuse
 
-Threat: browser cookie attachment is induced by a hostile origin.
+Threat: a hostile origin attempts to induce either the pre-session bootstrap proof POST or a later cookie-backed session mutation.
 
-Controls:
+Controls are explicitly two-phase.
 
-- GET/HEAD never mutate;
+**Pre-session/bootstrap:**
+
+- bootstrap mutation is POST/non-GET only;
+- exact expected Origin validation;
+- Fetch Metadata requires `same-origin` when present;
+- a short-lived server-authenticated `BootstrapFormGuard` is bound to the intended challenge, current challenge version/generation, expected origin, fresh per-render nonce, and bounded expiry;
+- the guard is required before bootstrap proof verification but grants no authority itself;
+- each authoritative proof attempt advances or consumes the challenge generation, making the submitted guard stale for replay;
+- GET may render a stateless guard but does not mutate authoritative challenge/application state, consume a challenge, establish a session, or authorize access.
+
+**Established session:**
+
+- mutation is non-GET;
 - exact Origin validation;
-- Fetch Metadata requires `same-origin` for mutations when present;
+- Fetch Metadata requires `same-origin` when present;
 - session-bound CSRF/synchronizer proof;
-- `SameSite=Lax` defense in depth;
-- CORS closed by default;
-- restrictive CSP with `form-action 'self'`, `frame-ancestors 'none'`, `base-uri 'none'`, and frame-header defense in depth.
+- valid current external browser session;
+- current authoritative AccessGrant/application authorization.
 
-SameSite alone is not accepted as the CSRF boundary.
+`BootstrapFormGuard`, session CSRF proof, browser-session possession, and `SameSite` are browser/request-delivery controls only. None widens `THREAD_READ`, `ATTACHMENT_READ`, or `THREAD_REPLY`. SameSite alone is not accepted as the CSRF boundary. CORS remains closed by default, with restrictive CSP `form-action 'self'`, `frame-ancestors 'none'`, `base-uri 'none'`, and frame-header defense in depth.
 
 ### Anonymous Internet request flooding and abuse
 
@@ -507,7 +518,7 @@ Controls:
 
 - provider-neutral minimal notification intent;
 - no PHI/message body/attachment content/sensitive filename;
-- no AccessGrant/session/verifier/CSRF secrets;
+- no AccessGrant/session/verifier/CSRF or `BootstrapFormGuard` material;
 - invitation URL contains locator only;
 - click/open tracking remains off unless separately justified;
 - independent-challenge proof is not copied into notification email.
