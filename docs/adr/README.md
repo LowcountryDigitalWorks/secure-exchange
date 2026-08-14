@@ -17,3 +17,4 @@ Accepted ADRs are authoritative until superseded by a later accepted ADR.
 - [ADR-0002 — AWS-First Reference Architecture](0002-aws-first-reference-architecture.md)
 - [ADR-0003 — Initial Implementation Stack](0003-implementation-stack.md)
 - [ADR-0004 — DynamoDB Reference State Store](0004-state-store.md)
+- [ADR-0005 — External Bootstrap and Browser Session Boundary](0005-external-bootstrap-session-boundary.md)
