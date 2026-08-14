@@ -32,6 +32,12 @@ The persistence layer is hidden behind provider-neutral repository and transacti
 | AP-20 | Transfer attestation | Append an authenticated staff TransferAttestation for a deployment/thread | Authoritative actor/thread/deployment validation; append/supersede semantics |
 | AP-21 | Transfer attestation | Retrieve current/qualifying TransferAttestation evidence for a thread | Authoritative lookup; do not infer from download/audit summaries |
 | AP-22 | Completion | Validate configured completion preconditions, including qualifying TransferAttestation when required, then transition to `COMPLETED` | Authoritative policy/thread/attestation validation; fail closed; conditional/transactional mutation |
+| AP-23 | Bootstrap | Resolve and verify one pending external bootstrap challenge by deployment + opaque bootstrap locator | Locator is not authority; keyed verifier, attempts, lock, expiry, and current AccessGrant must be authoritative |
+| AP-24 | Bootstrap/session | Consume one valid bootstrap challenge and establish a new browser session | Atomic one-time consume + session creation; replay must not create another session |
+| AP-25 | External session | Resolve current browser session and validate verifier, absolute/idle lifetime, revocation, AccessGrant binding, and security epoch | Authoritative lookup; raw browser bearer is never persisted; session is transport only |
+| AP-26 | External session | Invalidate session(s) for logout, new-session concurrency, AccessGrant reissue/revocation, compromise, or recovery epoch | Conditional/idempotent invalidation; application AccessGrant remains authoritative |
+| AP-27 | Bootstrap | Increment failed bootstrap proof attempts and lock/invalidate at configured maximum | Atomic/conditional counter; generic external result; raw proof never stored/logged |
+| AP-28 | Recovery | Advance/read deployment access/security epoch when restore continuity cannot prove monotonic revocation | Authoritative kill-switch semantics; stale pre-epoch bootstrap/session authority denied |
 
 ## Search scope
 
@@ -180,3 +186,18 @@ The synthetic external browser capability remains a short-lived transport contai
 
 Reply-only authority does not grant conversation read, and read-only authority does not grant reply. The adapter does not widen an AccessGrant.
 
+## Release 0.12 bootstrap/session access-pattern requirements
+
+AP-23 through AP-28 are production-delivery design requirements, not implemented storage schema in this release.
+
+The bootstrap locator may identify a pending challenge record but is never proof of authority. A future state adapter must store only a keyed/non-reversible verifier for the human-entered bootstrap proof, because the proof has intentionally lower entropy than the 256-bit random AccessGrant/session bearers. The keyed verifier secret/key is held separately from the state store in customer-owned secret/key-management facilities.
+
+Successful bootstrap must be a transaction-equivalent operation: validate current challenge state and proof, enforce attempt/expiry/lock rules, revalidate the current AccessGrant boundary, mark the challenge consumed, create the fresh browser-session verifier record, and invalidate the prior active session for that AccessGrant. A replay arriving after the consume cannot create another session.
+
+The production browser session stores only a one-way verifier for a uniformly random 256-bit bearer. The raw bearer remains browser/transient-memory material only. Session lookup and valid lifetime are delivery preconditions; they never substitute for current AccessGrant operation, revocation, expiry, thread/resource, or reply-guard checks.
+
+Restore/failover must not cause version/time rollback to resurrect delivery authority. If a persistence adapter cannot guarantee monotonic revocation across restore, AP-28 provides a deployment-wide access/security epoch or equivalent authoritative invalidation mechanism. Sessions/challenges created before the active epoch fail closed and controlled reissue is required.
+
+Secondary indexes, caches, edge rate-limit stores, notification-delivery status, and browser session records may optimize delivery/operations only. None grants product access.
+
+See [External Delivery and Credential Bootstrap Boundary](EXTERNAL_DELIVERY_BOUNDARY.md).
