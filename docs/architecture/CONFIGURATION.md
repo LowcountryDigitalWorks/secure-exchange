@@ -90,3 +90,36 @@ Invalid or ambiguous security-sensitive configuration must fail closed rather th
 ## Portability
 
 The core consumes a normalized `ProductConfiguration`. Provider adapters may have separate infrastructure configuration, but provider fields must not leak into domain rules.
+
+## Release 0.12 external-delivery policy boundary
+
+A future production configuration model may expose only bounded, security-reviewed policy values for external delivery. Provider credentials and cryptographic secret material remain infrastructure secrets, not product configuration.
+
+Expected normalized policy concepts include:
+
+- external verification assurance: `MAILBOX_ONLY` or `INDEPENDENT_CHALLENGE`;
+- bootstrap proof lifetime, bounded at or below the 15-minute reference maximum;
+- bootstrap failed-attempt limit, bounded at or below the five-attempt reference maximum;
+- browser-session absolute lifetime, bounded at or below the 20-minute reference maximum;
+- browser-session idle lifetime, bounded at or below the 10-minute reference maximum and never exceeding absolute lifetime;
+- browser-session concurrency policy, initially one active session per AccessGrant;
+- deployment-level reissue/notification and external-operation abuse ceilings within product-supported ranges;
+- approved notification intent/template identifiers containing only non-sensitive content.
+
+Configuration must not:
+
+- make a bootstrap locator sufficient authority;
+- permit active bearer/bootstrap/session secrets in URLs;
+- weaken explicit AccessGrant operation checks or create wildcard authority;
+- label `MAILBOX_ONLY` delivery as MFA or independent-factor verification;
+- let a session lifetime outlive or extend the authoritative AccessGrant lifetime;
+- disable authoritative revocation/expiry/lifecycle/resource-state revalidation;
+- turn edge/cache/rate-limit state into application authorization truth;
+- disable the production mutation Origin/Fetch-Metadata/CSRF boundary;
+- redefine backup restore as permission to resurrect stale credentials.
+
+A customer/deployment that requires protection against a compromised notification mailbox must select `INDEPENDENT_CHALLENGE` or another separately approved stronger identity mechanism. The exact verification channel/provider is adapter configuration and remains separately gated.
+
+Customer-owned keyed bootstrap-verifier material, browser/session signing or verifier secrets where applicable, notification provider credentials, encryption keys, and provider API credentials are never serialized into `ProductConfiguration`, repository files, client-visible HTML, or logs.
+
+See [External Delivery and Credential Bootstrap Boundary](EXTERNAL_DELIVERY_BOUNDARY.md).

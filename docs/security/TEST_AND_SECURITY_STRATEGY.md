@@ -208,3 +208,117 @@ Existing staff-reply behavior and all Release 0.7–0.9 AccessGrant, attachment,
 
 Release 0.11 adds deterministic HTTP/browser checks for operation independence, disabled-by-default routing, same-origin reply POST, safe fixed PRG navigation, bounded plain-text validation, authoritative actor attribution, revocation/expiry/lifecycle denial, activity/attention semantics, audit minimization, and accessibility. Release 0.10 stale-thread, concurrent-revocation, and expiry-crossing tests remain intact and continue to prove the transaction boundary below HTTP.
 
+## Release 0.12 architecture/security validation boundary
+
+Release 0.12 is documentation/architecture only. It intentionally does **not** add production bootstrap/session runtime code or manufacture runtime tests for code that does not exist. The complete existing `npm run validate` gate must remain green, and the release candidate must receive the normal protected-main pull-request-context `validate` check.
+
+The new architecture creates implementation invariants that later executable releases must test before any public production exposure.
+
+### Bootstrap invariants for future implementation
+
+Tests must prove:
+
+- the notification URL contains only a non-secret opaque bootstrap locator;
+- raw bootstrap proof, AccessGrant bearer, session bearer, verifier, pre-session form guard, and session CSRF proof never enter path/query/fragment/Location/generated links;
+- GET of the bootstrap locator page cannot consume, lock, or advance a challenge, establish a session, retrieve protected content, or otherwise authorize application access;
+- bootstrap GET may render a stateless server-authenticated `BootstrapFormGuard` for the current challenge version without mutating authoritative challenge/application state;
+- mail-security/link-prefetch GETs therefore remain non-authorizing;
+- a bootstrap proof POST is rejected before proof verification unless it is non-GET, has the exact expected Origin, has same-origin Fetch Metadata when present, and supplies a valid unexpired `BootstrapFormGuard` bound to the intended challenge and its current authoritative version/generation;
+- `BootstrapFormGuard` possession alone cannot validate the one-time bootstrap proof, establish a session, read/reply/download, widen `bootstrapId`, or exercise any AccessGrant operation;
+- the guard expires no later than 10 minutes and no later than the underlying bootstrap challenge;
+- the raw guard is not persisted/logged/audited or placed in notifications/telemetry;
+- each bootstrap proof attempt that reaches authoritative challenge processing conditionally advances or consumes the challenge version/generation, invalidating the submitted guard;
+- concurrent/replayed submissions using the same guard permit at most one accepted authoritative attempt for that challenge version;
+- if a failed proof remains retry-eligible, a fresh guard is required for the new challenge version;
+- the raw bootstrap proof is never persisted/logged/audited;
+- the stored proof verifier is keyed/non-reversible and a state-store-only disclosure is insufficient to validate guesses offline without the separately held key;
+- proof expiry is enforced at the exact authoritative time boundary;
+- failed attempts increment authoritatively and the configured maximum locks/invalidates the challenge;
+- successful challenge consume plus fresh browser-session creation is atomic;
+- concurrent/replayed successful proof submissions produce at most one new session;
+- reissue invalidates every outstanding prior challenge for the grant;
+- unknown/wrong/expired/consumed/locked/revoked/stale-guard cases collapse to bounded generic external behavior.
+
+### Browser-session invariants for future implementation
+
+Tests must prove:
+
+- successful bootstrap creates a fresh random session rather than upgrading a pre-auth token or `BootstrapFormGuard`;
+- raw session bearer has 256 bits of random material and is never persisted;
+- the state store contains only a versioned one-way verifier and bounded opaque metadata;
+- database/state disclosure alone does not yield a directly usable cookie credential;
+- cookie is `__Host-sx_external`, host-only/no Domain, `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/`;
+- no localStorage/sessionStorage/IndexedDB bearer copy is created;
+- 20-minute absolute and 10-minute idle reference bounds are enforced from authoritative server time;
+- activity cannot silently slide the absolute expiry;
+- one-active-session-per-AccessGrant behavior invalidates the prior session on establishment of a new one;
+- logout revokes the server-side session before clearing the cookie;
+- AccessGrant revocation/expiry/current lifecycle denial wins even when the session remains locally present;
+- reissue/compromise invalidates the relevant sessions;
+- a session without the explicit requested AccessGrant operation cannot exercise that operation.
+
+### Authorization/concurrency invariants
+
+Every production browser operation must be covered by tests demonstrating current authoritative deployment/thread/AccessGrant lookup, explicit operation independence, revocation/expiry, lifecycle/resource state, attachment ownership/safety where applicable, expected version, and `AccessGrantAuthorityGuard` for external reply mutation.
+
+A `BootstrapFormGuard`, browser session row, cookie, locator, candidate list, successful prior request, or UI-visible control never grants or widens `THREAD_READ`, `ATTACHMENT_READ`, or `THREAD_REPLY`.
+
+The existing evidence separation remains mandatory: `Opened != Downloaded != Transferred/Filed != Completed`.
+
+### CSRF/same-origin invariants
+
+Mutation tests must cover the two phases separately.
+
+**Pre-session/bootstrap mutation:**
+
+- POST/non-GET method;
+- exact expected Origin;
+- same-origin Fetch Metadata when present;
+- valid unexpired server-authenticated `BootstrapFormGuard` bound to the intended challenge and current challenge version/generation;
+- no requirement for an already established browser session or session-bound CSRF token;
+- challenge proof/AccessGrant eligibility still independently required before session creation;
+- stale/replayed/wrong-challenge/wrong-origin/cross-site/missing-guard cases fail closed with generic external behavior.
+
+**Established-session mutation:**
+
+- non-GET method;
+- exact expected Origin;
+- same-origin Fetch Metadata when present;
+- valid session-bound CSRF/synchronizer proof;
+- valid current external browser session;
+- current AccessGrant/application authorization.
+
+Tests must prove neither pre-session nor established-session CSRF/request-integrity material becomes product authorization. `SameSite` alone is never sufficient CSRF protection. CORS remains closed by default; CSP/form-action/frame/base-uri and no-store/no-referrer headers receive browser regression coverage.
+
+### Abuse-control invariants
+
+Later public-delivery tests must exercise bounded request/body/message/file size rejection, per-bootstrap attempt lockout, per-source/deployment/session/grant throttles, reissue/notification ceilings, reply/download quotas, progressive/temporary throttling behavior where implemented, and generic anti-enumeration responses.
+
+Edge-provider controls may be tested separately as deployment evidence, but tests must prove application authorization does not depend on edge rate-limit/cache state.
+
+### Notification and logging invariants
+
+Automated serialization/logging tests must prevent ordinary notifications, audit, and infrastructure/application logs from containing:
+
+- PHI/message/attachment content;
+- bootstrap proof;
+- `BootstrapFormGuard`;
+- raw AccessGrant or session bearer;
+- stored verifier;
+- cookie/session CSRF secret;
+- unrestricted external contact information;
+- provider credentials/private keys.
+
+Notification tests must distinguish `MAILBOX_ONLY` from `INDEPENDENT_CHALLENGE` and must not claim same-mailbox link + code is MFA. Independent-channel proof must not be copied back into notification email.
+
+Security telemetry tests should prefer bounded opaque IDs/reason codes and prove attacker-driven invalid submissions cannot generate unrestricted sensitive or unbounded log content.
+
+### Recovery invariants
+
+Production adapter/recovery tests must prove that restore/failover does not resurrect consumed bootstrap challenges, expired/revoked sessions, or revoked AccessGrants. Where continuity cannot establish monotonic revocation, tests must demonstrate the deployment access/security epoch or equivalent invalidation mechanism denies pre-restore delivery authority before reissue.
+
+### Release 0.12 evidence limitation
+
+Passing the existing repository gate and documenting these future invariants is evidence only that the design remains internally consistent with the current codebase. It is **not** evidence of production deployment, production authentication/session behavior, anonymous-Internet abuse resistance, provider configuration, malware scanning, backup recovery, HIPAA compliance, certification, or regulated readiness.
+
+See [External Delivery and Credential Bootstrap Boundary](../architecture/EXTERNAL_DELIVERY_BOUNDARY.md) and [ADR-0005](../adr/0005-external-bootstrap-session-boundary.md).

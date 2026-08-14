@@ -216,3 +216,22 @@ Release 0.11 wires the Release 0.10 `THREAD_REPLY` application core into the exi
 
 Browser reply uses same-origin POST plus a fixed local Post/Redirect/Get confirmation. The existing two development gates remain required: `SECURE_EXCHANGE_SYNTHETIC_DEMO=enabled` and `DEMO_EXTERNAL_RETRIEVAL_ENABLED=enabled`. Release 0.11 does not authorize a production public portal, production authentication, AWS infrastructure, customer data, PHI, or paid services.
 
+## Release 0.12 — Production Delivery Boundary & Credential Bootstrap Design
+
+Release 0.12 is the architecture/security gate between the synthetic Release 0.9–0.11 browser adapter and any later real external-participant delivery implementation.
+
+It defines the reference production flow as:
+
+**non-secret email URL locator -> user-entered one-time bootstrap proof -> atomic one-time exchange -> short-lived server-verified browser session -> per-request authoritative AccessGrant operation revalidation.**
+
+The reference design rejects a usable secret in the email URL. The raw AccessGrant bearer, bootstrap proof, browser session bearer, verifier, and CSRF proof remain out of URL/path/query/fragment/redirect data.
+
+The design distinguishes `MAILBOX_ONLY` verification from `INDEPENDENT_CHALLENGE`. Same-email locator + code is explicitly not MFA and does not mitigate compromised-mailbox access. Deployments whose policy requires protection from mailbox compromise must use an independent challenge or a separately approved stronger external identity mechanism.
+
+The browser session is transport only: host-only `__Host-` cookie, `Secure`, `HttpOnly`, `SameSite=Lax`, bounded absolute/idle lifetimes, one active session per AccessGrant, server-side verifier only, server-side logout/invalidation, no silent absolute renewal, and AccessGrant revalidation on every protected operation.
+
+Production mutation design requires Origin + Fetch Metadata + session-bound CSRF proof and keeps CORS closed by default. The release also specifies public-Internet throttling/lockout boundaries, minimized provider-neutral notification contracts, logging exclusions/security events, backup/restore invalidation, provider-adapter responsibilities, and customer-owned production secret/resource ownership.
+
+Release 0.12 creates no production endpoint, email/verification provider, state/object/scanner adapter, AWS/Cloudflare resource, customer data/PHI path, paid service, or compliance/production-readiness claim. New recurring cost: **$0**.
+
+See [External Delivery and Credential Bootstrap Boundary](architecture/EXTERNAL_DELIVERY_BOUNDARY.md) and [ADR-0005](adr/0005-external-bootstrap-session-boundary.md).

@@ -242,3 +242,52 @@ External browser reply is available only when both development-only gates are en
 
 Use synthetic data only. The browser capability remains short-lived transport, not a production session. No production public deployment, identity provider, notification delivery, AWS adapter, customer data, or PHI is part of this slice.
 
+## Release 0.12 architecture/development boundary
+
+Release 0.12 adds **no executable production delivery path**. The Release 0.9–0.11 `/demo/external/access` routes remain synthetic development adapters behind the existing explicit gates and must not be repurposed or enabled as production endpoints.
+
+The production bootstrap/session architecture is documentation-only in this release. Future implementation work must be separately authorized and must preserve [ADR-0005](../adr/0005-external-bootstrap-session-boundary.md) and [External Delivery and Credential Bootstrap Boundary](../architecture/EXTERNAL_DELIVERY_BOUNDARY.md).
+
+### No production secrets or fixtures
+
+Do not add concrete bootstrap proofs, session bearers, AccessGrant bearer values, CSRF secrets, HMAC/bootstrap-verifier keys, notification credentials, provider API keys, private keys, or customer contact/PHI data to local fixtures, screenshots, documentation examples, issues, pull requests, commits, or test output.
+
+Synthetic future tests must inject deterministic fake verifier/key interfaces where needed without copying any real credential material.
+
+### Production configuration is not a demo flag
+
+`SECURE_EXCHANGE_SYNTHETIC_DEMO` and `DEMO_EXTERNAL_RETRIEVAL_ENABLED` remain local/synthetic controls only. A later production implementation must not use these flags as external authentication, authorization, bootstrap assurance, or Internet-exposure controls.
+
+Production delivery policy concepts such as `MAILBOX_ONLY` versus `INDEPENDENT_CHALLENGE`, bootstrap/session lifetimes, concurrency, throttling, and reissue behavior require validated bounded production configuration and cannot be smuggled in as unchecked environment toggles.
+
+### Future implementation order
+
+A later implementation should begin provider-neutral and synthetic/local before any public provider deployment:
+
+1. define bootstrap challenge/session value objects and application-owned ports;
+2. implement deterministic in-memory/local adapters and concurrency/replay tests;
+3. preserve current AccessGrant revalidation and reply authority guard rather than creating browser-only authorization;
+4. implement exact Origin + Fetch Metadata + CSRF mutation controls and defensive response headers;
+5. only after those invariants are reviewed should notification, durable state, edge-abuse, and customer-owned provider adapters be separately authorized.
+
+Do not jump directly from this architecture release to a public URL or production provider integration.
+
+### Production infrastructure and ownership
+
+No AWS, Cloudflare, email, identity, state, object, scanner, key-management, DNS, TLS, or customer resource is created by Release 0.12.
+
+Before a real deployment is approved:
+
+- infrastructure must be reproducible and reviewed through the selected IaC process;
+- the customer owns runtime data/state/object resources, domain/TLS, keys/secrets/verifier material, notification sender/provider credentials, logs, backups, and customer-specific policy decisions;
+- LDW uses named role-based administration and does not require shared credentials;
+- backup/restore behavior must prove revoked delivery authority cannot be resurrected and must implement an access/security epoch or equivalent invalidation mechanism if monotonic revocation cannot otherwise be guaranteed;
+- public abuse/rate controls must be deployed and validated without becoming application authorization truth.
+
+### Validation for Release 0.12
+
+No runtime test is added merely to restate documentation. This release must keep the complete existing `npm run validate` gate green and receive the normal pull-request-context `validate` check on the frozen candidate.
+
+The future executable invariants created by Release 0.12 are listed in `docs/security/TEST_AND_SECURITY_STRATEGY.md` and become mandatory when implementation is authorized.
+
+Release 0.12 changes no dependency and introduces no recurring cost.

@@ -181,3 +181,77 @@ Synthetic credential POST -> scoped HttpOnly capability cookie -> server-rendere
 
 The capability secret and reply body never enter path, query, fragment, or redirect data. The reply application transaction preserves both expected-thread-version concurrency and the AccessGrant authority/version/expiry guard. A failed authority or lifecycle check publishes no reply message, activity/attention change, or reply audit evidence.
 
+## Release 0.12 production bootstrap and browser-session flow
+
+Release 0.12 replaces the unresolved production-delivery portion of Flow C with a provider-neutral trust contract. It does not implement the flow.
+
+```mermaid
+sequenceDiagram
+    participant N as Notification channel
+    participant B as External browser
+    participant D as Delivery adapter
+    participant S as Authoritative state
+    participant A as AccessGrant application service
+
+    N->>B: Non-sensitive invitation + non-secret bootstrapId URL
+    B->>D: GET bootstrap page
+    D-->>B: no-store proof form + stateless BootstrapFormGuard; GET consumes nothing
+    B->>D: POST bootstrapId + one-time proof + BootstrapFormGuard
+    D->>D: validate exact Origin + same-origin Fetch Metadata + form guard
+    D->>S: validate current challenge version/keyed verifier/attempts/expiry
+    D->>A: revalidate current AccessGrant scope and state
+    A-->>D: current explicit authority or generic denial
+    D->>S: conditional challenge update or atomic consume + fresh session-verifier creation
+    D-->>B: Set-Cookie __Host-sx_external; 303 clean local URL
+    B->>D: protected request with session cookie + session CSRF proof for mutation
+    D->>S: validate session verifier/lifetime/revocation/epoch
+    D->>A: revalidate requested AccessGrant operation and resource state
+```
+
+### Notification-to-bootstrap boundary
+
+The notification URL contains only an opaque, high-entropy `bootstrapId` locator. The locator is not proof and a GET cannot establish a session, consume/lock/advance a challenge, or return message/attachment content. This makes ordinary mail-security scanner/prefetch GETs non-authorizing.
+
+The bootstrap GET may render a provider-neutral stateless `BootstrapFormGuard` bound to the intended challenge, current challenge version/generation, exact expected origin, a fresh unpredictable per-render nonce, and a short expiry. Rendering that request-integrity material does not mutate authoritative challenge/application state and does not create authority.
+
+The active one-time bootstrap proof is entered only by POST and is never placed in a URL. Before proof verification, the POST must be non-GET, pass exact expected Origin validation, pass same-origin Fetch Metadata when present, and carry a valid unexpired guard bound to the same current challenge version/generation. A future implementation retains only a keyed/non-reversible verifier for the human-entered proof and enforces the documented attempt/expiry/one-use rules.
+
+`BootstrapFormGuard` is neither the bootstrap authorization proof nor an AccessGrant nor a browser session. It cannot retrieve/read/reply/download or widen the non-secret locator into authority.
+
+Every proof attempt that reaches authoritative challenge processing conditionally advances or consumes the challenge generation. That invalidates the submitted guard, so a concurrent/replayed request against the prior version fails closed. If the challenge remains retry-eligible after a failed proof, a fresh form guard is required for the new version.
+
+`MAILBOX_ONLY` may deliver both locator and code through the same mailbox, but is explicitly not MFA and does not mitigate a compromised mailbox or forwarding of the whole message. `INDEPENDENT_CHALLENGE` keeps the proof outside the notification mailbox and is required when the deployment's threat policy demands protection against mailbox compromise.
+
+### Bootstrap-to-session boundary
+
+Successful verification creates an entirely new 256-bit random browser-session bearer. The bootstrap challenge is atomically consumed with session creation, so replay cannot create another session. The success response redirects to a fixed clean URL; locator, bootstrap proof, and form guard are not propagated.
+
+The browser session uses a host-only `__Host-sx_external` `Secure`, `HttpOnly`, `SameSite=Lax`, `Path=/` cookie. The raw session bearer is never persisted; the state adapter retains only a one-way verifier and bounded delivery metadata. Absolute and idle lifetimes are independently enforced from authoritative server time and the absolute lifetime never slides.
+
+### Session-to-application boundary
+
+Session validation only establishes that the delivery adapter may attempt a request on behalf of the bound AccessGrant. It does not authorize thread read, attachment read, or reply.
+
+Each protected operation re-enters the existing AccessGrant service and revalidates the explicit operation, current grant revocation/expiry, current thread/resource state, ownership, expected version where required, and `AccessGrantAuthorityGuard` for reply mutation. Browser/UI/session/request-integrity state cannot broaden authority.
+
+### CSRF and cross-origin boundary
+
+The mutation boundary is explicitly two-phase.
+
+**Pre-session bootstrap proof POST:** non-GET method, exact expected Origin, same-origin Fetch Metadata when present, and a valid challenge/version-bound `BootstrapFormGuard` are required before bootstrap proof verification. No established session or session-bound CSRF proof can be required because the successful POST creates that session.
+
+**Established-session mutation:** after successful bootstrap, each state-changing request requires a non-GET method, exact expected Origin, same-origin Fetch Metadata when present, session-bound CSRF/synchronizer proof, valid current external browser session, and current AccessGrant/application authorization.
+
+Neither request-integrity proof grants application authority. CORS is closed by default. `SameSite` remains defense in depth rather than the sole CSRF control.
+
+### Reissue, compromise, and recovery
+
+Reissue invalidates outstanding bootstrap challenges and active browser sessions for the AccessGrant. Suspected credential compromise revokes the AccessGrant and requires a newly issued AccessGrant/bootstrap. Logout invalidates only the browser session unless an explicit revoke action is also performed.
+
+A production restore/failover may not resurrect consumed/expired challenges, sessions, or revoked grants. If monotonic revocation continuity cannot be proven after restore, a deployment access/security epoch or equivalent kill switch invalidates pre-restore external delivery authority before controlled reissue.
+
+### Production adapter boundaries
+
+Authoritative state, protected objects, malware scanning, key/secrets management, notification delivery, and telemetry remain replaceable provider adapters. Customer-owned deployments hold runtime data, keys/secrets/verifier material, notification credentials, logs, and backups; LDW administration uses named access.
+
+See [External Delivery and Credential Bootstrap Boundary](EXTERNAL_DELIVERY_BOUNDARY.md) and [ADR-0005](../adr/0005-external-bootstrap-session-boundary.md).
