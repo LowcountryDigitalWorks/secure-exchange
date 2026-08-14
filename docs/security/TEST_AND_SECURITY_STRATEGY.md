@@ -219,24 +219,31 @@ The new architecture creates implementation invariants that later executable rel
 Tests must prove:
 
 - the notification URL contains only a non-secret opaque bootstrap locator;
-- raw bootstrap proof, AccessGrant bearer, session bearer, verifier, and CSRF proof never enter path/query/fragment/Location/generated links;
-- GET of the bootstrap locator page cannot consume/lock a challenge, establish a session, or retrieve protected content;
+- raw bootstrap proof, AccessGrant bearer, session bearer, verifier, pre-session form guard, and session CSRF proof never enter path/query/fragment/Location/generated links;
+- GET of the bootstrap locator page cannot consume, lock, or advance a challenge, establish a session, retrieve protected content, or otherwise authorize application access;
+- bootstrap GET may render a stateless server-authenticated `BootstrapFormGuard` for the current challenge version without mutating authoritative challenge/application state;
 - mail-security/link-prefetch GETs therefore remain non-authorizing;
-- a valid proof is accepted only by protected POST with the required browser mutation signals;
-- the raw proof is never persisted/logged/audited;
+- a bootstrap proof POST is rejected before proof verification unless it is non-GET, has the exact expected Origin, has same-origin Fetch Metadata when present, and supplies a valid unexpired `BootstrapFormGuard` bound to the intended challenge and its current authoritative version/generation;
+- `BootstrapFormGuard` possession alone cannot validate the one-time bootstrap proof, establish a session, read/reply/download, widen `bootstrapId`, or exercise any AccessGrant operation;
+- the guard expires no later than 10 minutes and no later than the underlying bootstrap challenge;
+- the raw guard is not persisted/logged/audited or placed in notifications/telemetry;
+- each bootstrap proof attempt that reaches authoritative challenge processing conditionally advances or consumes the challenge version/generation, invalidating the submitted guard;
+- concurrent/replayed submissions using the same guard permit at most one accepted authoritative attempt for that challenge version;
+- if a failed proof remains retry-eligible, a fresh guard is required for the new challenge version;
+- the raw bootstrap proof is never persisted/logged/audited;
 - the stored proof verifier is keyed/non-reversible and a state-store-only disclosure is insufficient to validate guesses offline without the separately held key;
 - proof expiry is enforced at the exact authoritative time boundary;
 - failed attempts increment authoritatively and the configured maximum locks/invalidates the challenge;
-- successful consume plus session creation is atomic;
-- concurrent/replayed submissions produce at most one new session;
+- successful challenge consume plus fresh browser-session creation is atomic;
+- concurrent/replayed successful proof submissions produce at most one new session;
 - reissue invalidates every outstanding prior challenge for the grant;
-- unknown/wrong/expired/consumed/locked/revoked cases collapse to bounded generic external behavior.
+- unknown/wrong/expired/consumed/locked/revoked/stale-guard cases collapse to bounded generic external behavior.
 
 ### Browser-session invariants for future implementation
 
 Tests must prove:
 
-- successful bootstrap creates a fresh random session rather than upgrading a pre-auth token;
+- successful bootstrap creates a fresh random session rather than upgrading a pre-auth token or `BootstrapFormGuard`;
 - raw session bearer has 256 bits of random material and is never persisted;
 - the state store contains only a versioned one-way verifier and bounded opaque metadata;
 - database/state disclosure alone does not yield a directly usable cookie credential;
@@ -254,22 +261,34 @@ Tests must prove:
 
 Every production browser operation must be covered by tests demonstrating current authoritative deployment/thread/AccessGrant lookup, explicit operation independence, revocation/expiry, lifecycle/resource state, attachment ownership/safety where applicable, expected version, and `AccessGrantAuthorityGuard` for external reply mutation.
 
-A browser session row, cookie, locator, candidate list, successful prior request, or UI-visible control never grants or widens `THREAD_READ`, `ATTACHMENT_READ`, or `THREAD_REPLY`.
+A `BootstrapFormGuard`, browser session row, cookie, locator, candidate list, successful prior request, or UI-visible control never grants or widens `THREAD_READ`, `ATTACHMENT_READ`, or `THREAD_REPLY`.
 
 The existing evidence separation remains mandatory: `Opened != Downloaded != Transferred/Filed != Completed`.
 
 ### CSRF/same-origin invariants
 
-Mutation tests must require all applicable layers together:
+Mutation tests must cover the two phases separately.
+
+**Pre-session/bootstrap mutation:**
+
+- POST/non-GET method;
+- exact expected Origin;
+- same-origin Fetch Metadata when present;
+- valid unexpired server-authenticated `BootstrapFormGuard` bound to the intended challenge and current challenge version/generation;
+- no requirement for an already established browser session or session-bound CSRF token;
+- challenge proof/AccessGrant eligibility still independently required before session creation;
+- stale/replayed/wrong-challenge/wrong-origin/cross-site/missing-guard cases fail closed with generic external behavior.
+
+**Established-session mutation:**
 
 - non-GET method;
 - exact expected Origin;
 - same-origin Fetch Metadata when present;
 - valid session-bound CSRF/synchronizer proof;
-- valid current session;
+- valid current external browser session;
 - current AccessGrant/application authorization.
 
-Cross-origin/missing/wrong-CSRF cases fail closed. Tests must not treat `SameSite` alone as sufficient CSRF protection. CORS remains closed by default; CSP/form-action/frame/base-uri and no-store/no-referrer headers receive browser regression coverage.
+Tests must prove neither pre-session nor established-session CSRF/request-integrity material becomes product authorization. `SameSite` alone is never sufficient CSRF protection. CORS remains closed by default; CSP/form-action/frame/base-uri and no-store/no-referrer headers receive browser regression coverage.
 
 ### Abuse-control invariants
 
@@ -283,9 +302,10 @@ Automated serialization/logging tests must prevent ordinary notifications, audit
 
 - PHI/message/attachment content;
 - bootstrap proof;
+- `BootstrapFormGuard`;
 - raw AccessGrant or session bearer;
 - stored verifier;
-- cookie/CSRF secret;
+- cookie/session CSRF secret;
 - unrestricted external contact information;
 - provider credentials/private keys.
 
