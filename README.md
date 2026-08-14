@@ -66,20 +66,21 @@ See [Development conventions](docs/development/DEVELOPMENT.md) for commands, pro
 
 ## Product direction
 
+The approved initial reference architecture remains AWS-first and customer-owned, with one isolated deployment per customer. Provider-specific behavior remains behind provider-neutral interfaces and does not become domain or application authorization truth.
+
 The current approved reference direction is:
 
 - one generic Secure Exchange product, not customer-specific forks;
-- customer-owned/dedicated infrastructure as the preferred production deployment model, with LDW-managed options only where management creates legitimate value;
-- provider-neutral domain, authorization, workflow, and persistence boundaries;
-- cloud-first/web-first delivery where practical;
-- AWS reference adapters may be used where justified without embedding AWS concepts into the domain layer;
+- one isolated deployment per customer in customer-owned infrastructure as the preferred production model;
+- provider-neutral domain and workflow semantics;
+- AWS-first reference adapters for identity, notification, object storage, execution, encryption, malware scanning, infrastructure logging, and state persistence;
 - Secure Exchange-owned application audit events, lifecycle, retention/disposition, routing, configuration, and UX;
 - strict TypeScript with Node.js 24 for the initial server runtime;
 - a thin Web-standards-oriented HTTP layer;
 - semantic HTML/CSS with small TypeScript modules for the initial frontend;
-- DynamoDB remains the current initial AWS reference state-store direction behind provider-neutral persistence abstractions.
+- DynamoDB as the initial AWS reference state store behind provider-neutral persistence abstractions.
 
-Provider choice, managed-service responsibility, and regulated-production architecture remain subject to later product, economics, security, and operations gates.
+Existing AWS choices remain reference adapters rather than domain semantics. Provider economics, any LDW-managed deployment model, and regulated-production architecture remain subject to later product, economics, security, and operations gates.
 
 ## Authorization, evidence, and workflow invariants
 
