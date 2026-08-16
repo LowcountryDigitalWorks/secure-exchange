@@ -244,3 +244,13 @@ Release 0.13 implements the Release 0.12 delivery-state core without a public br
 A validated session creates only application-owned delivery state. Session-backed `THREAD_READ`, `ATTACHMENT_READ`, and `THREAD_REPLY` still reload current AccessGrant/thread authority, retain independent operations, preserve the Release 0.10 `AccessGrantAuthorityGuard` for reply, and reuse the Release 0.6/0.8 exactly-`CLEAN` attachment path. The existing raw AccessGrant synthetic development path remains unchanged.
 
 No public bootstrap route/UI/cookie, notification provider, cloud resource, customer data/PHI, analytics, or paid dependency is added. Expected recurring cost remains **$0**.
+
+## Release 0.14 — Synthetic Provider-Augmented Commercial Workflow Demo
+
+Release 0.14 is the authorized synthetic/local commercial-validation slice for the accepted customer-owned augmentation model. It demonstrates provider-augmented records intake through the existing attachment quarantine/safety path, staff queue review, bounded synthetic dental-workflow resolution/mapping, deterministic downstream simulation, explicit staff FILED attestation, completion, and disposition.
+
+Dental-specific fixtures, matching evidence, patient-resolution state, and filing mappings stay inside the bounded synthetic adapter/presentation composition. Generic Secure Exchange gains only reusable authorized staff attachment candidate/preview resolution, with preview and download sharing the existing ownership, authorization, exactly-`CLEAN`, protected-content, and byte-integrity checks. Preview is read-only; manual download remains the action that creates `ATTACHMENT_DOWNLOADED` evidence.
+
+The commercial namespace is disabled by default and requires both `SECURE_EXCHANGE_SYNTHETIC_DEMO=enabled` and `DEMO_COMMERCIAL_WORKFLOW_ENABLED=enabled`. The existing Release 0.9–0.11 external retrieval/reply gate remains independent. No real provider integration, patient creation, provider-confirmed filing, customer data/PHI, production persistence/authentication/cloud resource, analytics, paid dependency, or regulated-production claim is introduced. Expected new recurring cost remains **$0**.
+
+A later paying-pilot/production gate must revalidate provider plan/BAA and notification delivery, downstream integration semantics/evidence, customer-owned infrastructure, support/operations, data retention, regulated security/privacy controls, and production audit requirements before synthetic assumptions can become real customer behavior.

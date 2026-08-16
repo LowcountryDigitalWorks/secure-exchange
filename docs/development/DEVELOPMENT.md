@@ -291,3 +291,34 @@ No runtime test is added merely to restate documentation. This release must keep
 The future executable invariants created by Release 0.12 are listed in `docs/security/TEST_AND_SECURITY_STRATEGY.md` and become mandatory when implementation is authorized.
 
 Release 0.12 changes no dependency and introduces no recurring cost.
+
+## Release 0.14 synthetic commercial workflow demo
+
+Release 0.14 remains disabled by default. Enable the commercial slice locally only with both development gates:
+
+```sh
+SECURE_EXCHANGE_SYNTHETIC_DEMO=enabled \
+DEMO_COMMERCIAL_WORKFLOW_ENABLED=enabled \
+npm run dev
+```
+
+The namespace is `/demo/commercial/*`. `DEMO_COMMERCIAL_WORKFLOW_ENABLED` is independent from the Release 0.9–0.11 `DEMO_EXTERNAL_RETRIEVAL_ENABLED` gate. Do not treat either flag as production authentication, authorization, bootstrap assurance, or Internet-exposure control.
+
+The commercial slice uses server-rendered HTML/CSS and no client-side framework. Intake is bounded to one through four synthetic PDF/PNG/JPEG/text attachments at the current 2 MiB per-file limit. Files always pass through `AttachmentService.ingestAttachment()` as `QUARANTINED` before the demo invokes the existing trusted scan-result transition to `CLEAN`.
+
+`AttachmentService.listStaffAttachmentCandidates()` and `previewStaffAttachment()` are generic application capabilities. They require current STAFF authorization, queue scope, and `ATTACHMENT_READ`; preview and download share the same authoritative message/attachment ownership, exactly-`CLEAN`, protected-content, and byte-integrity resolver. Preview GET is read-only and creates no download evidence. Manual download remains same-origin POST through `retrieveStaffAttachment()` and records the existing successful `ATTACHMENT_DOWNLOADED` event.
+
+Dental-specific fixture data and per-thread patient/mapping/simulation state live only in `SyntheticCommercialWorkflow` under `src/adapters` plus the commercial HTTP/presentation composition. They are not generic domain/application fields and reset with the local process. No real patient creation/search, Open Dental/network/provider SDK, mail delivery, database, analytics, or production persistence is present.
+
+The synthetic completion policy requires an authenticated staff FILED TransferAttestation to the bounded generic `SYNTHETIC_PATIENT_RECORD` destination. A simulated success flag never qualifies by itself. Staff must explicitly confirm simulated filing, explicitly complete, and explicitly dispose.
+
+Use only obviously synthetic fixture values. Do not enter real patient/customer information, PHI, credentials, provider tokens, or production configuration into the demo, tests, screenshots, logs, issues, pull requests, or documentation.
+
+Focused Release 0.14 checks:
+
+```sh
+npm test -- tests/unit/synthetic-commercial-workflow.test.ts tests/integration/staff-attachment-preview.test.ts tests/integration/commercial-development-http.test.ts tests/architecture/commercial-demo-boundary.test.ts
+npx playwright test tests/e2e/commercial-demo.spec.ts
+```
+
+Package version is `0.14.0`; Release 0.14 adds no runtime or development dependency and no expected recurring cost.
