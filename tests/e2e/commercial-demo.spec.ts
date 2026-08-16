@@ -97,7 +97,10 @@ test("synthetic commercial demo completes the provider-augmented browser workflo
     .selectOption("PATIENT_DOCUMENTS");
   await page.getByLabel("Classification").selectOption("DOCUMENT");
   await page.getByRole("button", { name: "Save / confirm mapping" }).click();
-  await expect(page.getByText("Synthetic patient documents")).toBeVisible();
+  await expect(page.getByLabel("Destination/category")).toHaveValue(
+    "PATIENT_DOCUMENTS",
+  );
+  await expect(page.getByLabel("Classification")).toHaveValue("DOCUMENT");
 
   await page.getByRole("button", { name: "SIMULATED FAILURE" }).click();
   await expect(page.getByText("SIMULATED / SYNTHETIC FAILURE")).toBeVisible();
