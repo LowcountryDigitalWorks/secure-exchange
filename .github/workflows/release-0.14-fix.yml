@@ -1,0 +1,66 @@
+name: Release 0.14 temporary strict type fix
+
+on:
+  push:
+    branches:
+      - release/0.14-synthetic-commercial-workflow-demo
+    paths:
+      - .github/workflows/release-0.14-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out release branch
+        uses: actions/checkout@v6
+        with:
+          ref: release/0.14-synthetic-commercial-workflow-demo
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Apply exact TypeScript corrections
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          adapter = Path("src/adapters/synthetic-commercial-workflow.ts")
+          text = adapter.read_text()
+          text = text.replace("state.confirmedPatientNumber = undefined;", "delete state.confirmedPatientNumber;")
+          text = text.replace("state.patientCandidateSource = undefined;", "delete state.patientCandidateSource;")
+          text = text.replace("state.simulatedTransferOutcome = undefined;", "delete state.simulatedTransferOutcome;")
+          adapter.write_text(text)
+
+          test = Path("tests/integration/commercial-development-http.test.ts")
+          text = test.read_text()
+          old = '): File {\n  return new File([content], name, { type });\n}'
+          new = '): File {\n  const owned = new Uint8Array(content.byteLength);\n  owned.set(content);\n  return new File([owned.buffer], name, { type });\n}'
+          if old not in text:
+              raise SystemExit("syntheticFile anchor not found")
+          test.write_text(text.replace(old, new))
+          PY
+      - name: Apply repository formatter
+        run: npm run format
+      - name: Commit corrections
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "No strict type corrections required."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix Release 0.14 strict TypeScript boundary"
+          git push origin HEAD:release/0.14-synthetic-commercial-workflow-demo
+
+# Temporary WIP helper; remove before freezing the Release 0.14 candidate.
