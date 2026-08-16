@@ -265,7 +265,7 @@ export class SyntheticCommercialWorkflow {
       );
     }
     const patient = fixtureByNumber(normalized);
-    state.confirmedPatientNumber = undefined;
+    delete state.confirmedPatientNumber;
     state.patientCandidateSource = "NUMBER";
     state.patientCandidateNumbers =
       patient === undefined ? [] : [patient.patientNumber];
@@ -297,7 +297,7 @@ export class SyntheticCommercialWorkflow {
         normalizedName(patient.displayName).includes(normalized) &&
         patient.dateOfBirth === dob,
     );
-    state.confirmedPatientNumber = undefined;
+    delete state.confirmedPatientNumber;
     state.patientCandidateSource = "SEARCH";
     state.patientCandidateNumbers = matches.map(
       (patient) => patient.patientNumber,
@@ -325,7 +325,7 @@ export class SyntheticCommercialWorkflow {
       this.increment("patient_search_selected");
     }
     state.patientCandidateNumbers = [];
-    state.patientCandidateSource = undefined;
+    delete state.patientCandidateSource;
     return copyPatient(patient);
   }
 
@@ -333,9 +333,9 @@ export class SyntheticCommercialWorkflow {
     const state = this.requireState(threadId);
     state.patientResolutionStatus = "NOT_FOUND";
     state.patientCandidateNumbers = [];
-    state.patientCandidateSource = undefined;
-    state.confirmedPatientNumber = undefined;
-    state.simulatedTransferOutcome = undefined;
+    delete state.patientCandidateSource;
+    delete state.confirmedPatientNumber;
+    delete state.simulatedTransferOutcome;
     state.filingConfirmationPending = false;
     this.increment("patient_not_found_selected");
   }

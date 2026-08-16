@@ -40,7 +40,9 @@ function syntheticFile(
   type = "application/pdf",
   content: Uint8Array = new TextEncoder().encode("synthetic file bytes"),
 ): File {
-  return new File([content], name, { type });
+  const owned = new Uint8Array(content.byteLength);
+  owned.set(content);
+  return new File([owned.buffer], name, { type });
 }
 
 async function postForm(
