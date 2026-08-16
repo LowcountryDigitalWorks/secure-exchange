@@ -51,10 +51,12 @@ function attachment(overrides: Partial<Attachment> = {}): Attachment {
   };
 }
 
-function fixture(options: {
-  readonly seededAttachment?: Attachment;
-  readonly authorization?: ReturnType<typeof makeActorAuthorization>;
-} = {}) {
+function fixture(
+  options: {
+    readonly seededAttachment?: Attachment;
+    readonly authorization?: ReturnType<typeof makeActorAuthorization>;
+  } = {},
+) {
   const seededAttachment = options.seededAttachment ?? attachment();
   const store = new InMemoryWorkflowStore({
     queues: [makeQueue()],
@@ -62,7 +64,8 @@ function fixture(options: {
     messages: [makeMessage()],
     attachments: [seededAttachment],
     actorAuthorizations: [
-      options.authorization ?? makeActorAuthorization({ permissions: ["ATTACHMENT_READ"] }),
+      options.authorization ??
+        makeActorAuthorization({ permissions: ["ATTACHMENT_READ"] }),
     ],
   });
   const contentStore = new InMemoryProtectedContentStore();
@@ -129,7 +132,9 @@ describe("authorized staff attachment candidate and preview resolution", () => {
     expect(preview.normalizedMediaType).toBe("application/pdf");
     expect(store.listAuditEvents(DEPLOYMENT_A, THREAD_A)).toEqual(before);
     expect(await store.getThread(DEPLOYMENT_A, THREAD_A)).toEqual(threadBefore);
-    expect(await store.listTransferAttestations(DEPLOYMENT_A, THREAD_A)).toEqual([]);
+    expect(
+      await store.listTransferAttestations(DEPLOYMENT_A, THREAD_A),
+    ).toEqual([]);
   });
 
   it("denies non-CLEAN preview and missing/inconsistent protected content", async () => {

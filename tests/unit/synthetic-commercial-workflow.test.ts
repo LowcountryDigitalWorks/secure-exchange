@@ -55,9 +55,9 @@ describe("synthetic commercial workflow adapter", () => {
     const instance = workflow();
     const patient = SYNTHETIC_PATIENT_FIXTURES[0];
 
-    expect(
-      instance.verifyPatientNumber(THREAD, patient.patientNumber),
-    ).toEqual(patient);
+    expect(instance.verifyPatientNumber(THREAD, patient.patientNumber)).toEqual(
+      patient,
+    );
     expect(instance.getThreadState(THREAD)).toMatchObject({
       patientResolutionStatus: "CANDIDATES",
       confirmedPatient: undefined,

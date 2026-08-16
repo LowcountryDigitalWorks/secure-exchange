@@ -111,8 +111,9 @@ async function seedQuarantinedCommercialThread(
     queueId: fixture.runtime.queueId,
     routingCategory: "RECORDS",
     threadId,
-    externalParticipantRef:
-      fixture.runtime.idGenerator.generate("external-participant"),
+    externalParticipantRef: fixture.runtime.idGenerator.generate(
+      "external-participant",
+    ),
     messageId,
     initialMessage: "Synthetic quarantined preview fixture.",
     threadCreatedAuditEventId: fixture.runtime.idGenerator.generate("audit"),
@@ -130,7 +131,11 @@ async function seedQuarantinedCommercialThread(
     at: fixture.runtime.now(),
   });
   const boundedCandidates = await candidates(fixture, threadId);
-  fixture.runtime.commercialWorkflow.registerIntake(threadId, {}, boundedCandidates);
+  fixture.runtime.commercialWorkflow.registerIntake(
+    threadId,
+    {},
+    boundedCandidates,
+  );
   return { threadId, messageId, attachmentId: attachment.attachmentId };
 }
 
@@ -138,10 +143,14 @@ describe("Release 0.14 synthetic commercial development HTTP", () => {
   it("requires both commercial gates and leaves existing external-retrieval gating independent", async () => {
     const runtime = createLocalDevelopmentDemoRuntime();
     const disabled = createApp();
-    expect((await disabled.request(`${ORIGIN}/demo/commercial`)).status).toBe(404);
+    expect((await disabled.request(`${ORIGIN}/demo/commercial`)).status).toBe(
+      404,
+    );
 
     const masterOnly = createApp({ demo: runtime });
-    expect((await masterOnly.request(`${ORIGIN}/demo/commercial`)).status).toBe(404);
+    expect((await masterOnly.request(`${ORIGIN}/demo/commercial`)).status).toBe(
+      404,
+    );
 
     const commercial = createApp({
       demo: runtime,
@@ -201,9 +210,9 @@ describe("Release 0.14 synthetic commercial development HTTP", () => {
     expect(
       events.some((event) => event.eventType === "ATTACHMENT_DOWNLOADED"),
     ).toBe(false);
-    expect(
-      fixture.runtime.commercialWorkflow.getNotifications(),
-    ).toEqual([{ message: "A secure exchange item is available." }]);
+    expect(fixture.runtime.commercialWorkflow.getNotifications()).toEqual([
+      { message: "A secure exchange item is available." },
+    ]);
   });
 
   it("rejects unsupported type/extension, oversized files, attachment-count overflow, and cross-site intake", async () => {
@@ -211,10 +220,7 @@ describe("Release 0.14 synthetic commercial development HTTP", () => {
     const badForm = new FormData();
     badForm.set("routingCategory", "RECORDS");
     badForm.set("initialMessage", "Synthetic unsupported upload.");
-    badForm.append(
-      "attachments",
-      syntheticFile("unsafe.html", "text/html"),
-    );
+    badForm.append("attachments", syntheticFile("unsafe.html", "text/html"));
     expect(
       (
         await unsupported.app.request(`${ORIGIN}/demo/commercial/intake`, {
@@ -324,13 +330,17 @@ describe("Release 0.14 synthetic commercial development HTTP", () => {
     );
     expect(imageResponse.status).toBe(200);
     expect(imageResponse.headers.get("content-type")).toBe("image/png");
-    expect(imageResponse.headers.get("cache-control")).toBe("no-store, private");
+    expect(imageResponse.headers.get("cache-control")).toBe(
+      "no-store, private",
+    );
     expect(imageResponse.headers.get("x-content-type-options")).toBe("nosniff");
     expect(imageResponse.headers.get("referrer-policy")).toBe("no-referrer");
     expect(imageResponse.headers.get("cross-origin-resource-policy")).toBe(
       "same-origin",
     );
-    expect(new Uint8Array(await imageResponse.arrayBuffer())).toEqual(imageBytes);
+    expect(new Uint8Array(await imageResponse.arrayBuffer())).toEqual(
+      imageBytes,
+    );
     expect(
       imageFixture.runtime.store.listAuditEvents(
         imageFixture.runtime.deploymentId,
@@ -435,7 +445,10 @@ describe("Release 0.14 synthetic commercial development HTTP", () => {
       ),
     ).toEqual([]);
     expect(
-      await fixture.runtime.store.getThread(fixture.runtime.deploymentId, threadId),
+      await fixture.runtime.store.getThread(
+        fixture.runtime.deploymentId,
+        threadId,
+      ),
     ).toMatchObject({ state: "NEW" });
     expect(
       fixture.runtime.commercialWorkflow.getDiagnostics()
@@ -574,7 +587,10 @@ describe("Release 0.14 synthetic commercial development HTTP", () => {
       ),
     ).toEqual([]);
     expect(
-      await fixture.runtime.store.getThread(fixture.runtime.deploymentId, threadId),
+      await fixture.runtime.store.getThread(
+        fixture.runtime.deploymentId,
+        threadId,
+      ),
     ).toMatchObject({ state: "NEW", version: 1 });
 
     const confirmation = await postForm(
@@ -594,7 +610,10 @@ describe("Release 0.14 synthetic commercial development HTTP", () => {
       actorRef: fixture.runtime.staffActor.actorRef,
     });
     expect(
-      await fixture.runtime.store.getThread(fixture.runtime.deploymentId, threadId),
+      await fixture.runtime.store.getThread(
+        fixture.runtime.deploymentId,
+        threadId,
+      ),
     ).toMatchObject({ state: "NEW" });
 
     const replay = await postForm(
@@ -617,7 +636,10 @@ describe("Release 0.14 synthetic commercial development HTTP", () => {
     );
     expect(completion.status).toBe(303);
     expect(
-      await fixture.runtime.store.getThread(fixture.runtime.deploymentId, threadId),
+      await fixture.runtime.store.getThread(
+        fixture.runtime.deploymentId,
+        threadId,
+      ),
     ).toMatchObject({ state: "COMPLETED", version: 2 });
 
     const disposition = await postForm(
@@ -627,7 +649,10 @@ describe("Release 0.14 synthetic commercial development HTTP", () => {
     );
     expect(disposition.status).toBe(303);
     expect(
-      await fixture.runtime.store.getThread(fixture.runtime.deploymentId, threadId),
+      await fixture.runtime.store.getThread(
+        fixture.runtime.deploymentId,
+        threadId,
+      ),
     ).toMatchObject({ state: "DISPOSED", version: 3 });
   });
 
