@@ -58,10 +58,11 @@ describe("synthetic commercial workflow adapter", () => {
     expect(instance.verifyPatientNumber(THREAD, patient.patientNumber)).toEqual(
       patient,
     );
-    expect(instance.getThreadState(THREAD)).toMatchObject({
+    const verifiedState = instance.getThreadState(THREAD);
+    expect(verifiedState).toMatchObject({
       patientResolutionStatus: "CANDIDATES",
-      confirmedPatient: undefined,
     });
+    expect(verifiedState.confirmedPatient).toBeUndefined();
     expectWorkflowCode(
       () => instance.confirmPatient(THREAD, "DEMO-INVENTED"),
       "PATIENT_NOT_SELECTABLE",
@@ -87,18 +88,20 @@ describe("synthetic commercial workflow adapter", () => {
     );
 
     expect(matches).toEqual([patient]);
-    expect(instance.getThreadState(THREAD)).toMatchObject({
+    const searchedState = instance.getThreadState(THREAD);
+    expect(searchedState).toMatchObject({
       patientResolutionStatus: "CANDIDATES",
-      confirmedPatient: undefined,
     });
+    expect(searchedState.confirmedPatient).toBeUndefined();
     instance.confirmPatient(THREAD, patient.patientNumber);
     expect(instance.getDiagnostics().patient_search_selected).toBe(1);
 
     instance.markPatientNotFound(THREAD);
-    expect(instance.getThreadState(THREAD)).toMatchObject({
+    const notFoundState = instance.getThreadState(THREAD);
+    expect(notFoundState).toMatchObject({
       patientResolutionStatus: "NOT_FOUND",
-      confirmedPatient: undefined,
     });
+    expect(notFoundState.confirmedPatient).toBeUndefined();
     expect(instance.getDiagnostics().patient_not_found_selected).toBe(1);
     expectWorkflowCode(
       () => instance.simulateTransfer(THREAD, "SUCCESS"),
