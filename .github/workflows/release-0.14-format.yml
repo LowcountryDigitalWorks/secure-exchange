@@ -27,30 +27,40 @@ jobs:
           cache-dependency-path: package-lock.json
       - name: Install dependencies
         run: npm ci
-      - name: Apply narrow checkpoint correction
+      - name: Apply Release 0.14 mechanical updates
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
-          path = Path("src/http/commercial-development.ts")
-          text = path.read_text()
+
+          http = Path("src/http/commercial-development.ts")
+          text = http.read_text()
           text = text.replace("  type SyntheticTransferSimulationOutcome,\n", "")
           text = text.replace("          outcome as SyntheticTransferSimulationOutcome,\n", "          outcome,\n")
-          path.write_text(text)
+          http.write_text(text)
+
+          page = Path("src/web/page.ts")
+          text = page.read_text()
+          marker = "code {\n  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;\n  overflow-wrap: anywhere;\n}\n"
+          addition = marker + "\n.preview-image {\n  display: block;\n  width: min(100%, 44rem);\n  height: auto;\n  max-height: 36rem;\n  object-fit: contain;\n}\n\ntable {\n  width: 100%;\n  border-collapse: collapse;\n}\n\nth,\ntd {\n  padding: 0.5rem;\n  text-align: left;\n  vertical-align: top;\n  overflow-wrap: anywhere;\n}\n"
+          if ".preview-image {" not in text:
+              text = text.replace(marker, addition)
+          page.write_text(text)
           PY
+          npm version 0.14.0 --no-git-tag-version
       - name: Apply repository formatter
         run: npm run format
-      - name: Commit corrections if needed
+      - name: Commit mechanical updates if needed
         shell: bash
         run: |
           if git diff --quiet; then
-            echo "No correction or formatting changes required."
+            echo "No Release 0.14 mechanical updates required."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "Fix Release 0.14 strict lint checkpoint"
+          git commit -m "Finalize Release 0.14 package and presentation mechanics"
           git push origin HEAD:release/0.14-synthetic-commercial-workflow-demo
 
 # Temporary WIP helper; remove before freezing the Release 0.14 candidate.
