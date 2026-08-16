@@ -16,9 +16,12 @@ if (!Number.isInteger(parsedPort) || parsedPort < 1 || parsedPort > 65_535) {
 const demoEnabled = process.env["SECURE_EXCHANGE_SYNTHETIC_DEMO"] === "enabled";
 const externalRetrievalEnabled =
   demoEnabled && process.env["DEMO_EXTERNAL_RETRIEVAL_ENABLED"] === "enabled";
+const commercialWorkflowEnabled =
+  demoEnabled && process.env["DEMO_COMMERCIAL_WORKFLOW_ENABLED"] === "enabled";
 const app = createApp({
   ...(demoEnabled ? { demo: createLocalDevelopmentDemoRuntime() } : {}),
   ...(externalRetrievalEnabled ? { externalRetrievalEnabled: true } : {}),
+  ...(commercialWorkflowEnabled ? { commercialWorkflowEnabled: true } : {}),
 });
 
 serve({
@@ -27,5 +30,5 @@ serve({
 });
 
 console.log(
-  `Secure Exchange local development server listening on port ${parsedPort}; synthetic demo ${demoEnabled ? "enabled" : "disabled"}; external retrieval development slice ${externalRetrievalEnabled ? "enabled" : "disabled"}.`,
+  `Secure Exchange local development server listening on port ${parsedPort}; synthetic demo ${demoEnabled ? "enabled" : "disabled"}; external retrieval development slice ${externalRetrievalEnabled ? "enabled" : "disabled"}; commercial workflow demo ${commercialWorkflowEnabled ? "enabled" : "disabled"}.`,
 );

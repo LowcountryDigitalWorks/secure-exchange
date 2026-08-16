@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 
+import { registerCommercialDevelopmentRoutes } from "./commercial-development.js";
 import { registerExternalRetrievalDevelopmentRoutes } from "./external-retrieval-development.js";
 import { ApplicationError } from "../application/errors.js";
 import { getEngineeringStatus } from "../application/status.js";
@@ -19,10 +20,15 @@ import type { DevelopmentDemoRuntime } from "./development-demo.js";
 export interface CreateAppOptions {
   readonly demo?: DevelopmentDemoRuntime;
   readonly externalRetrievalEnabled?: boolean;
+  readonly commercialWorkflowEnabled?: boolean;
 }
 
-function contentSecurityPolicy(demoEnabled: boolean): string {
-  return `default-src 'none'; style-src 'self'; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action ${demoEnabled ? "'self'" : "'none'"}`;
+function contentSecurityPolicy(
+  demoEnabled: boolean,
+  commercialWorkflowEnabled: boolean,
+): string {
+  const imageSource = commercialWorkflowEnabled ? " img-src 'self';" : "";
+  return `default-src 'none'; style-src 'self'; connect-src 'self';${imageSource} base-uri 'none'; frame-ancestors 'none'; form-action ${demoEnabled ? "'self'" : "'none'"}`;
 }
 
 function isSameOriginPost(request: Request): boolean {
@@ -95,6 +101,8 @@ export function createApp(options: CreateAppOptions = {}): Hono {
   const demoEnabled = demo !== undefined;
   const externalRetrievalEnabled =
     demoEnabled && options.externalRetrievalEnabled === true;
+  const commercialWorkflowEnabled =
+    demoEnabled && options.commercialWorkflowEnabled === true;
   const app = new Hono();
 
   app.use("*", async (context, next) => {
@@ -102,7 +110,7 @@ export function createApp(options: CreateAppOptions = {}): Hono {
 
     context.header(
       "Content-Security-Policy",
-      contentSecurityPolicy(demoEnabled),
+      contentSecurityPolicy(demoEnabled, commercialWorkflowEnabled),
     );
     context.header("Referrer-Policy", "no-referrer");
     context.header("X-Content-Type-Options", "nosniff");
@@ -131,6 +139,9 @@ export function createApp(options: CreateAppOptions = {}): Hono {
   if (demo !== undefined) {
     if (externalRetrievalEnabled) {
       registerExternalRetrievalDevelopmentRoutes(app, demo);
+    }
+    if (commercialWorkflowEnabled) {
+      registerCommercialDevelopmentRoutes(app, demo);
     }
 
     const rejectCrossSitePost = (request: Request): boolean =>

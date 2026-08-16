@@ -7,12 +7,17 @@ import type { OpaqueIdGenerator } from "../application/id-generator.js";
 import { WorkflowService } from "../application/workflow-service.js";
 import { InMemoryProtectedContentStore } from "../adapters/in-memory-protected-content-store.js";
 import { InMemoryWorkflowStore } from "../adapters/in-memory-workflow-store.js";
+import {
+  SYNTHETIC_PATIENT_RECORD_DESTINATION,
+  SyntheticCommercialWorkflow,
+} from "../adapters/synthetic-commercial-workflow.js";
 import { WebCryptoAccessGrantSecretManager } from "../adapters/web-crypto-access-grant-secret.js";
 import { WebCryptoOpaqueIdGenerator } from "../adapters/web-crypto-id-generator.js";
 import type {
   AccessGrantPolicy,
   ActorContext,
   AttachmentFilePolicy,
+  CompletionPolicy,
   Queue,
 } from "../domain/index.js";
 
@@ -23,7 +28,9 @@ export const SYNTHETIC_SYSTEM_ACTOR_REF = "synthetic-development-system";
 export const SYNTHETIC_ACCESS_GRANT_POLICY_REF =
   "synthetic-development-access-policy-v1";
 export const SYNTHETIC_ATTACHMENT_POLICY_REF =
-  "synthetic-development-attachment-policy-v1";
+  "synthetic-development-attachment-policy-v2";
+export const SYNTHETIC_COMPLETION_POLICY_REF =
+  "synthetic-commercial-completion-policy-v1";
 
 export const SYNTHETIC_ROUTING_CHOICES = [
   { value: "GENERAL", label: "General" },
@@ -38,6 +45,7 @@ export interface DevelopmentDemoRuntime {
   readonly attachmentService: AttachmentService;
   readonly accessGrantService: AccessGrantService;
   readonly externalAttachmentRetrievalService: ExternalAttachmentRetrievalService;
+  readonly commercialWorkflow: SyntheticCommercialWorkflow;
   readonly idGenerator: OpaqueIdGenerator;
   readonly now: () => string;
   readonly deploymentId: string;
@@ -79,9 +87,14 @@ export function createLocalDevelopmentDemoRuntime(
     deploymentId: SYNTHETIC_DEPLOYMENT_ID,
     maxAttachmentSizeBytes: 2 * 1024 * 1024,
     maxAttachmentsPerMessage: 4,
-    allowedMediaCategories: ["DOCUMENT", "TEXT"],
-    allowedMediaTypes: ["application/pdf", "text/plain"],
-    allowedExtensions: ["pdf", "txt"],
+    allowedMediaCategories: ["DOCUMENT", "IMAGE", "TEXT"],
+    allowedMediaTypes: [
+      "application/pdf",
+      "image/png",
+      "image/jpeg",
+      "text/plain",
+    ],
+    allowedExtensions: ["pdf", "png", "jpg", "jpeg", "txt"],
   };
   const accessGrantPolicy: AccessGrantPolicy = {
     policyRef: SYNTHETIC_ACCESS_GRANT_POLICY_REF,
@@ -89,10 +102,18 @@ export function createLocalDevelopmentDemoRuntime(
     maxLifetimeSeconds: 3_600,
     allowedOperations: ["THREAD_READ", "ATTACHMENT_READ", "THREAD_REPLY"],
   };
+  const completionPolicy: CompletionPolicy = {
+    policyRef: SYNTHETIC_COMPLETION_POLICY_REF,
+    deploymentId: SYNTHETIC_DEPLOYMENT_ID,
+    requiresTransferAttestation: true,
+    qualifyingOutcomes: ["FILED"],
+    allowedDestinationCategories: [SYNTHETIC_PATIENT_RECORD_DESTINATION],
+  };
   const store = new InMemoryWorkflowStore({
     queues: [queue],
     attachmentPolicies: [attachmentPolicy],
     accessGrantPolicies: [accessGrantPolicy],
+    completionPolicies: [completionPolicy],
     actorAuthorizations: [
       {
         ...staffActor,
@@ -106,6 +127,9 @@ export function createLocalDevelopmentDemoRuntime(
           "ATTACHMENT_READ",
           "ACCESS_GRANT_ISSUE",
           "ACCESS_GRANT_REVOKE",
+          "TRANSFER_ATTEST",
+          "THREAD_COMPLETE",
+          "THREAD_DISPOSE",
         ],
       },
     ],
@@ -140,6 +164,7 @@ export function createLocalDevelopmentDemoRuntime(
       accessGrantService,
       clock,
     ),
+    commercialWorkflow: new SyntheticCommercialWorkflow(),
     idGenerator,
     now,
     deploymentId: SYNTHETIC_DEPLOYMENT_ID,
