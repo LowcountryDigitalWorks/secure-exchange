@@ -32,7 +32,9 @@ async function submitSyntheticCommercialIntake(page: Page): Promise<void> {
       name: "Synthetic provider-augmented records intake",
     }),
   ).toBeVisible();
-  await expect(page.getByText("SYNTHETIC DEVELOPMENT DEMO").first()).toBeVisible();
+  await expect(
+    page.getByText("SYNTHETIC DEVELOPMENT DEMO").first(),
+  ).toBeVisible();
   await page.getByLabel("Routing category").selectOption("RECORDS");
   await page
     .getByLabel("Synthetic message")
@@ -51,9 +53,7 @@ async function submitSyntheticCommercialIntake(page: Page): Promise<void> {
 }
 
 async function openSyntheticCommercialThread(page: Page): Promise<void> {
-  await page
-    .getByRole("link", { name: "Open synthetic staff queue" })
-    .click();
+  await page.getByRole("link", { name: "Open synthetic staff queue" }).click();
   await expect(
     page.getByRole("heading", { name: "Synthetic commercial staff queue" }),
   ).toBeVisible();
@@ -73,9 +73,7 @@ test("synthetic commercial demo completes the provider-augmented browser workflo
   await openSyntheticCommercialThread(page);
 
   await page.getByLabel("Known synthetic patient number").fill("DEMO-1001");
-  await page
-    .getByRole("button", { name: "Verify synthetic number" })
-    .click();
+  await page.getByRole("button", { name: "Verify synthetic number" }).click();
   await expect(
     page.getByRole("heading", { name: "Synthetic fixture candidates" }),
   ).toBeVisible();
@@ -86,22 +84,24 @@ test("synthetic commercial demo completes the provider-augmented browser workflo
     page.getByRole("heading", { name: "Confirmed synthetic patient" }),
   ).toBeVisible();
 
-  const preview = page.getByRole("img", { name: "Synthetic attachment preview" });
+  const preview = page.getByRole("img", {
+    name: "Synthetic attachment preview",
+  });
   await expect(preview).toBeVisible();
   expect(
     await preview.evaluate((image) => (image as HTMLImageElement).naturalWidth),
   ).toBeGreaterThan(0);
 
-  await page.getByLabel("Destination/category").selectOption("PATIENT_DOCUMENTS");
+  await page
+    .getByLabel("Destination/category")
+    .selectOption("PATIENT_DOCUMENTS");
   await page.getByLabel("Classification").selectOption("DOCUMENT");
   await page.getByRole("button", { name: "Save / confirm mapping" }).click();
   await expect(page.getByText("Synthetic patient documents")).toBeVisible();
 
   await page.getByRole("button", { name: "SIMULATED FAILURE" }).click();
   await expect(page.getByText("SIMULATED / SYNTHETIC FAILURE")).toBeVisible();
-  await page
-    .getByRole("button", { name: "SIMULATED SUCCESS / RETRY" })
-    .click();
+  await page.getByRole("button", { name: "SIMULATED SUCCESS / RETRY" }).click();
   await expect(page.getByText("SIMULATED / SYNTHETIC SUCCESS")).toBeVisible();
   await page.getByRole("button", { name: "Confirm simulated filing" }).click();
   await expect(
@@ -125,16 +125,16 @@ test("@a11y synthetic commercial intake, queue, work item, and diagnostics are W
   await expectNoOverflow(page);
 
   await page.getByLabel("Routing category").selectOption("RECORDS");
-  await page.getByLabel("Synthetic message").fill("Synthetic accessibility record.");
+  await page
+    .getByLabel("Synthetic message")
+    .fill("Synthetic accessibility record.");
   await page.getByLabel("Synthetic attachments").setInputFiles({
     name: "synthetic-image.png",
     mimeType: "image/png",
     buffer: SYNTHETIC_PNG,
   });
   await page.getByRole("button", { name: "Submit synthetic records" }).click();
-  await page
-    .getByRole("link", { name: "Open synthetic staff queue" })
-    .click();
+  await page.getByRole("link", { name: "Open synthetic staff queue" }).click();
   await expectNoA11yViolations(page);
   await expectNoOverflow(page);
 
@@ -145,9 +145,7 @@ test("@a11y synthetic commercial intake, queue, work item, and diagnostics are W
   await expectNoA11yViolations(page);
   await expectNoOverflow(page);
 
-  await page
-    .getByRole("link", { name: "Sanitized diagnostics" })
-    .click();
+  await page.getByRole("link", { name: "Sanitized diagnostics" }).click();
   await expect(
     page.getByRole("heading", { name: "Sanitized local diagnostics" }),
   ).toBeVisible();
