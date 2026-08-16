@@ -8,6 +8,7 @@ import {
   type Attachment,
   type AttachmentId,
   type AttachmentMediaCategory,
+  type AttachmentSafetyState,
   type AttachmentScanOutcome,
   type AuditEvent,
   type DeploymentId,
@@ -18,7 +19,9 @@ import {
   type WorkflowPermission,
 } from "../domain/index.js";
 import {
+  resolveAuthorizedAttachment,
   retrieveAuthorizedAttachment,
+  type AuthorizedAttachmentResolutionResult,
   type AuthorizedAttachmentRetrievalResult,
 } from "./attachment-retrieval.js";
 import { ApplicationError } from "./errors.js";
@@ -56,7 +59,32 @@ export interface RetrieveAttachmentInput {
   readonly at: string;
 }
 
+export interface PreviewStaffAttachmentInput {
+  readonly actor: ActorContext;
+  readonly deploymentId: DeploymentId;
+  readonly threadId: ThreadId;
+  readonly messageId: MessageId;
+  readonly attachmentId: AttachmentId;
+}
+
+export interface ListStaffAttachmentCandidatesInput {
+  readonly actor: ActorContext;
+  readonly deploymentId: DeploymentId;
+  readonly threadId: ThreadId;
+}
+
+export interface StaffAttachmentCandidate {
+  readonly messageId: MessageId;
+  readonly attachmentId: AttachmentId;
+  readonly safeDownloadFilename: string;
+  readonly normalizedMediaType: string;
+  readonly normalizedMediaCategory: AttachmentMediaCategory;
+  readonly byteLength: number;
+  readonly safetyState: AttachmentSafetyState;
+}
+
 export type AttachmentRetrievalResult = AuthorizedAttachmentRetrievalResult;
+export type AttachmentPreviewResult = AuthorizedAttachmentResolutionResult;
 
 interface AuthorizedThread {
   readonly thread: Thread;
@@ -258,6 +286,81 @@ export class AttachmentService {
     return nextAttachment;
   }
 
+  async listStaffAttachmentCandidates(
+    input: ListStaffAttachmentCandidatesInput,
+  ): Promise<readonly StaffAttachmentCandidate[]> {
+    const { authorization } = await this.loadAuthorizedThread(
+      input,
+      "ATTACHMENT_READ",
+    );
+    this.requireStaffAuthorization(authorization);
+
+    const messages = await this.store.listMessages(
+      input.deploymentId,
+      input.threadId,
+    );
+    const candidates: StaffAttachmentCandidate[] = [];
+
+    for (const message of messages) {
+      if (
+        message.deploymentId !== input.deploymentId ||
+        message.threadId !== input.threadId
+      ) {
+        throw new ApplicationError(
+          "RESOURCE_NOT_FOUND",
+          "Authoritative message was not found in the requested thread.",
+        );
+      }
+      const attachments = await this.store.listAttachmentsForMessage(
+        input.deploymentId,
+        input.threadId,
+        message.messageId,
+      );
+      for (const attachment of attachments) {
+        if (
+          attachment.deploymentId !== input.deploymentId ||
+          attachment.threadId !== input.threadId ||
+          attachment.messageId !== message.messageId
+        ) {
+          throw new ApplicationError(
+            "ATTACHMENT_NOT_FOUND",
+            "Authoritative attachment was not found in the requested scope.",
+          );
+        }
+        candidates.push({
+          messageId: message.messageId,
+          attachmentId: attachment.attachmentId,
+          safeDownloadFilename: attachment.safeDownloadFilename,
+          normalizedMediaType: attachment.normalizedMediaType,
+          normalizedMediaCategory: attachment.normalizedMediaCategory,
+          byteLength: attachment.sizeBytes,
+          safetyState: attachment.state,
+        });
+      }
+    }
+
+    return candidates.sort(
+      (left, right) =>
+        left.messageId.localeCompare(right.messageId) ||
+        left.attachmentId.localeCompare(right.attachmentId),
+    );
+  }
+
+  async previewStaffAttachment(
+    input: PreviewStaffAttachmentInput,
+  ): Promise<AttachmentPreviewResult> {
+    const { authorization } = await this.loadAuthorizedThread(
+      input,
+      "ATTACHMENT_READ",
+    );
+    this.requireStaffAuthorization(authorization);
+
+    return resolveAuthorizedAttachment(
+      { store: this.store, contentStore: this.contentStore },
+      input,
+    );
+  }
+
   async retrieveStaffAttachment(
     input: RetrieveAttachmentInput,
   ): Promise<AttachmentRetrievalResult> {
@@ -265,12 +368,7 @@ export class AttachmentService {
       input,
       "ATTACHMENT_READ",
     );
-    if (authorization.actorKind !== "STAFF") {
-      throw new ApplicationError(
-        "AUTHORIZATION_DENIED",
-        "Attachment retrieval requires an authenticated staff actor.",
-      );
-    }
+    this.requireStaffAuthorization(authorization);
 
     return retrieveAuthorizedAttachment(
       {
@@ -389,6 +487,15 @@ export class AttachmentService {
     }
 
     return { thread, authorization };
+  }
+
+  private requireStaffAuthorization(authorization: ActorAuthorization): void {
+    if (authorization.actorKind !== "STAFF") {
+      throw new ApplicationError(
+        "AUTHORIZATION_DENIED",
+        "Attachment access requires an authenticated staff actor.",
+      );
+    }
   }
 
   private systemAudit(
