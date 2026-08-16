@@ -6,6 +6,8 @@ Secure Exchange provides a simple, secure workflow for organizations that need t
 
 The product focuses on the exchange workflow itself: intake, routing, conversation state, secure retrieval, lifecycle management, workflow evidence, audit semantics, retention/disposition, and configurable product UX.
 
+Secure Exchange is also a reusable LDW implementation framework. It does not need to become a standalone SaaS product or replace a customer's existing Microsoft, Google, Zoho, or other productivity/mail platform to create value. The preferred commercial pattern is to keep the customer on the lowest practical adequate provider tier, configure that provider, and add only the narrow customer-owned Secure Exchange extension or integration the workflow actually requires.
+
 ## Target users
 
 ### External participant
@@ -41,6 +43,24 @@ Secure Exchange owns:
 
 Commodity providers should supply infrastructure primitives such as identity, object storage, encryption/key management, notification delivery, infrastructure logging, malware scanning, and compute.
 
+Existing customer platforms should be reused where they are adequate. Secure Exchange may complement a customer's mail/productivity provider by using ordinary mail only for non-sensitive routing or notification while sensitive content remains in the customer-owned exchange workflow.
+
+## Commercial and service model
+
+Secure Exchange is not required to justify itself through standalone recurring software-subscription revenue.
+
+LDW may create value through:
+
+- provider and workflow assessment;
+- customer-owned account and platform configuration;
+- fixed-fee or hourly implementation;
+- narrow customer-owned custom development;
+- integration with the customer's authoritative systems;
+- optional ongoing maintenance and support;
+- standardized reusable deployment methods that lower future delivery and support cost.
+
+A separate LDW pricing/service gate owns hourly rates, fixed-fee packaging, and support-retainer economics.
+
 ## Workflow evidence versus lifecycle
 
 Secure Exchange intentionally distinguishes operational evidence from thread lifecycle.
@@ -56,13 +76,62 @@ At minimum:
 
 ## Preferred deployment model
 
-The preferred production model is one isolated deployment per customer in customer-owned infrastructure.
+The preferred production model is one isolated deployment per customer in customer-owned infrastructure/accounts, with LDW using named and scoped administrative access where support is contracted.
 
-The product remains deployment-aware internally so isolation assumptions are explicit and testable, but the reference model does not require a shared cross-customer data plane.
+The product remains deployment-aware internally so isolation assumptions are explicit and testable, but the reference model does not require a shared cross-customer data plane. LDW-managed hosting or a future shared service is optional only where it creates legitimate customer value and acceptable operational economics.
 
-## First likely healthcare pilot
+A common target architecture is:
 
-Donovan Family Dentistry is the likely first healthcare pilot/reference customer. It is not a product fork and does not authorize dental-specific business logic in the core.
+customer-owned mail/productivity provider -> non-sensitive notification/routing -> customer-owned Secure Exchange portal -> customer workflow/integration -> downstream authoritative system -> temporary exchange disposition.
+
+LDW should not build or operate its own SMTP/mail server merely to create this workflow.
+
+## Current low-cost provider investigation
+
+As of 2026-08-15, Zoho Mail Lite is the leading low-cost provider candidate for testing the provider-plus-extension model. This is a research direction, not a vendor commitment, partnership, production approval, or claim that every required control is available on every Mail Lite tenant.
+
+Current public Zoho documentation supports the following investigation assumptions:
+
+- Mail Lite is a paid custom-domain plan and paid plans support Email Routing;
+- paid organizations can use Incoming Rules, including recipient-address matching and permanent rejection with an optional custom error message;
+- Zoho Mail exposes OAuth-based REST APIs for reading, sending, and replying to mail;
+- Zoho documents Strict TLS policies assignable to selected users/groups, with the feature released in phases and support involvement potentially required;
+- Zoho publishes HIPAA-oriented Mail guidance and provides a BAA template on request.
+
+Before any production healthcare recommendation, obtain written Zoho confirmation that the exact subscribed Mail Lite configuration is covered by the applicable BAA and that Strict TLS can be enabled as intended.
+
+Two low-cost patterns remain candidates for synthetic/provider testing:
+
+1. **Portal-only alias** — a records-style alias on an existing paid mailbox, with an Incoming Rule rejecting direct mail to that address using a custom response directing the sender to the customer-owned secure portal. This may avoid an additional mailbox license if the customer's exact configuration supports it.
+2. **TLS-only dedicated intake mailbox** — a separate low-cost Mail Lite user with a Strict TLS policy scoped to that user, creating a cleaner boundary without imposing the policy on ordinary organizational mail.
+
+Do not assume Zoho can simultaneously accept TLS-delivered mail while returning a custom portal-redirect rejection specifically for non-TLS delivery on the same address. Current public Incoming Rule conditions do not expose transport-TLS state. That combined behavior requires provider confirmation or controlled testing.
+
+## First healthcare workflow candidate
+
+Donovan Family Dentistry is a useful discovery/reference context for the first healthcare pilot, but no customer commitment is assumed and the product must not become a dental-specific fork.
+
+A differentiated future workflow may be:
+
+external provider -> Secure Exchange -> authorized staff validates patient association -> document transferred into Open Dental -> successful transfer/filing evidence recorded -> temporary Secure Exchange copy disposed according to policy.
+
+Open Dental currently exposes document-insertion API paths that make this a plausible integration target, but the integration is not yet authorized for implementation.
+
+## Regulated support and BAA boundary
+
+Customer-owned infrastructure does not automatically remove LDW's potential Business Associate status.
+
+If LDW's support, troubleshooting, integration, administration, or maintenance role can involve access to PHI, the engagement should assume that a client-specific BAA may be required before that access occurs. A BAA is a contractual agreement, not a certification or government-paid license.
+
+The operating preference remains to minimize LDW exposure:
+
+- customer-owned accounts, infrastructure, PHI, and backups;
+- named/scoped LDW administration;
+- least privilege;
+- synthetic or sanitized development and troubleshooting whenever practical;
+- no PHI in LDW repositories, chats, test fixtures, or ordinary support documentation;
+- minimized sensitive content in logs;
+- no shared credentials.
 
 ## Non-goals for the initial product
 
@@ -89,6 +158,8 @@ Regulated deployments require a documented end-to-end boundary covering vendors/
 
 ## Product principles
 
+- solve the customer's practical problem before optimizing for product revenue;
+- augment existing adequate platforms rather than forcing replacement;
 - conservative data exposure;
 - role-based routing over person-specific workflow design;
 - customer ownership of deployed data and infrastructure where practical;
