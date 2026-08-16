@@ -22,6 +22,7 @@ export default defineConfig({
     timeout: 15_000,
     env: {
       SECURE_EXCHANGE_SYNTHETIC_DEMO: "enabled",
+      DEMO_COMMERCIAL_WORKFLOW_ENABLED: "enabled",
     },
   },
   projects: [
