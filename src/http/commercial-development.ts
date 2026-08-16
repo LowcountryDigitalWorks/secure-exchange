@@ -5,7 +5,6 @@ import {
   SYNTHETIC_PATIENT_RECORD_DESTINATION,
   SyntheticCommercialWorkflowError,
   type SenderSuppliedMatchingEvidence,
-  type SyntheticTransferSimulationOutcome,
 } from "../adapters/synthetic-commercial-workflow.js";
 import { DomainError } from "../domain/errors.js";
 import type { AttachmentMediaCategory } from "../domain/index.js";
@@ -715,10 +714,7 @@ export function registerCommercialDevelopmentRoutes(
             "Synthetic downstream outcome is invalid.",
           );
         }
-        demo.commercialWorkflow.simulateTransfer(
-          threadId,
-          outcome as SyntheticTransferSimulationOutcome,
-        );
+        demo.commercialWorkflow.simulateTransfer(threadId, outcome);
         return context.redirect(threadHref(threadId), 303);
       } catch (error: unknown) {
         return commercialError(context, error, threadHref(threadId));
