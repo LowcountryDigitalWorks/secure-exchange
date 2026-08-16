@@ -1,0 +1,16 @@
+name: LDW dependency scan
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-scan:
+    uses: LowcountryDigitalWorks/.github/.github/workflows/security-dependencies-npm.yml@ebf64d4e7fb2bb6bab287601bb516612768a6a20
+    with:
+      online_queries: true
