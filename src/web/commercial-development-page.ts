@@ -110,11 +110,12 @@ export function renderCommercialSubmitted(): string {
 export function renderCommercialQueue(
   candidates: readonly QueueCandidate[],
 ): string {
-  const items = candidates.length === 0
-    ? "<p>No synthetic commercial work is queued.</p>"
-    : `<ul class="queue-list">${candidates
-        .map(
-          (candidate) => `<li class="queue-item">
+  const items =
+    candidates.length === 0
+      ? "<p>No synthetic commercial work is queued.</p>"
+      : `<ul class="queue-list">${candidates
+          .map(
+            (candidate) => `<li class="queue-item">
             <h2>${escapeHtml(candidate.routingCategory)}</h2>
             <div class="meta">
               <div><strong>State:</strong> ${escapeHtml(candidate.state)}</div>
@@ -125,8 +126,8 @@ export function renderCommercialQueue(
               <button type="submit">Open synthetic work item</button>
             </form>
           </li>`,
-        )
-        .join("")}</ul>`;
+          )
+          .join("")}</ul>`;
   return page(
     "Synthetic Commercial Staff Queue — Secure Exchange",
     `<section class="card" aria-labelledby="commercial-queue-title">
@@ -149,9 +150,10 @@ function patientResolution(state: SyntheticCommercialThreadState): string {
           <p><strong>WILL NOT CHANGE:</strong> these hints do not update downstream demographics.</p>
         </div>`;
 
-  const candidates = state.patientCandidates.length === 0
-    ? ""
-    : `<section class="card" aria-labelledby="candidate-title">
+  const candidates =
+    state.patientCandidates.length === 0
+      ? ""
+      : `<section class="card" aria-labelledby="candidate-title">
         <h3 id="candidate-title">Synthetic fixture candidates</h3>
         <p>Staff must explicitly select the intended fixture; no candidate is automatically selected.</p>
         <ul class="queue-list">${state.patientCandidates
@@ -169,9 +171,10 @@ function patientResolution(state: SyntheticCommercialThreadState): string {
           .join("")}</ul>
       </section>`;
 
-  const confirmed = state.confirmedPatient === undefined
-    ? `<p class="status">Patient resolution: ${escapeHtml(state.patientResolutionStatus)}</p>`
-    : `<div class="card">
+  const confirmed =
+    state.confirmedPatient === undefined
+      ? `<p class="status">Patient resolution: ${escapeHtml(state.patientResolutionStatus)}</p>`
+      : `<div class="card">
         <h3>Confirmed synthetic patient</h3>
         <p><strong>${escapeHtml(state.confirmedPatient.displayName)}</strong></p>
         <p>Patient number: <code>${escapeHtml(state.confirmedPatient.patientNumber)}</code></p>
@@ -229,18 +232,20 @@ function attachmentSection(
         (item) => item.attachmentId === candidate.attachmentId,
       );
       const previewPath = `/demo/commercial/staff/threads/${encodeURIComponent(threadId)}/preview/${encodeURIComponent(candidate.messageId)}/${encodeURIComponent(candidate.attachmentId)}`;
-      const preview = candidate.safetyState !== "CLEAN"
-        ? `<p>Preview unavailable until the attachment is exactly CLEAN.</p>`
-        : candidate.normalizedMediaType === "image/png" ||
-            candidate.normalizedMediaType === "image/jpeg"
-          ? `<a href="${previewPath}" target="_blank" rel="noopener noreferrer">Open larger synthetic image preview</a>
+      const preview =
+        candidate.safetyState !== "CLEAN"
+          ? `<p>Preview unavailable until the attachment is exactly CLEAN.</p>`
+          : candidate.normalizedMediaType === "image/png" ||
+              candidate.normalizedMediaType === "image/jpeg"
+            ? `<a href="${previewPath}" target="_blank" rel="noopener noreferrer">Open larger synthetic image preview</a>
              <img class="preview-image" src="${previewPath}" alt="Synthetic attachment preview">`
-          : candidate.normalizedMediaType === "application/pdf"
-            ? `<a class="button-link" href="${previewPath}" target="_blank" rel="noopener noreferrer">Open synthetic PDF preview in new tab</a>`
-            : `<p>Inline preview is not provided for this type. Use the explicit manual-download fallback.</p>`;
-      const mappingForm = mapping === undefined
-        ? "<p>No synthetic filing mapping is available.</p>"
-        : `<div class="card stack">
+            : candidate.normalizedMediaType === "application/pdf"
+              ? `<a class="button-link" href="${previewPath}" target="_blank" rel="noopener noreferrer">Open synthetic PDF preview in new tab</a>`
+              : `<p>Inline preview is not provided for this type. Use the explicit manual-download fallback.</p>`;
+      const mappingForm =
+        mapping === undefined
+          ? "<p>No synthetic filing mapping is available.</p>"
+          : `<div class="card stack">
             <h4>Proposed synthetic filing mapping</h4>
             <p><strong>Description:</strong> ${escapeHtml(mapping.description)}</p>
             ${mapping.syntheticLocationMetadata === undefined ? "" : `<p><strong>Fixture location metadata:</strong> ${escapeHtml(mapping.syntheticLocationMetadata)}</p>`}
@@ -286,18 +291,21 @@ function downstreamSection(
   state: SyntheticCommercialThreadState,
 ): string {
   const thread = conversation.thread;
-  const simulation = state.simulatedTransferOutcome === undefined
-    ? "Not run"
-    : `SIMULATED / SYNTHETIC ${state.simulatedTransferOutcome}`;
-  const filing = state.filedAttestationId === undefined
-    ? "No qualifying FILED attestation has been explicitly confirmed."
-    : `Existing FILED TransferAttestation recorded: ${escapeHtml(state.filedAttestationId)}`;
+  const simulation =
+    state.simulatedTransferOutcome === undefined
+      ? "Not run"
+      : `SIMULATED / SYNTHETIC ${state.simulatedTransferOutcome}`;
+  const filing =
+    state.filedAttestationId === undefined
+      ? "No qualifying FILED attestation has been explicitly confirmed."
+      : `Existing FILED TransferAttestation recorded: ${escapeHtml(state.filedAttestationId)}`;
   const canSimulate = state.confirmedPatient !== undefined;
   const canConfirm =
     state.simulatedTransferOutcome === "SUCCESS" &&
     state.filedAttestationId === undefined &&
     !state.filingConfirmationPending;
-  const canComplete = thread.state !== "COMPLETED" && thread.state !== "DISPOSED";
+  const canComplete =
+    thread.state !== "COMPLETED" && thread.state !== "DISPOSED";
   const canDispose = thread.state === "COMPLETED";
 
   return `<section class="card stack" aria-labelledby="downstream-title">
@@ -305,7 +313,9 @@ function downstreamSection(
     <p><strong>Simulation status:</strong> ${escapeHtml(simulation)}</p>
     <p>${filing}</p>
     <p>No real Open Dental or other provider receives this data. A simulated success is demo state only and never creates FILED evidence automatically.</p>
-    ${canSimulate ? `<div class="actions">
+    ${
+      canSimulate
+        ? `<div class="actions">
       <form method="post" action="/demo/commercial/staff/threads/${encodeURIComponent(thread.threadId)}/simulate">
         <input type="hidden" name="outcome" value="FAILURE">
         <button type="submit">SIMULATED FAILURE</button>
@@ -314,18 +324,32 @@ function downstreamSection(
         <input type="hidden" name="outcome" value="SUCCESS">
         <button type="submit">SIMULATED SUCCESS / RETRY</button>
       </form>
-    </div>` : `<p>Downstream simulation is blocked until a synthetic patient fixture is explicitly confirmed.</p>`}
-    ${canConfirm ? `<form method="post" action="/demo/commercial/staff/threads/${encodeURIComponent(thread.threadId)}/confirm-filing">
+    </div>`
+        : `<p>Downstream simulation is blocked until a synthetic patient fixture is explicitly confirmed.</p>`
+    }
+    ${
+      canConfirm
+        ? `<form method="post" action="/demo/commercial/staff/threads/${encodeURIComponent(thread.threadId)}/confirm-filing">
       <button type="submit">Confirm simulated filing</button>
-    </form>` : ""}
-    ${canComplete ? `<form method="post" action="/demo/commercial/staff/threads/${encodeURIComponent(thread.threadId)}/complete">
+    </form>`
+        : ""
+    }
+    ${
+      canComplete
+        ? `<form method="post" action="/demo/commercial/staff/threads/${encodeURIComponent(thread.threadId)}/complete">
       <input type="hidden" name="expectedVersion" value="${thread.version}">
       <button type="submit">Complete exchange</button>
-    </form>` : ""}
-    ${canDispose ? `<form method="post" action="/demo/commercial/staff/threads/${encodeURIComponent(thread.threadId)}/dispose">
+    </form>`
+        : ""
+    }
+    ${
+      canDispose
+        ? `<form method="post" action="/demo/commercial/staff/threads/${encodeURIComponent(thread.threadId)}/dispose">
       <input type="hidden" name="expectedVersion" value="${thread.version}">
       <button type="submit">Dispose temporary exchange</button>
-    </form>` : ""}
+    </form>`
+        : ""
+    }
     <p><strong>Current lifecycle:</strong> ${escapeHtml(thread.state)}</p>
   </section>`;
 }
@@ -358,11 +382,12 @@ export function renderCommercialDiagnostics(
         `<tr><th scope="row"><code>${escapeHtml(key)}</code></th><td>${value}</td></tr>`,
     )
     .join("");
-  const notices = notifications.length === 0
-    ? "<p>No synthetic notifications have been recorded.</p>"
-    : `<ul>${notifications
-        .map((notification) => `<li>${escapeHtml(notification.message)}</li>`)
-        .join("")}</ul>`;
+  const notices =
+    notifications.length === 0
+      ? "<p>No synthetic notifications have been recorded.</p>"
+      : `<ul>${notifications
+          .map((notification) => `<li>${escapeHtml(notification.message)}</li>`)
+          .join("")}</ul>`;
   return page(
     "Sanitized Synthetic Diagnostics — Secure Exchange",
     `<section class="card stack" aria-labelledby="diagnostics-title">

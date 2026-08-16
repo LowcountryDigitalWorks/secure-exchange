@@ -27,8 +27,7 @@ export interface AuthorizedAttachmentResolutionInput {
   readonly attachmentId: AttachmentId;
 }
 
-export interface AuthorizedAttachmentRetrievalInput
-  extends AuthorizedAttachmentResolutionInput {
+export interface AuthorizedAttachmentRetrievalInput extends AuthorizedAttachmentResolutionInput {
   readonly at: string;
   readonly expectedThreadVersion: number;
   readonly authority: AttachmentRetrievalAuthority;

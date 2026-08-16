@@ -1,9 +1,6 @@
-import type {
-  StaffAttachmentCandidate,
-} from "../application/attachment-service.js";
+import type { StaffAttachmentCandidate } from "../application/attachment-service.js";
 
-export const SYNTHETIC_PATIENT_RECORD_DESTINATION =
-  "SYNTHETIC_PATIENT_RECORD";
+export const SYNTHETIC_PATIENT_RECORD_DESTINATION = "SYNTHETIC_PATIENT_RECORD";
 
 export const SYNTHETIC_PATIENT_FIXTURES = [
   {
@@ -86,10 +83,7 @@ export interface SyntheticFilingMapping {
 }
 
 export type SyntheticPatientResolutionStatus =
-  | "UNRESOLVED"
-  | "CANDIDATES"
-  | "CONFIRMED"
-  | "NOT_FOUND";
+  "UNRESOLVED" | "CANDIDATES" | "CONFIRMED" | "NOT_FOUND";
 export type SyntheticTransferSimulationOutcome = "SUCCESS" | "FAILURE";
 
 type PatientCandidateSource = "NUMBER" | "SEARCH";
@@ -222,7 +216,9 @@ export class SyntheticCommercialWorkflow {
       filingMappings: attachments.map(defaultMapping),
       filingConfirmationPending: false,
     });
-    this.notifications.push({ message: "A secure exchange item is available." });
+    this.notifications.push({
+      message: "A secure exchange item is available.",
+    });
   }
 
   getThreadState(threadId: string): SyntheticCommercialThreadState {
@@ -233,7 +229,10 @@ export class SyntheticCommercialWorkflow {
       patientResolutionStatus: state.patientResolutionStatus,
       patientCandidates: state.patientCandidateNumbers
         .map((patientNumber) => fixtureByNumber(patientNumber))
-        .filter((patient): patient is SyntheticPatientFixture => patient !== undefined)
+        .filter(
+          (patient): patient is SyntheticPatientFixture =>
+            patient !== undefined,
+        )
         .map(copyPatient),
       ...(state.confirmedPatientNumber === undefined
         ? {}
@@ -268,7 +267,8 @@ export class SyntheticCommercialWorkflow {
     const patient = fixtureByNumber(normalized);
     state.confirmedPatientNumber = undefined;
     state.patientCandidateSource = "NUMBER";
-    state.patientCandidateNumbers = patient === undefined ? [] : [patient.patientNumber];
+    state.patientCandidateNumbers =
+      patient === undefined ? [] : [patient.patientNumber];
     state.patientResolutionStatus =
       patient === undefined ? "UNRESOLVED" : "CANDIDATES";
     if (patient !== undefined) {
@@ -286,11 +286,7 @@ export class SyntheticCommercialWorkflow {
     const state = this.requireState(threadId);
     const normalized = normalizedName(name);
     const dob = dateOfBirth.trim();
-    if (
-      normalized.length === 0 ||
-      normalized.length > 80 ||
-      !validDob(dob)
-    ) {
+    if (normalized.length === 0 || normalized.length > 80 || !validDob(dob)) {
       throw new SyntheticCommercialWorkflowError(
         "INVALID_PATIENT_QUERY",
         "Synthetic patient search requires bounded name and YYYY-MM-DD date of birth.",
@@ -303,13 +299,18 @@ export class SyntheticCommercialWorkflow {
     );
     state.confirmedPatientNumber = undefined;
     state.patientCandidateSource = "SEARCH";
-    state.patientCandidateNumbers = matches.map((patient) => patient.patientNumber);
+    state.patientCandidateNumbers = matches.map(
+      (patient) => patient.patientNumber,
+    );
     state.patientResolutionStatus =
       matches.length === 0 ? "UNRESOLVED" : "CANDIDATES";
     return matches.map(copyPatient);
   }
 
-  confirmPatient(threadId: string, patientNumber: string): SyntheticPatientFixture {
+  confirmPatient(
+    threadId: string,
+    patientNumber: string,
+  ): SyntheticPatientFixture {
     const state = this.requireState(threadId);
     if (!state.patientCandidateNumbers.includes(patientNumber)) {
       throw new SyntheticCommercialWorkflowError(

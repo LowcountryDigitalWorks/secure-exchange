@@ -128,7 +128,9 @@ function extension(filename: string): string {
     : basename.slice(dot + 1).toLowerCase();
 }
 
-async function prepareUploads(form: FormData): Promise<readonly PreparedUpload[]> {
+async function prepareUploads(
+  form: FormData,
+): Promise<readonly PreparedUpload[]> {
   const entries = form.getAll("attachments");
   if (entries.length === 0 || entries.length > MAX_ATTACHMENTS) {
     throw new ApplicationError(
@@ -168,7 +170,9 @@ async function prepareUploads(form: FormData): Promise<readonly PreparedUpload[]
   return uploads;
 }
 
-function parseExpectedVersion(value: FormDataEntryValue | null): number | undefined {
+function parseExpectedVersion(
+  value: FormDataEntryValue | null,
+): number | undefined {
   if (typeof value !== "string" || !/^[1-9][0-9]*$/u.test(value)) {
     return undefined;
   }
@@ -222,15 +226,16 @@ function commercialError(
   backHref: string,
 ): Response {
   const status = statusForError(error);
-  const title = status === 404
-    ? "Synthetic work item unavailable"
-    : status === 403
-      ? "Synthetic action not authorized"
-      : status === 409
-        ? "Synthetic action not accepted"
-        : status === 400
-          ? "Invalid synthetic request"
-          : "Synthetic demo request failed";
+  const title =
+    status === 404
+      ? "Synthetic work item unavailable"
+      : status === 403
+        ? "Synthetic action not authorized"
+        : status === 409
+          ? "Synthetic action not accepted"
+          : status === 400
+            ? "Invalid synthetic request"
+            : "Synthetic demo request failed";
   return context.html(
     renderCommercialError(
       title,
@@ -307,7 +312,10 @@ export function registerCommercialDevelopmentRoutes(
           "Synthetic routing and message are required.",
         );
       }
-      const syntheticName = optionalEvidenceValue(form.get("syntheticName"), 80);
+      const syntheticName = optionalEvidenceValue(
+        form.get("syntheticName"),
+        80,
+      );
       const syntheticDateOfBirth = optionalEvidenceValue(
         form.get("syntheticDob"),
         10,
@@ -330,7 +338,9 @@ export function registerCommercialDevelopmentRoutes(
         queueId: demo.queueId,
         routingCategory,
         threadId,
-        externalParticipantRef: demo.idGenerator.generate("external-participant"),
+        externalParticipantRef: demo.idGenerator.generate(
+          "external-participant",
+        ),
         messageId,
         initialMessage,
         threadCreatedAuditEventId: demo.idGenerator.generate("audit"),
@@ -354,22 +364,24 @@ export function registerCommercialDevelopmentRoutes(
           threadId,
           messageId,
           attachmentId: attachment.attachmentId,
-          scanResultRef: `synthetic-clean-${attachment.attachmentId}`.slice(0, 128),
+          scanResultRef: `synthetic-clean-${attachment.attachmentId}`.slice(
+            0,
+            128,
+          ),
           outcome: "CLEAN",
           at,
         });
       }
 
-      const candidates = await demo.attachmentService.listStaffAttachmentCandidates({
-        actor: demo.staffActor,
-        deploymentId: demo.deploymentId,
-        threadId,
-      });
+      const candidates =
+        await demo.attachmentService.listStaffAttachmentCandidates({
+          actor: demo.staffActor,
+          deploymentId: demo.deploymentId,
+          threadId,
+        });
       const senderEvidence: SenderSuppliedMatchingEvidence = {
         ...(syntheticName === undefined ? {} : { syntheticName }),
-        ...(syntheticDateOfBirth === undefined
-          ? {}
-          : { syntheticDateOfBirth }),
+        ...(syntheticDateOfBirth === undefined ? {} : { syntheticDateOfBirth }),
       };
       demo.commercialWorkflow.registerIntake(
         threadId,
@@ -443,11 +455,12 @@ export function registerCommercialDevelopmentRoutes(
       const threadId = context.req.param("threadId");
       try {
         await requireCommercialThread(demo, threadId);
-        const conversation = await demo.conversationService.readStaffConversation({
-          actor: demo.staffActor,
-          deploymentId: demo.deploymentId,
-          threadId,
-        });
+        const conversation =
+          await demo.conversationService.readStaffConversation({
+            actor: demo.staffActor,
+            deploymentId: demo.deploymentId,
+            threadId,
+          });
         const candidates =
           await demo.attachmentService.listStaffAttachmentCandidates({
             actor: demo.staffActor,
@@ -768,7 +781,10 @@ export function registerCommercialDevelopmentRoutes(
           (await context.req.raw.formData()).get("expectedVersion"),
         );
         if (expectedVersion === undefined) {
-          throw new DomainError("STALE_VERSION", "Expected thread version is invalid.");
+          throw new DomainError(
+            "STALE_VERSION",
+            "Expected thread version is invalid.",
+          );
         }
         await demo.workflowService.completeThread({
           actor: demo.staffActor,
@@ -798,7 +814,10 @@ export function registerCommercialDevelopmentRoutes(
           (await context.req.raw.formData()).get("expectedVersion"),
         );
         if (expectedVersion === undefined) {
-          throw new DomainError("STALE_VERSION", "Expected thread version is invalid.");
+          throw new DomainError(
+            "STALE_VERSION",
+            "Expected thread version is invalid.",
+          );
         }
         await demo.workflowService.transitionThread({
           actor: demo.staffActor,
