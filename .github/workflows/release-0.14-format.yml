@@ -27,40 +27,124 @@ jobs:
           cache-dependency-path: package-lock.json
       - name: Install dependencies
         run: npm ci
-      - name: Apply Release 0.14 mechanical updates
+      - name: Apply Release 0.14 documentation reconciliation
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
 
-          http = Path("src/http/commercial-development.ts")
-          text = http.read_text()
-          text = text.replace("  type SyntheticTransferSimulationOutcome,\n", "")
-          text = text.replace("          outcome as SyntheticTransferSimulationOutcome,\n", "          outcome,\n")
-          http.write_text(text)
+          readme = Path("README.md")
+          text = readme.read_text()
+          text = text.replace(
+              "**Release 0.13 — Provider-Neutral Bootstrap & Browser Session Core Prototype is the currently accepted release.** It implements the Release 0.12 external-delivery design as synthetic/local provider-neutral application state: bounded one-time bootstrap challenges, keyed proof verification, `BootstrapFormGuard`, atomic bootstrap consume plus browser-session creation, one active browser session per AccessGrant, logout/reissue/replacement invalidation, bounded idle/absolute session lifetime, and session-backed external read, attachment-read, and reply authorization.\n",
+              "**Release 0.14 — Synthetic Provider-Augmented Commercial Workflow Demo is the current release line.** It adds a disabled-by-default synthetic commercial workflow for validating provider-augmented intake, attachment review, staff-directed synthetic patient resolution, filing mapping, deterministic downstream simulation, explicit FILED attestation, completion, and disposition while keeping dental-specific state outside the generic Secure Exchange domain/application core.\n\nRelease 0.13 remains the accepted provider-neutral bootstrap/session foundation beneath the product. It implements the Release 0.12 external-delivery design as synthetic/local application state: bounded one-time bootstrap challenges, keyed proof verification, `BootstrapFormGuard`, atomic bootstrap consume plus browser-session creation, one active browser session per AccessGrant, logout/reissue/replacement invalidation, bounded idle/absolute session lifetime, and session-backed external read, attachment-read, and reply authorization.\n",
+          )
+          text = text.replace(
+              "Release 0.13 does **not** expose a real/public bootstrap route, recipient-facing production UI, production session cookie, notification/email/SMS provider, public-Internet abuse service, production persistence/cloud resources, customer data, or PHI. It does not establish HIPAA or other regulated-production readiness.\n\nThe next substantial engineering sequence is **not automatically authorized**. Current portfolio direction requires focused Product Strategy & Business Value validation of the first pilot workflow, willingness to pay, platform/SaaS/OSS alternatives, provider/deployment economics, customer-owned versus LDW-managed deployment, support burden, and regulated operational responsibility before another substantial release.\n",
+              "Release 0.14 remains synthetic/local and does **not** expose a production bootstrap route, production session transport, real mail provider, real Open Dental integration, provider-confirmed filing, customer data/PHI, production persistence/cloud resources, or regulated-production claim. Release 0.13 likewise does not silently become a production public delivery surface.\n\nLDW has accepted the customer-owned augmentation model for this stage: fit Secure Exchange around the customer's existing provider/workflow rather than requiring a standalone replacement. Release 0.14 is specifically authorized to validate that workflow and commercial fit with synthetic data at $0 expected new recurring cost. A paying-pilot or production deployment still requires separate provider-plan/BAA, operational-support, customer-ownership, security/privacy, and regulated-production gates.\n",
+          )
+          retrieval_block = "The existing Release 0.9–0.11 synthetic external retrieval/reply browser adapter requires both development gates:\n\n```sh\nSECURE_EXCHANGE_SYNTHETIC_DEMO=enabled \\\nDEMO_EXTERNAL_RETRIEVAL_ENABLED=enabled \\\nnpm run dev\n```\n"
+          commercial_block = retrieval_block + "\nThe Release 0.14 synthetic commercial workflow uses its own independent second gate:\n\n```sh\nSECURE_EXCHANGE_SYNTHETIC_DEMO=enabled \\\nDEMO_COMMERCIAL_WORKFLOW_ENABLED=enabled \\\nnpm run dev\n```\n\nThe two second-stage demo gates are independent; enabling one does not expose the other namespace.\n"
+          if "DEMO_COMMERCIAL_WORKFLOW_ENABLED=enabled" not in text:
+              text = text.replace(retrieval_block, commercial_block)
+          focused = "npm test -- tests/unit/external-session-security.test.ts tests/integration/external-session-service.test.ts tests/integration/external-session-invariants.test.ts tests/integration/external-session-replacement.test.ts tests/integration/session-backed-external-access.test.ts tests/integration/session-backed-access-grant-expiry.test.ts\n"
+          if "synthetic-commercial-workflow.test.ts" not in text:
+              text = text.replace(
+                  focused,
+                  focused + "npm test -- tests/unit/synthetic-commercial-workflow.test.ts tests/integration/staff-attachment-preview.test.ts tests/integration/commercial-development-http.test.ts tests/architecture/commercial-demo-boundary.test.ts\n",
+              )
+          if "Release 0.14 — Synthetic Commercial Workflow Demo" not in text:
+              text = text.replace(
+                  "- [Release 0.13 — Bootstrap & Browser Session Core](docs/releases/0.13-bootstrap-session-core.md)\n",
+                  "- [Release 0.14 — Synthetic Commercial Workflow Demo](docs/releases/0.14-synthetic-commercial-workflow-demo.md)\n- [Release 0.13 — Bootstrap & Browser Session Core](docs/releases/0.13-bootstrap-session-core.md)\n",
+              )
+          readme.write_text(text)
 
-          page = Path("src/web/page.ts")
-          text = page.read_text()
-          marker = "code {\n  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;\n  overflow-wrap: anywhere;\n}\n"
-          addition = marker + "\n.preview-image {\n  display: block;\n  width: min(100%, 44rem);\n  height: auto;\n  max-height: 36rem;\n  object-fit: contain;\n}\n\ntable {\n  width: 100%;\n  border-collapse: collapse;\n}\n\nth,\ntd {\n  padding: 0.5rem;\n  text-align: left;\n  vertical-align: top;\n  overflow-wrap: anywhere;\n}\n"
-          if ".preview-image {" not in text:
-              text = text.replace(marker, addition)
-          page.write_text(text)
+          roadmap = Path("docs/MVP_AND_ROADMAP.md")
+          text = roadmap.read_text()
+          if "## Release 0.14 — Synthetic Provider-Augmented Commercial Workflow Demo" not in text:
+              text += """
+
+## Release 0.14 — Synthetic Provider-Augmented Commercial Workflow Demo
+
+Release 0.14 is the authorized synthetic/local commercial-validation slice for the accepted customer-owned augmentation model. It demonstrates provider-augmented records intake through the existing attachment quarantine/safety path, staff queue review, bounded synthetic dental-workflow resolution/mapping, deterministic downstream simulation, explicit staff FILED attestation, completion, and disposition.
+
+Dental-specific fixtures, matching evidence, patient-resolution state, and filing mappings stay inside the bounded synthetic adapter/presentation composition. Generic Secure Exchange gains only reusable authorized staff attachment candidate/preview resolution, with preview and download sharing the existing ownership, authorization, exactly-`CLEAN`, protected-content, and byte-integrity checks. Preview is read-only; manual download remains the action that creates `ATTACHMENT_DOWNLOADED` evidence.
+
+The commercial namespace is disabled by default and requires both `SECURE_EXCHANGE_SYNTHETIC_DEMO=enabled` and `DEMO_COMMERCIAL_WORKFLOW_ENABLED=enabled`. The existing Release 0.9–0.11 external retrieval/reply gate remains independent. No real provider integration, patient creation, provider-confirmed filing, customer data/PHI, production persistence/authentication/cloud resource, analytics, paid dependency, or regulated-production claim is introduced. Expected new recurring cost remains **$0**.
+
+A later paying-pilot/production gate must revalidate provider plan/BAA and notification delivery, downstream integration semantics/evidence, customer-owned infrastructure, support/operations, data retention, regulated security/privacy controls, and production audit requirements before synthetic assumptions can become real customer behavior.
+"""
+          roadmap.write_text(text)
+
+          strategy = Path("docs/security/TEST_AND_SECURITY_STRATEGY.md")
+          text = strategy.read_text()
+          if "## Release 0.14 synthetic commercial workflow regression boundary" not in text:
+              text += """
+
+## Release 0.14 synthetic commercial workflow regression boundary
+
+Release 0.14 adds deterministic coverage for the disabled-by-default commercial-demo boundary: dual-gate route registration; bounded multipart intake; MIME/extension/count/size policy; quarantine-before-CLEAN transition; STAFF/queue/`ATTACHMENT_READ` candidate authorization; bounded candidate metadata; read-only preview using the same ownership/CLEAN/content-integrity resolver as download; explicit download evidence; fixed synthetic patient-number and name+DOB fixture resolution; explicit candidate selection/not-found state; allowlisted mapping correction; deterministic failure/retry/success; explicit FILED confirmation; completion policy; separate disposition; fixed diagnostic counters; and non-sensitive local notification representation.
+
+Evidence regression coverage must continue proving **Opened != Downloaded != Transferred/Filed != Completed != Disposed**. In particular, preview creates no `ATTACHMENT_DOWNLOADED`; manual download creates no FILED evidence; simulated downstream success creates no FILED evidence; explicit staff filing confirmation creates the existing FILED TransferAttestation; FILED alone does not complete; completion does not dispose.
+
+Architecture tests reject dental-specific patient/Open Dental vocabulary in generic `src/domain` and `src/application` and reject provider SDK imports in the bounded commercial slice. Browser tests execute the representative intake -> queue -> patient confirmation -> image preview -> mapping correction -> simulated failure/retry/success -> FILED confirmation -> completion -> disposition flow at desktop and mobile viewports, with axe WCAG A/AA and horizontal-overflow checks on principal commercial pages.
+
+Passing these synthetic tests is not evidence of production provider behavior, real patient matching, provider-confirmed filing, anonymous-Internet abuse resistance, production persistence/authentication, HIPAA compliance, certification, or regulated readiness.
+"""
+          strategy.write_text(text)
+
+          development = Path("docs/development/DEVELOPMENT.md")
+          text = development.read_text()
+          if "## Release 0.14 synthetic commercial workflow demo" not in text:
+              text += """
+
+## Release 0.14 synthetic commercial workflow demo
+
+Release 0.14 remains disabled by default. Enable the commercial slice locally only with both development gates:
+
+```sh
+SECURE_EXCHANGE_SYNTHETIC_DEMO=enabled \\
+DEMO_COMMERCIAL_WORKFLOW_ENABLED=enabled \\
+npm run dev
+```
+
+The namespace is `/demo/commercial/*`. `DEMO_COMMERCIAL_WORKFLOW_ENABLED` is independent from the Release 0.9–0.11 `DEMO_EXTERNAL_RETRIEVAL_ENABLED` gate. Do not treat either flag as production authentication, authorization, bootstrap assurance, or Internet-exposure control.
+
+The commercial slice uses server-rendered HTML/CSS and no client-side framework. Intake is bounded to one through four synthetic PDF/PNG/JPEG/text attachments at the current 2 MiB per-file limit. Files always pass through `AttachmentService.ingestAttachment()` as `QUARANTINED` before the demo invokes the existing trusted scan-result transition to `CLEAN`.
+
+`AttachmentService.listStaffAttachmentCandidates()` and `previewStaffAttachment()` are generic application capabilities. They require current STAFF authorization, queue scope, and `ATTACHMENT_READ`; preview and download share the same authoritative message/attachment ownership, exactly-`CLEAN`, protected-content, and byte-integrity resolver. Preview GET is read-only and creates no download evidence. Manual download remains same-origin POST through `retrieveStaffAttachment()` and records the existing successful `ATTACHMENT_DOWNLOADED` event.
+
+Dental-specific fixture data and per-thread patient/mapping/simulation state live only in `SyntheticCommercialWorkflow` under `src/adapters` plus the commercial HTTP/presentation composition. They are not generic domain/application fields and reset with the local process. No real patient creation/search, Open Dental/network/provider SDK, mail delivery, database, analytics, or production persistence is present.
+
+The synthetic completion policy requires an authenticated staff FILED TransferAttestation to the bounded generic `SYNTHETIC_PATIENT_RECORD` destination. A simulated success flag never qualifies by itself. Staff must explicitly confirm simulated filing, explicitly complete, and explicitly dispose.
+
+Use only obviously synthetic fixture values. Do not enter real patient/customer information, PHI, credentials, provider tokens, or production configuration into the demo, tests, screenshots, logs, issues, pull requests, or documentation.
+
+Focused Release 0.14 checks:
+
+```sh
+npm test -- tests/unit/synthetic-commercial-workflow.test.ts tests/integration/staff-attachment-preview.test.ts tests/integration/commercial-development-http.test.ts tests/architecture/commercial-demo-boundary.test.ts
+npx playwright test tests/e2e/commercial-demo.spec.ts
+```
+
+Package version is `0.14.0`; Release 0.14 adds no runtime or development dependency and no expected recurring cost.
+"""
+          development.write_text(text)
           PY
-          npm version 0.14.0 --no-git-tag-version
       - name: Apply repository formatter
         run: npm run format
-      - name: Commit mechanical updates if needed
+      - name: Commit documentation reconciliation if needed
         shell: bash
         run: |
           if git diff --quiet; then
-            echo "No Release 0.14 mechanical updates required."
+            echo "No Release 0.14 documentation updates required."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "Finalize Release 0.14 package and presentation mechanics"
+          git commit -m "Reconcile Release 0.14 documentation"
           git push origin HEAD:release/0.14-synthetic-commercial-workflow-demo
 
 # Temporary WIP helper; remove before freezing the Release 0.14 candidate.
