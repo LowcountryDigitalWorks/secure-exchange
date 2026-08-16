@@ -41,3 +41,5 @@ jobs:
           git add -A
           git commit -m "Format Release 0.14 work in progress"
           git push origin HEAD:release/0.14-synthetic-commercial-workflow-demo
+
+# Trigger formatter after deterministic acceptance coverage update.
