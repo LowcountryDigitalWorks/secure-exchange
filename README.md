@@ -6,6 +6,8 @@ Secure Exchange is a Lowcountry Digital Works product for secure, role-routed me
 
 **Release 0.14 — Synthetic Provider-Augmented Commercial Workflow Demo is the current release line.** It adds a disabled-by-default synthetic commercial workflow for validating provider-augmented intake, attachment review, staff-directed synthetic patient resolution, filing mapping, deterministic downstream simulation, explicit FILED attestation, completion, and disposition while keeping dental-specific state outside the generic Secure Exchange domain/application core.
 
+Release 0.14.1 is documentation maintenance only: it records the accepted CodeQL coverage-proof disposition while Release 0.14 remains the current functional product behavior.
+
 Release 0.13 remains the accepted provider-neutral bootstrap/session foundation beneath the product. It implements the Release 0.12 external-delivery design as synthetic/local application state: bounded one-time bootstrap challenges, keyed proof verification, `BootstrapFormGuard`, atomic bootstrap consume plus browser-session creation, one active browser session per AccessGrant, logout/reissue/replacement invalidation, bounded idle/absolute session lifetime, and session-backed external read, attachment-read, and reply authorization.
 
 Release 0.12 remains the accepted production-delivery architecture boundary. The reference flow is a non-secret bootstrap locator plus a user-entered one-time proof, followed by a short-lived server-verified browser session. Browser/session possession does not become application authorization truth; current AccessGrant, thread, operation, lifecycle, and resource authority must still be revalidated.
@@ -117,6 +119,7 @@ The local in-memory stores are development/test adapters only. Their maps, array
 
 - [Product purpose and non-goals](docs/PRODUCT.md)
 - [MVP and roadmap](docs/MVP_AND_ROADMAP.md)
+- [Release 0.14.1 — CodeQL Proof Documentation Maintenance](docs/releases/0.14.1-codeql-proof-documentation-maintenance.md)
 - [Release 0.14 — Synthetic Commercial Workflow Demo](docs/releases/0.14-synthetic-commercial-workflow-demo.md)
 - [Release 0.13 — Bootstrap & Browser Session Core](docs/releases/0.13-bootstrap-session-core.md)
 - [Release 0.12 — Production Delivery Boundary](docs/releases/0.12-production-delivery-boundary.md)
