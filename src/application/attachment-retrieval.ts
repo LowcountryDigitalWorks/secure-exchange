@@ -3,6 +3,7 @@ import {
   type AccessGrantId,
   type ActorRef,
   type AttachmentId,
+  type AttachmentMediaCategory,
   type AuditActorKind,
   type DeploymentId,
   type MessageId,
@@ -19,23 +20,30 @@ export interface AttachmentRetrievalAuthority {
   readonly accessGrantId?: AccessGrantId;
 }
 
-export interface AuthorizedAttachmentRetrievalInput {
+export interface AuthorizedAttachmentResolutionInput {
   readonly deploymentId: DeploymentId;
   readonly threadId: ThreadId;
   readonly messageId: MessageId;
   readonly attachmentId: AttachmentId;
+}
+
+export interface AuthorizedAttachmentRetrievalInput extends AuthorizedAttachmentResolutionInput {
   readonly at: string;
   readonly expectedThreadVersion: number;
   readonly authority: AttachmentRetrievalAuthority;
 }
 
-export interface AuthorizedAttachmentRetrievalResult {
+export interface AuthorizedAttachmentResolutionResult {
   readonly attachmentId: AttachmentId;
   readonly safeDownloadFilename: string;
   readonly normalizedMediaType: string;
+  readonly normalizedMediaCategory: AttachmentMediaCategory;
   readonly byteLength: number;
   readonly content: Uint8Array;
 }
+
+export type AuthorizedAttachmentRetrievalResult =
+  AuthorizedAttachmentResolutionResult;
 
 export interface AttachmentRetrievalDependencies {
   readonly store: WorkflowStore;
@@ -43,10 +51,10 @@ export interface AttachmentRetrievalDependencies {
   readonly idGenerator: OpaqueIdGenerator;
 }
 
-export async function retrieveAuthorizedAttachment(
-  dependencies: AttachmentRetrievalDependencies,
-  input: AuthorizedAttachmentRetrievalInput,
-): Promise<AuthorizedAttachmentRetrievalResult> {
+export async function resolveAuthorizedAttachment(
+  dependencies: Pick<AttachmentRetrievalDependencies, "store" | "contentStore">,
+  input: AuthorizedAttachmentResolutionInput,
+): Promise<AuthorizedAttachmentResolutionResult> {
   const message = await dependencies.store.getMessage(
     input.deploymentId,
     input.threadId,
@@ -102,6 +110,22 @@ export async function retrieveAuthorizedAttachment(
     );
   }
 
+  return {
+    attachmentId: attachment.attachmentId,
+    safeDownloadFilename: attachment.safeDownloadFilename,
+    normalizedMediaType: attachment.normalizedMediaType,
+    normalizedMediaCategory: attachment.normalizedMediaCategory,
+    byteLength: content.byteLength,
+    content: new Uint8Array(content),
+  };
+}
+
+export async function retrieveAuthorizedAttachment(
+  dependencies: AttachmentRetrievalDependencies,
+  input: AuthorizedAttachmentRetrievalInput,
+): Promise<AuthorizedAttachmentRetrievalResult> {
+  const result = await resolveAuthorizedAttachment(dependencies, input);
+
   await dependencies.store.commit({
     deploymentId: input.deploymentId,
     threadId: input.threadId,
@@ -115,7 +139,7 @@ export async function retrieveAuthorizedAttachment(
         actorRef: input.authority.actorRef,
         actorKind: input.authority.actorKind,
         at: input.at,
-        attachmentId: attachment.attachmentId,
+        attachmentId: result.attachmentId,
         ...(input.authority.accessGrantId === undefined
           ? {}
           : { accessGrantId: input.authority.accessGrantId }),
@@ -124,11 +148,5 @@ export async function retrieveAuthorizedAttachment(
     ],
   });
 
-  return {
-    attachmentId: attachment.attachmentId,
-    safeDownloadFilename: attachment.safeDownloadFilename,
-    normalizedMediaType: attachment.normalizedMediaType,
-    byteLength: content.byteLength,
-    content: new Uint8Array(content),
-  };
+  return result;
 }

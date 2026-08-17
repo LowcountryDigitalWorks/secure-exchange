@@ -4,13 +4,15 @@ Secure Exchange is a Lowcountry Digital Works product for secure, role-routed me
 
 ## Current status
 
-**Release 0.13 — Provider-Neutral Bootstrap & Browser Session Core Prototype is the currently accepted release.** It implements the Release 0.12 external-delivery design as synthetic/local provider-neutral application state: bounded one-time bootstrap challenges, keyed proof verification, `BootstrapFormGuard`, atomic bootstrap consume plus browser-session creation, one active browser session per AccessGrant, logout/reissue/replacement invalidation, bounded idle/absolute session lifetime, and session-backed external read, attachment-read, and reply authorization.
+**Release 0.14 — Synthetic Provider-Augmented Commercial Workflow Demo is the current release line.** It adds a disabled-by-default synthetic commercial workflow for validating provider-augmented intake, attachment review, staff-directed synthetic patient resolution, filing mapping, deterministic downstream simulation, explicit FILED attestation, completion, and disposition while keeping dental-specific state outside the generic Secure Exchange domain/application core.
+
+Release 0.13 remains the accepted provider-neutral bootstrap/session foundation beneath the product. It implements the Release 0.12 external-delivery design as synthetic/local application state: bounded one-time bootstrap challenges, keyed proof verification, `BootstrapFormGuard`, atomic bootstrap consume plus browser-session creation, one active browser session per AccessGrant, logout/reissue/replacement invalidation, bounded idle/absolute session lifetime, and session-backed external read, attachment-read, and reply authorization.
 
 Release 0.12 remains the accepted production-delivery architecture boundary. The reference flow is a non-secret bootstrap locator plus a user-entered one-time proof, followed by a short-lived server-verified browser session. Browser/session possession does not become application authorization truth; current AccessGrant, thread, operation, lifecycle, and resource authority must still be revalidated.
 
-Release 0.13 does **not** expose a real/public bootstrap route, recipient-facing production UI, production session cookie, notification/email/SMS provider, public-Internet abuse service, production persistence/cloud resources, customer data, or PHI. It does not establish HIPAA or other regulated-production readiness.
+Release 0.14 remains synthetic/local and does **not** expose a production bootstrap route, production session transport, real mail provider, real Open Dental integration, provider-confirmed filing, customer data/PHI, production persistence/cloud resources, or regulated-production claim. Release 0.13 likewise does not silently become a production public delivery surface.
 
-The next substantial engineering sequence is **not automatically authorized**. Current portfolio direction requires focused Product Strategy & Business Value validation of the first pilot workflow, willingness to pay, platform/SaaS/OSS alternatives, provider/deployment economics, customer-owned versus LDW-managed deployment, support burden, and regulated operational responsibility before another substantial release.
+LDW has accepted the customer-owned augmentation model for this stage: fit Secure Exchange around the customer's existing provider/workflow rather than requiring a standalone replacement. Release 0.14 is specifically authorized to validate that workflow and commercial fit with synthetic data at $0 expected new recurring cost. A paying-pilot or production deployment still requires separate provider-plan/BAA, operational-support, customer-ownership, security/privacy, and regulated-production gates.
 
 This repository is public. Development must use synthetic examples only. Do not commit or enter real customer, patient, client, confidential, regulated, or PHI data, credentials, secrets, private operational details, or production configuration.
 
@@ -44,6 +46,16 @@ DEMO_EXTERNAL_RETRIEVAL_ENABLED=enabled \
 npm run dev
 ```
 
+The Release 0.14 synthetic commercial workflow uses its own independent second gate:
+
+```sh
+SECURE_EXCHANGE_SYNTHETIC_DEMO=enabled \
+DEMO_COMMERCIAL_WORKFLOW_ENABLED=enabled \
+npm run dev
+```
+
+The two second-stage demo gates are independent; enabling one does not expose the other namespace.
+
 For a compiled local run, use the same gate values with `npm start` after `npm run build`.
 
 The enabled UI is prominently labeled **Synthetic Development Demo** and is for synthetic data only. Release 0.13 adds the provider-neutral bootstrap/session core behind the application boundary; it does not silently convert the existing synthetic adapter into a production delivery surface.
@@ -60,6 +72,7 @@ npm test -- tests/integration/development-demo-http.test.ts tests/integration/sa
 npm test -- tests/unit/attachment.test.ts tests/integration/attachment-service.test.ts
 npm test -- tests/unit/access-grant.test.ts tests/integration/access-grant-service.test.ts tests/integration/attachment-count-concurrency.test.ts
 npm test -- tests/unit/external-session-security.test.ts tests/integration/external-session-service.test.ts tests/integration/external-session-invariants.test.ts tests/integration/external-session-replacement.test.ts tests/integration/session-backed-external-access.test.ts tests/integration/session-backed-access-grant-expiry.test.ts
+npm test -- tests/unit/synthetic-commercial-workflow.test.ts tests/integration/staff-attachment-preview.test.ts tests/integration/commercial-development-http.test.ts tests/architecture/commercial-demo-boundary.test.ts
 ```
 
 See [Development conventions](docs/development/DEVELOPMENT.md) for commands, project structure, CI behavior, dependency updates, security rules, and release boundaries.
@@ -104,6 +117,7 @@ The local in-memory stores are development/test adapters only. Their maps, array
 
 - [Product purpose and non-goals](docs/PRODUCT.md)
 - [MVP and roadmap](docs/MVP_AND_ROADMAP.md)
+- [Release 0.14 — Synthetic Commercial Workflow Demo](docs/releases/0.14-synthetic-commercial-workflow-demo.md)
 - [Release 0.13 — Bootstrap & Browser Session Core](docs/releases/0.13-bootstrap-session-core.md)
 - [Release 0.12 — Production Delivery Boundary](docs/releases/0.12-production-delivery-boundary.md)
 - [ADR-0005 — External Bootstrap and Browser Session Boundary](docs/adr/0005-external-bootstrap-session-boundary.md)

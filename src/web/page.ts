@@ -126,6 +126,27 @@ code {
   overflow-wrap: anywhere;
 }
 
+.preview-image {
+  display: block;
+  width: min(100%, 44rem);
+  height: auto;
+  max-height: 36rem;
+  object-fit: contain;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 0.5rem;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 38rem) {
   main {
     width: min(100% - 1rem, 58rem);
