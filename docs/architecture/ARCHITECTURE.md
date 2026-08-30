@@ -97,6 +97,22 @@ See [Retention and Disposition](../security/RETENTION_AND_DISPOSITION.md).
 
 Provider-specific behavior is isolated behind interfaces. Portability means the core can be adapted without rewriting domain semantics; it does not mean all providers expose identical operational guarantees.
 
+## Pre-production customer deployment refinement
+
+The current repeatability target refines the existing AWS-first/customer-owned reference without changing its provider-neutral authority model:
+
+- one isolated customer-owned AWS deployment per customer;
+- mail-provider routing/redirect for ordinary records plus direct Secure Exchange portal upload for large/preferred submissions;
+- private S3 staging and the accepted authoritative malware-gate semantics independent of the customer's mail/productivity storage;
+- 500 MB/file and 1 GB/submission as production planning targets, not implemented Release 0.14 limits;
+- customer differences expressed through bounded configuration rather than source forks;
+- customer-first branding with discreet LDW/Secure Exchange attribution;
+- GitHub-to-AWS infrastructure/application deployment using short-lived OIDC credentials as the intended repeatable update path;
+- zero customer-specific development and <=1-2 hours active LDW labor as the mature clean-install target, not a present capability or customer quote;
+- dental/Open Dental as the first concrete profile while the generic core remains suitable for separately validated medical, legal, and other sensitive-record workflows.
+
+See [Customer Deployment, Ingress, Branding, and Repeatability Direction](CUSTOMER_DEPLOYMENT_AND_INGRESS.md).
+
 ## Release 0.12 production external-delivery boundary
 
 Release 0.12 adds a constraining production-delivery architecture without changing the provider-neutral application authority model.
